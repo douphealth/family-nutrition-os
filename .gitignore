@@ -1,0 +1,14 @@
+# Node / OS
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Local dev
+*.log
+.env
+.env.*
