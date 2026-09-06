@@ -1,0 +1,1 @@
+{"name":"zenith-pro-family-nutrition-os","private":true,"type":"module","scripts":{"test":"node tests/nutrition-engine.test.mjs"}}
