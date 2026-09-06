@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { isMinor, adultBmiLabel, energyRange, portionProfile } from '../src/nutrition-engine.js';
+const son={sex:'m',age:15,height:179,weight:67,athlete:true,goal:'performance'};
+const mother={sex:'f',age:51,height:167,weight:87,athlete:false,goal:'gradual_fat_loss',activityFactor:1.35};
+assert.equal(isMinor(son),true);
+assert.equal(adultBmiLabel(son),null,'Minors must never receive adult BMI labels');
+assert.ok(energyRange(son,'hard').upper > energyRange(son,'rest').upper,'Athlete energy range should rise with training load');
+assert.ok(portionProfile(son,'hard').carbs > portionProfile(son,'rest').carbs,'Athlete carb portion should respond to training load');
+assert.equal(isMinor(mother),false);
+assert.ok(adultBmiLabel(mother));
+assert.ok(energyRange(mother).upper < energyRange({...mother,goal:'maintain'}).upper,'Adult gradual fat-loss estimate should be below maintenance');
+console.log('nutrition-engine tests: PASS');
