@@ -38,12 +38,18 @@ jobs:
           grep -q 'type="module" src="src/app.js"' index.html
           grep -q 'styles/app.css' index.html
           grep -q 'manifest.webmanifest' index.html
+          grep -q 'lang="el"' index.html
           grep -q "./src/storage.js" sw.js
           grep -q "./src/views.js" sw.js
           grep -q "./src/ui.js" sw.js
-          grep -q 'zenith-v3' sw.js
-          grep -q 'lang="el"' index.html
-          grep -q 'network-first\|networkFirst' sw.js || true
+
+      - name: Verify service-worker strategy
+        run: |
+          # v3 must be network-first for navigation (v2 was cache-first, which is
+          # why deploys could appear stale) and stale-while-revalidate for assets.
+          grep -q "CACHE = 'zenith-v3" sw.js
+          grep -q "req.mode === 'navigate'" sw.js
+          grep -q "caches.open(CACHE)" sw.js
 
   smoke:
     runs-on: ubuntu-latest

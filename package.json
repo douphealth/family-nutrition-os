@@ -15,8 +15,8 @@
     "check": "node --check src/app.js && node --check src/data.js && node --check src/ui.js && node --check src/views.js && node --check src/nutrition-engine.js && node --check src/storage.js && node --check sw.js"
   },
   "devDependencies": {
-    "fake-indexeddb": "^6.0.0",
-    "jsdom": "^25.0.1"
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^30.0.1"
   },
   "engines": {
     "node": ">=20"
