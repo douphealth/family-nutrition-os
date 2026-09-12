@@ -2,6 +2,47 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [4.2.0] — 2026-09-12
+
+The app is a PWA, so the phone is the surface that actually gets used — the mother in the
+kitchen, anyone in the shop. It had only ever been reviewed at desktop width. Reviewing it
+at 390×844 found three real layout bugs, all now fixed and guarded by a new automated
+audit.
+
+### Fixed
+- **The shopping header collapsed into its own buttons.** `.shop-progress` is a flex row
+  of icon + title + three buttons. On a phone the title was squeezed to one word per line
+  ("4 / από / 42 / στο / καλάθι") and the buttons rendered *on top of it*. The actions now
+  take their own row and share it evenly, and the progress bar is visible again.
+- **Cook Mode's primary action required a scroll on every step.** The step nav sat at the
+  bottom of the scrolling body, below the step list. On a single-column phone layout that
+  meant scrolling to find "Επόμενο βήμα" on every step, with wet hands, mid-recipe. The
+  nav now sits outside `.cook-cols` — so its containing block spans the whole sheet — and
+  is pinned to the bottom on narrow screens. Verified pinned before *and* after scrolling
+  to the end.
+- **The persona header was unreadable at phone width.** The avatar, name eyebrow and goal
+  tag competed for one row, squeezing "ΔΗΜΗΤΡΗΣ · ΤΙ ΜΕΤΡΑΕΙ ΓΙΑ ΣΕΝΑ" into a ragged
+  column. The tag now drops to its own line below.
+- **24px shopping checkboxes were unusable with a thumb.** Raised to 36px on mobile, with
+  a taller row; filter chips are held at a 40px minimum height.
+
+### Added
+- **Mobile layout audit** (`scripts/capture_mobile.py`, `npm run shots:mobile`). Renders
+  the real app in Chromium at 390×844 and asserts: no horizontal overflow on any view,
+  every tap target ≥ 36px tall, the active member chip is scrolled into view, the Cook
+  Mode step nav is pinned before and after scrolling, the sheet footer is inside the
+  viewport, and the shopping title is not overlapped by its buttons. Exits non-zero on
+  failure and writes `docs/mobile-*.png`.
+- **A `mobile` job in CI** runs that audit on every push, because jsdom has no layout
+  engine and nothing in the existing suites could ever have caught these bugs.
+- **The member strip scrolls the active member into view.** On a phone the strip scrolls
+  horizontally, so a member selected from the command palette — or restored on load —
+  could sit off-screen and the switcher then looked like it belonged to someone else.
+
+### Changed
+- `APP.version` → `4.2.0`; service-worker cache → `zenith-v4-2026-09-12-3`.
+- `npm run shots` / `npm run shots:mobile` added as the documented capture entry points.
+
 ## [4.1.0] — 2026-09-12
 
 The household finally has names. The four members were shipped as placeholder labels

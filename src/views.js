@@ -183,13 +183,6 @@ export function cookBody(ctx, recipe) {
             </button>
           </li>`).join('')}
         </ol>
-
-        <div class="cook-nav">
-          <button type="button" class="btn ${step === total - 1 ? 'btn-primary' : ''}" data-act="cookStep" data-to="${step + 1}" ${step === total - 1 ? 'disabled' : ''}>
-            ${step === total - 1 ? 'Τελευταίο βήμα' : 'Επόμενο βήμα'} ${icon('arrowRight', 15)}
-          </button>
-          <button type="button" class="btn btn-ghost" data-act="closeSheet">${icon('x', 15)} Κλείσιμο</button>
-        </div>
       </div>
 
       <aside class="cook-side">
@@ -217,6 +210,13 @@ export function cookBody(ctx, recipe) {
           <p class="tiny muted">Οι ποσότητες κλιμακώνονται ανά μέλος — μοίρασε ανάλογα.</p>
         </div>
       </aside>
+    </div>
+
+    <div class="cook-nav">
+      <button type="button" class="btn ${step === total - 1 ? 'btn-primary' : ''}" data-act="cookStep" data-to="${step + 1}" ${step === total - 1 ? 'disabled' : ''}>
+        ${step === total - 1 ? 'Τελευταίο βήμα' : 'Επόμενο βήμα'} ${icon('arrowRight', 15)}
+      </button>
+      <button type="button" class="btn btn-ghost" data-act="closeSheet">${icon('x', 15)} Κλείσιμο</button>
     </div>
   </div>`;
 }

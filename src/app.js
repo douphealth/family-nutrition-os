@@ -260,9 +260,18 @@ function renderShell() {
     `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
       ${icon(ic, 18)}<span>${esc(label)}</span></button>`).join('');
 
-  byId('memberStrip').innerHTML = cache.profiles.map(p =>
+  const strip = byId('memberStrip');
+  strip.innerHTML = cache.profiles.map(p =>
     `<button type="button" class="member-chip ${p.id === state.member ? 'active' : ''}" data-act="member" data-id="${esc(p.id)}" aria-pressed="${p.id === state.member}">
       ${avatar(p, 30)}<span>${esc(p.name)}</span></button>`).join('');
+  // On a phone the strip scrolls horizontally, so a member selected from the
+  // command palette — or restored on load — can sit off-screen and the switcher
+  // then looks like it belongs to someone else. Centre it, but only when the
+  // strip is genuinely scrollable, so desktop never shifts.
+  const activeChip = strip.querySelector('.member-chip.active');
+  if (activeChip && strip.scrollWidth > strip.clientWidth) {
+    strip.scrollLeft = activeChip.offsetLeft - (strip.clientWidth - activeChip.offsetWidth) / 2;
+  }
 
   byId('tabbar').innerHTML = PRIMARY_TABS.map(id => {
     const entry = NAV.find(n => n[0] === id);

@@ -1,4 +1,4 @@
-# ZENITH PRO v4 · Family Nutrition OS
+# ZENITH PRO v4.2 · Family Nutrition OS
 
 Privacy-first, offline-first family nutrition PWA built around one shared family meal
 system with member-specific portion logic. Greek-language UI, zero runtime dependencies,
@@ -32,13 +32,43 @@ no build step, hosted as static files on GitHub Pages.
 |---|---|
 | ![Family](docs/screenshot-family.png) | ![Dark](docs/screenshot-dark.png) |
 
-Regenerate with `python scripts/capture_shots.py` while a local server is running.
+### On a phone — where the app actually gets used
+
+| Today (mother) | Cook Mode (pinned step nav) |
+|---|---|
+| ![Mobile today](docs/mobile-today.png) | ![Mobile cook](docs/mobile-cook.png) |
+
+| Shopping (what's left) | Family |
+|---|---|
+| ![Mobile shopping](docs/mobile-shopping.png) | ![Mobile family](docs/mobile-family.png) |
+
+Regenerate with `python scripts/capture_shots.py` (desktop) and
+`python scripts/capture_mobile.py` (phone + layout audit) while a local server is running.
+
+## What's new in v4.2
+
+The app is a PWA, so the phone is the surface that actually gets used. Reviewing it at
+390×844 found three real layout bugs, all fixed and now guarded by CI:
+
+- **The shopping header collapsed into its own buttons** — the title was squeezed to one
+  word per line and the buttons rendered on top of it.
+- **Cook Mode's "Επόμενο βήμα" needed a scroll on every step** — the step nav now sits
+  outside the column grid and is **pinned to the bottom** of the sheet on narrow screens.
+- **The persona header was unreadable at phone width** — the goal tag now drops to its own
+  line instead of squeezing the member's name into a ragged column.
+- **24px shopping checkboxes** raised to 36px, with filter chips held at a 40px minimum.
+
+`npm run shots:mobile` renders the real app in Chromium at phone width and asserts no
+horizontal overflow, thumb-sized tap targets, a pinned step nav, and a readable shopping
+header. It runs in CI as its own job — jsdom has no layout engine, so nothing else could
+have caught these.
 
 ## What's new in v4
 
 v3 was correct. **v4 is personal** — it is built around the three people who actually use
 it: the mother (51, gradual fat loss, does the cooking), the son (15, basketball) and the
-daughter (17, growing).
+daughter (17, growing). The household carries their real names — **Αναστασία**, **Αλέξης**,
+**Αλεξάνδρα** and **Δημήτρης** — with the family relation kept as a separate editable field.
 
 ### Easy for the mother
 - **Cook Mode** — one instruction on screen at a time, large type, a progress bar, a
@@ -152,8 +182,9 @@ There is no build step. Edit a file, reload the browser.
 
 ```bash
 npm test           # nutrition-engine + data-integrity + persona & kitchen suites
-npm run smoke      # DOM smoke test: localStorage path AND IndexedDB path (112 checks)
+npm run smoke      # DOM smoke test: localStorage path AND IndexedDB path (120 checks)
 npm run check      # syntax check every module
+npm run shots:mobile   # phone-width render + layout audit (needs Playwright)
 ```
 
 The DOM smoke test boots the real `index.html` in jsdom, imports the real `src/app.js`,
@@ -165,6 +196,10 @@ are dev-only:
 npm install        # installs devDependencies
 npm run smoke
 ```
+
+`npm run shots:mobile` needs Playwright and a local server on port 8137. jsdom has no
+layout engine, so this is the only suite that can catch a mobile layout regression; it
+runs in CI as its own job.
 
 ## License
 
