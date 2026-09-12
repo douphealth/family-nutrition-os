@@ -12,27 +12,28 @@
  */
 
 import {
-  APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, AISLES,
+  APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, SLOT_TIME, AISLES,
   PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES
 } from './data.js';
 import {
   isMinor, targetsFor, dayMacros, planCoverage, mealMacros, weightTrend,
   loggingStreak, hydrationTarget, contextualGuidance, energyRange,
-  personaPoints, trainingFueling, ironMeals, householdServings, upgradeMemberNames
+  personaPoints, trainingFueling, ironMeals, householdServings, upgradeMemberNames,
+  nextMealNudge
 } from './nutrition-engine.js';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
   storageInfo, requestPersistence, activeBackend
 } from './storage.js';
 import {
-  esc, icon, logo, byId, $, $$, avatar,
+  esc, icon, logo, byId, $, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, cycleWeek, dateFromKey,
   num, num1, pct, mlToText, bytesToText, longDate, shortDate, GREEK_DAYS_SHORT,
   toast, openSheet, closeSheet, isSheetOpen, clockText
 } from './ui.js';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
-  guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody
+  guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, swapSheet
 } from './views.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
@@ -232,6 +233,9 @@ function buildCtx() {
       hydrationMl: Number(log?.waterMl) || 0,
       measurements: measurements.length
     }),
+    /* Time-awareness. The clock is read here, at the edge, and passed in as a
+       value — the engine function itself stays pure and testable. */
+    nudge: nextMealNudge({ log, slotTimes: SLOT_TIME, now: new Date() }),
     personaFocus: PERSONA_FOCUS[profile.goal] || null,
     fueling: trainingFueling(profile, load),
     ironToday: ironTodayFor(planDay),
@@ -248,6 +252,10 @@ const shopKey = weekDays => weekDays.length ? `w:${weekDays[0].date}` : 'w:none'
 
 function renderShell() {
   const profile = currentProfile();
+  // Avatars need to know about each OTHER to stay distinguishable (Αλέξης and
+  // Αλεξάνδρα share five letters), so the household is registered here — the
+  // one place that runs before every render and after every member edit.
+  registerMembers(cache.profiles);
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.style.setProperty('--accent', profile?.accent || '#0E9F6E');
   document.documentElement.style.setProperty('--accent-2', profile?.accent || '#0E9F6E');
@@ -614,8 +622,15 @@ document.addEventListener('click', async e => {
       const date = target.dataset.date || localDateKey();
       const slot = target.dataset.slot;
       const portion = Number(target.dataset.portion) || 1;
+      const plannedId = planForDate(date)?.[slot];
+      const chosenId = target.dataset.recipe || plannedId;
       const log = logFor(profile.id, date);
-      log.meals = { ...(log.meals || {}), [slot]: { status: 'done', portion, at: new Date().toISOString() } };
+      log.meals = { ...(log.meals || {}), [slot]: {
+        status: 'done', portion, at: new Date().toISOString(),
+        // Only recorded when it differs from the plan. A log entry that merely
+        // echoes the plan would make every meal look "swapped" in the data.
+        ...(chosenId && chosenId !== plannedId ? { recipeId: chosenId } : {})
+      } };
       await saveLog(log);
       render();
       toast(`Καταγράφηκε: ${SLOT_LABEL[slot]} ${portion}×`, {
@@ -627,6 +642,21 @@ document.addEventListener('click', async e => {
           render();
           toast('Η καταγραφή αφαιρέθηκε.');
         }
+      });
+      break;
+    }
+    case 'swap': {
+      const slot = target.dataset.slot;
+      const date = target.dataset.date || localDateKey();
+      const log = logFor(profile.id, date);
+      const plannedId = planForDate(date)?.[slot];
+      const currentId = log?.meals?.[slot]?.recipeId || plannedId;
+      const recipe = recipeById(currentId);
+      if (!recipe) break;
+      openSheet({
+        title: `Αλλαγή: ${SLOT_LABEL[slot]}`,
+        size: 'lg',
+        body: swapSheet(buildCtx(), slot, recipe, date)
       });
       break;
     }
@@ -683,6 +713,32 @@ document.addEventListener('click', async e => {
       const r = recipeById(target.dataset.id);
       if (!r) break;
       openSheet({ title: r.name, size: 'lg', body: recipeDetail(buildCtx(), r) });
+      break;
+    }
+    case 'swapPick': {
+      const date = target.dataset.date || localDateKey();
+      const slot = target.dataset.slot;
+      const log = logFor(profile.id, date);
+      const plannedId = planForDate(date)?.[slot];
+      const chosenId = target.dataset.id;
+      log.meals = { ...(log.meals || {}), [slot]: {
+        status: 'done', portion: log?.meals?.[slot]?.portion ?? 1, at: new Date().toISOString(),
+        ...(chosenId && chosenId !== plannedId ? { recipeId: chosenId } : {})
+      } };
+      await saveLog(log);
+      closeSheet();
+      render();
+      const r = recipeById(chosenId);
+      toast(`Αντικαταστάθηκε: ${SLOT_LABEL[slot]} → ${r?.name || ''}`, {
+        actionLabel: 'Αναίρεση',
+        onAction: async () => {
+          const l = logFor(profile.id, date);
+          delete l.meals[slot];
+          await saveLog(l);
+          render();
+          toast('Η αλλαγή αφαιρέθηκε.');
+        }
+      });
       break;
     }
     case 'cook': {

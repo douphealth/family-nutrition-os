@@ -117,8 +117,11 @@ with sync_playwright() as p:
         """() => document.querySelector('#sideNav [data-act="nav"][data-view="today"]')?.click()"""
     )
     settle(page, 700)
+    # All FOUR members. The father was missing here too, which is how the README
+    # came to describe a household of three while data.js modelled four.
     for member_id, filename in [
         ("mother", "screenshot-persona-mother.png"),
+        ("father", "screenshot-persona-father.png"),
         ("son", "screenshot-persona-son.png"),
         ("daughter", "screenshot-persona-daughter.png"),
     ]:

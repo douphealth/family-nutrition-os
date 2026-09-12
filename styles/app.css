@@ -15,45 +15,102 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
 
-  --bg: #f4f8f6;
-  --bg-2: #e9f1ed;
+  /* Surfaces: a cool, faintly green-shifted neutral ramp. Nothing here is pure
+     grey and nothing is pure black — the green cast keeps white reading as
+     fresh paper and ties the neutrals to the brand without spending chroma. */
+  --bg: #f1f6f3;
+  --bg-2: #e6eeea;
   --surface: #ffffff;
-  --surface-2: #f7fbf9;
-  --surface-3: #eef5f2;
-  --line: rgba(9, 42, 33, .10);
-  --line-strong: rgba(9, 42, 33, .17);
-  --ink: #0a1e18;
-  --ink-2: #48615a;
-  --ink-3: #6f8781;
+  --surface-2: #f5faf7;
+  --surface-3: #e8f0ec;
+  /* Hairlines now carry the elevation system, so they sit a touch stronger than
+     the usual 8% wash — see the shadow tokens further down. */
+  --line: rgba(8, 38, 30, .13);
+  --line-strong: rgba(8, 38, 30, .22);
+  --ink: #081a15;
+  --ink-2: #455e57;
+  /* Was #6a827b — 4.12:1 on white and 3.56:1 on --surface-3, so every micro-label,
+     note and secondary caption missed AA. */
+  --ink-3: #546a63;
   --logo-ink: #ffffff;
 
+  /* Brand — FIXED. The product's own colour. Never follows the member. */
+  --brand: #0e9f6e;
+  --brand-2: #35c68d;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(14, 159, 110, .10);
+  --brand-line: rgba(14, 159, 110, .30);
+
+  /* State — FIXED. "How am I doing." Progress is ALWAYS --ok, whichever member
+     is selected. Before v6 `--accent` was simultaneously the member colour and
+     the success colour, so selecting Αλέξης turned every progress bar blue and
+     Δημήτρης turned them amber — exactly the hues the UI reserves for warnings
+     and for the protein/fat data series. */
+  --ok: #0e9f6e;
+  --ok-soft: rgba(14, 159, 110, .10);
+  --ok-line: rgba(14, 159, 110, .30);
+  --warn: #a86a08;
+  --danger: #c7362f;
+  --ok-ink: #04231a;
+
+  /* TEXT-safe variants of the state/data colours.
+     The colours above are FILLS: emerald #0E9F6E is 3.39:1 as text on white and
+     3.02:1 on its own 10% tint, so every eyebrow, link, status pill and slot tag
+     built on it was failing WCAG AA. A colour that is legible as a 7px bar is not
+     automatically legible as 11px type. Each fill now has a darker sibling that
+     clears 4.5:1 against white AND against its own tint; fills keep using the
+     bright colour, type uses these. */
+  --ok-text: #0a7452;
+  --warn-text: #8a5a06;
+  --gold-text: #8a5a06;
+  --blue-text: #2559c4;
+  --rose-text: #b93d78;
+  --danger-text: #c7362f;
+
+  /* Identity — RUNTIME. Overwritten by app.js with the selected member's
+     colour. It tints identity surfaces ONLY: avatar, persona rail, active nav
+     rail, member chip. Never a progress bar, a status pill or the hero card. */
   --accent: #0e9f6e;
-  --accent-2: #37c78f;
+  --accent-2: #35c68d;
   --accent-ink: #ffffff;
   --accent-soft: rgba(14, 159, 110, .10);
   --accent-line: rgba(14, 159, 110, .30);
 
+  /* Data series — FIXED. Macro identity, not status. Deliberately held apart
+     from the state trio so a blue protein bar can never read as a warning and a
+     rose fat bar can never read as an error. */
   --blue: #2f6fed;
-  --rose: #d9457a;
-  --gold: #b8760d;
-  --danger: #cf3b3b;
-  --warn: #b8760d;
+  --rose: #b93d78;
+  --gold: #a86a08;
 
   --tint-accent: rgba(14, 159, 110, .10);
+  --tint-ok: rgba(14, 159, 110, .10);
   --tint-blue: rgba(47, 111, 237, .10);
-  --tint-rose: rgba(217, 69, 122, .10);
-  --tint-gold: rgba(184, 118, 13, .12);
-  --tint-danger: rgba(207, 59, 59, .10);
+  --tint-rose: rgba(185, 61, 120, .10);
+  --tint-gold: rgba(168, 106, 8, .11);
+  --tint-warn: rgba(168, 106, 8, .11);
+  --tint-danger: rgba(199, 54, 47, .10);
 
-  --shadow-1: 0 1px 2px rgba(9, 42, 33, .05), 0 6px 18px -10px rgba(9, 42, 33, .16);
-  --shadow-2: 0 2px 4px rgba(9, 42, 33, .05), 0 22px 48px -22px rgba(9, 42, 33, .26);
-  --shadow-3: 0 40px 90px -34px rgba(9, 42, 33, .34);
-  --ring-hi: inset 0 1px 0 rgba(255, 255, 255, .85);
+  /* Elevation: hairline first, shadow last. The old --shadow-1 was heavy enough
+     that every card read as floating above the page. At this density the card
+     EDGE should do the work, so -1 is now barely more than a contact shadow. */
+  --shadow-1: 0 1px 2px rgba(8, 38, 30, .04);
+  --shadow-2: 0 1px 2px rgba(8, 38, 30, .05), 0 12px 26px -14px rgba(8, 38, 30, .20);
+  --shadow-3: 0 2px 6px rgba(8, 38, 30, .06), 0 34px 70px -30px rgba(8, 38, 30, .34);
+  --ring-hi: inset 0 1px 0 rgba(255, 255, 255, .9);
 
-  --r-xs: 9px; --r-sm: 12px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px; --r-full: 999px;
+  --r-xs: 9px; --r-sm: 12px; --r-md: 16px; --r-lg: 20px; --r-xl: 26px; --r-full: 999px;
   --sp: clamp(16px, 2.4vw, 30px);
   --shell: 1320px;
   --ease: cubic-bezier(.22, .61, .36, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+
+  /* Two caption steps replace the eight slightly-different sizes the app had
+     drifted into (.62rem through .78rem). When the same job always gets the
+     same size, an interface stops reading as assembled from parts. */
+  --fs-micro: .66rem;
+  --fs-cap: .78rem;
+  --track-micro: .1em;
 
   /* Recipe illustration palette — warm, food-like, theme-aware. */
   --art-bg: #eef5f1;
@@ -72,11 +129,30 @@
   --surface: #0b1a16;
   --surface-2: #102420;
   --surface-3: #16302a;
-  --line: rgba(255, 255, 255, .085);
-  --line-strong: rgba(255, 255, 255, .16);
-  --ink: #e9f5f0;
-  --ink-2: #a4bcb4;
-  --ink-3: #7d968e;
+  --line: rgba(255, 255, 255, .10);
+  --line-strong: rgba(255, 255, 255, .18);
+  --ink: #eaf6f1;
+  --ink-2: #a9c1b9;
+  --ink-3: #82998f;
+
+  --brand: #33d69b;
+  --brand-2: #7cebbe;
+  --brand-ink: #04231a;
+  --brand-soft: rgba(51, 214, 155, .12);
+  --brand-line: rgba(51, 214, 155, .34);
+
+  --ok: #33d69b;
+  --ok-soft: rgba(51, 214, 155, .12);
+  --ok-line: rgba(51, 214, 155, .34);
+  --warn: #e8b25e;
+  --danger: #ff8b8b;
+  --ok-ink: #04231a;
+  --ok-text: #45dda4;
+  --warn-text: #e8b25e;
+  --gold-text: #e8b25e;
+  --blue-text: #8fbaff;
+  --rose-text: #ff9ec4;
+  --danger-text: #ff8b8b;
 
   --accent: #33d69b;
   --accent-2: #7cebbe;
@@ -85,20 +161,20 @@
   --accent-line: rgba(51, 214, 155, .34);
 
   --blue: #6da4ff;
-  --rose: #ff8fab;
-  --gold: #f2c063;
-  --danger: #ff8b8b;
-  --warn: #f2c063;
+  --rose: #ff9ec4;
+  --gold: #e8b25e;
 
   --tint-accent: rgba(51, 214, 155, .13);
+  --tint-ok: rgba(51, 214, 155, .13);
   --tint-blue: rgba(109, 164, 255, .13);
-  --tint-rose: rgba(255, 143, 171, .13);
-  --tint-gold: rgba(242, 192, 99, .14);
+  --tint-rose: rgba(255, 158, 196, .13);
+  --tint-gold: rgba(232, 178, 94, .14);
+  --tint-warn: rgba(232, 178, 94, .14);
   --tint-danger: rgba(255, 139, 139, .13);
 
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -12px rgba(0, 0, 0, .6);
-  --shadow-2: 0 2px 6px rgba(0, 0, 0, .45), 0 26px 56px -26px rgba(0, 0, 0, .8);
-  --shadow-3: 0 46px 100px -38px rgba(0, 0, 0, .9);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-2: 0 1px 3px rgba(0, 0, 0, .35), 0 14px 30px -16px rgba(0, 0, 0, .7);
+  --shadow-3: 0 2px 8px rgba(0, 0, 0, .4), 0 40px 80px -34px rgba(0, 0, 0, .85);
   --ring-hi: inset 0 1px 0 rgba(255, 255, 255, .06);
   --logo-ink: #04140f;
 
@@ -155,7 +231,19 @@ b, strong { font-weight: 700; }
 .ic { flex: none; }
 .spacer { flex: 1; }
 .muted { color: var(--ink-2); }
-.tiny { font-size: .8rem; }
+.tiny { font-size: var(--fs-cap); }
+
+/* Every figure in the app is set in the sans with tabular numerals. The system
+   serifs behind --font-display (Georgia, Palatino, Iowan) carry OLD-STYLE
+   digits, which sit at inconsistent heights — so `1.775` reads as ragged and a
+   column of shopping quantities fails to line up. Wrong for a KPI row, wrong
+   for a shopping list, wrong for a cooking timer. */
+.tnum,
+.mb-val b, .bc-val, .shop-qty, .kpi-val,
+.cook-counter b, .scale-kcal, .cp-kcal, .ing-qty, .stat-val {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -218,10 +306,21 @@ b, strong { font-weight: 700; }
   transition: background .18s var(--ease), color .18s var(--ease), transform .18s var(--ease);
 }
 .nav-btn:hover { background: var(--surface-2); color: var(--ink); }
+/* Active nav is a NEUTRAL surface plus a 3px member-colour rail. Keeping active
+ * states inside the neutral family is what the reference dashboards do, and it
+ * matters more here: a full member-tinted pill made the whole sidebar change
+ * hue four times a day. The rail still says whose data you are looking at. */
 .nav-btn.active {
-  background: var(--accent-soft); color: var(--ink);
-  border-color: var(--accent-line); font-weight: 700;
-  box-shadow: var(--ring-hi);
+  position: relative;
+  background: var(--surface); color: var(--ink);
+  border-color: var(--line); font-weight: 700;
+  box-shadow: var(--shadow-1);
+}
+.nav-btn.active::before {
+  content: ""; position: absolute; left: -1px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 0 3px 3px 0;
+  background: var(--accent);
 }
 .nav-btn.active .ic { color: var(--accent); }
 .nav-badge {
@@ -264,7 +363,8 @@ b, strong { font-weight: 700; }
 .avatar {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
   border-radius: var(--r-full); font-weight: 800; letter-spacing: -.02em;
-  color: #fff; background: var(--av, var(--accent));
+  color: #fff;
+  background: color-mix(in srgb, var(--av, var(--accent)) 72%, #05130f);
   text-transform: uppercase;
 }
 
@@ -274,10 +374,16 @@ b, strong { font-weight: 700; }
 
 /* ── 5. Typography helpers ─────────────────────────────────────────────── */
 
+/* Micro-labels are MUTED by default. Both reference dashboards keep every
+ * caption in the neutral family and spend chroma only on the marks that carry
+ * data — with ~40 accented eyebrows on screen the accent stopped meaning
+ * anything. The page-level eyebrow under .hero keeps the colour, so each view
+ * still opens with the member's hue. */
 .eyebrow {
-  font-size: .65rem; font-weight: 800; letter-spacing: .15em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 7px;
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: var(--track-micro);
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px;
 }
+.hero .eyebrow { color: var(--ok-text); }
 
 .hero { margin-bottom: 22px; }
 .hero h1 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.015em; }
@@ -305,11 +411,23 @@ b, strong { font-weight: 700; }
 .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
 .btn:active { transform: translateY(0) scale(.985); }
 .btn-primary {
-  background: linear-gradient(160deg, var(--accent-2), var(--accent));
-  color: var(--accent-ink); border-color: transparent;
-  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--accent) 70%, transparent);
+  /* Flat fill with a hairline of its own colour. The old gradient-plus-glow
+     made every primary action look like a candy button; a flat fill is what
+     the reference dashboards use and it keeps the ONE chroma surface honest. */
+  /* Filled with the fixed brand emerald rather than the MEMBER colour. The member
+     palette includes amber (#D98A16), on which neither white nor near-black type
+     reaches 4.5:1 — so the app's most important button was the least legible one
+     for one of the four people. A brand-filled button with dark ink is 4.92:1 for
+     everyone, and keeps the member colour for identity rather than action. */
+  background: var(--ok);
+  color: var(--ok-ink); border-color: transparent;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ok) 30%, transparent);
 }
-.btn-primary:hover { box-shadow: 0 16px 34px -14px color-mix(in srgb, var(--accent) 78%, transparent); }
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--ok) 88%, var(--ink));
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ok) 34%, transparent),
+              0 10px 22px -12px color-mix(in srgb, var(--ok) 60%, transparent);
+}
 .btn-ghost { background: transparent; box-shadow: none; border-color: var(--line); }
 .btn-ghost:hover { background: var(--surface-2); box-shadow: var(--shadow-1); }
 .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 34%, transparent); background: var(--tint-danger); }
@@ -369,16 +487,27 @@ b, strong { font-weight: 700; }
   font-size: .74rem; font-weight: 750; letter-spacing: .01em;
 }
 .pill-neutral { background: var(--surface-3); color: var(--ink-2); }
-.pill-accent { background: var(--tint-accent); color: var(--accent); }
-.pill-blue { background: var(--tint-blue); color: var(--blue); }
-.pill-rose { background: var(--tint-rose); color: var(--rose); }
-.pill-gold { background: var(--tint-gold); color: var(--gold); }
-.pill-danger { background: var(--tint-danger); color: var(--danger); }
+.pill-accent { background: var(--tint-accent); color: var(--ok-text); }
+.pill-blue { background: var(--tint-blue); color: var(--blue-text); }
+.pill-rose { background: var(--tint-rose); color: var(--rose-text); }
+.pill-gold { background: var(--tint-gold); color: var(--gold-text); }
+.pill-ok { background: var(--tint-ok); color: var(--ok-text); }
+.pill-warn { background: var(--tint-warn); color: var(--warn-text); }
+.pill-danger { background: var(--tint-danger); color: var(--danger-text); }
 
 .tone-accent { --tone: var(--accent); }
+/* `ok` is the STATE tone, deliberately separate from `accent`: a progress bar
+   must not change colour because a different family member is selected. */
+.tone-ok { --tone: var(--ok); }
 .tone-blue { --tone: var(--blue); }
 .tone-rose { --tone: var(--rose); }
 .tone-gold { --tone: var(--gold); }
+.tone-warn { --tone: var(--warn); }
+/* Selective emphasis: in a chart only the mark that carries the signal gets
+   chroma, and everything else is reference. Colouring all seven bars equally
+   made none of them readable as "this is the one that matters" — and it spent
+   seven times the ink to do it. */
+.tone-muted { --tone: color-mix(in srgb, var(--ink-3) 34%, transparent); }
 .tone-danger { --tone: var(--danger); }
 
 /* ── 7. Cards ──────────────────────────────────────────────────────────── */
@@ -400,13 +529,13 @@ b, strong { font-weight: 700; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .card-title { font-size: .95rem; font-weight: 700; }
 
-.grid { display: grid; gap: 14px; }
+.grid { display: grid; gap: 16px; }
 .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .g-side { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
 
-.stack { display: grid; gap: 14px; }
+.stack { display: grid; gap: 16px; }
 .stack-lg { display: grid; gap: 22px; }
 
 .notice {
@@ -433,11 +562,15 @@ b, strong { font-weight: 700; }
 .hero-ring-caption { font-size: .74rem; color: var(--ink-3); text-align: center; max-width: 22ch; }
 
 .ring-track { stroke: var(--surface-3); }
-.ring-ghost { stroke: var(--accent); opacity: .32; }
+/* The value arc is STATE (always --ok). The ghost arc shows what the PLAN would
+   provide, which is a neutral reference, not a status — so it is drawn in ink
+   rather than a second saturated colour. Grey reference + one coloured mark is
+   the single most-reused device in both reference dashboards. */
+.ring-ghost { stroke: var(--ink-3); opacity: .30; }
 .ring-value {
-  stroke: var(--accent);
+  stroke: var(--ok);
   transition: stroke-dasharray .9s var(--ease);
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 40%, transparent));
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ok) 22%, transparent));
 }
 .ring-blue .ring-value { stroke: var(--blue); filter: none; }
 .ring-blue .ring-ghost { stroke: var(--blue); }
@@ -445,7 +578,10 @@ b, strong { font-weight: 700; }
 .ring-rose .ring-ghost { stroke: var(--rose); }
 .ring-gold .ring-value { stroke: var(--gold); filter: none; }
 .ring-gold .ring-ghost { stroke: var(--gold); }
-.ring-main { font-family: var(--font-display); font-size: 2.55rem; font-weight: 700; fill: var(--ink); }
+.ring-main {
+  font-family: var(--font-sans); font-size: 2.4rem; font-weight: 700;
+  letter-spacing: -.03em; fill: var(--ink); font-variant-numeric: tabular-nums;
+}
 .ring-sub { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; fill: var(--ink-3); }
 
 .mb { display: grid; gap: 6px; }
@@ -454,11 +590,14 @@ b, strong { font-weight: 700; }
 .mb-val { font-size: .84rem; color: var(--ink-3); }
 .mb-val b { font-size: 1rem; color: var(--ink); font-weight: 750; }
 .mb-unit { margin-left: 3px; }
-.mb-track { height: 8px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; }
+.mb-track { height: 7px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; }
+/* Flat capsule on a neutral track. A gradient on every bar is decoration; flat
+   fills read more precisely at 5–9px tall, which is the whole height budget.
+   Default tone is --ok because these bars all answer "how close am I". */
 .mb-fill {
   height: 100%; border-radius: var(--r-full);
-  background: linear-gradient(90deg, color-mix(in srgb, var(--tone, var(--accent)) 62%, transparent), var(--tone, var(--accent)));
-  transition: width .8s var(--ease);
+  background: var(--tone, var(--ok));
+  transition: width .8s var(--ease-out);
 }
 .mb-note { font-size: .76rem; color: var(--ink-3); }
 
@@ -467,11 +606,14 @@ b, strong { font-weight: 700; }
 .stat-ic {
   display: inline-flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border-radius: 8px;
-  background: color-mix(in srgb, var(--tone, var(--accent)) 14%, transparent);
-  color: var(--tone, var(--accent));
+  background: color-mix(in srgb, var(--tone, var(--ok)) 14%, transparent);
+  color: var(--tone, var(--ok));
 }
 .stat-label { font-size: .78rem; font-weight: 650; color: var(--ink-2); }
-.stat-val { font-family: var(--font-display); font-size: 1.95rem; font-weight: 700; letter-spacing: -.02em; }
+.stat-val {
+  font-family: var(--font-sans); font-size: 1.7rem; font-weight: 700;
+  letter-spacing: -.025em; line-height: 1.1;
+}
 .stat-val small { font-family: var(--font-sans); font-size: .8rem; font-weight: 600; color: var(--ink-3); }
 .stat-note { font-size: .78rem; color: var(--ink-3); line-height: 1.5; }
 
@@ -498,10 +640,10 @@ b, strong { font-weight: 700; }
   transition: transform .16s var(--ease), box-shadow .16s var(--ease);
 }
 .hm-cell:hover { transform: scale(1.14); box-shadow: var(--shadow-1); }
-.hm-1 { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); color: var(--accent); }
-.hm-2 { background: color-mix(in srgb, var(--accent) 42%, var(--surface)); color: var(--accent-ink); }
-.hm-3 { background: color-mix(in srgb, var(--accent) 66%, var(--surface)); color: var(--accent-ink); }
-.hm-4 { background: var(--accent); color: var(--accent-ink); }
+.hm-1 { background: color-mix(in srgb, var(--ok) 22%, var(--surface)); color: var(--ok); }
+.hm-2 { background: color-mix(in srgb, var(--ok) 42%, var(--surface)); color: var(--ok-ink); }
+.hm-3 { background: color-mix(in srgb, var(--ok) 66%, var(--surface)); color: var(--ok-ink); }
+.hm-4 { background: var(--ok); color: var(--ok-ink); }
 .hm-cell.is-today { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 .bc { display: grid; gap: 9px; }
@@ -510,17 +652,17 @@ b, strong { font-weight: 700; }
 .bc-track { height: 9px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; }
 .bc-fill {
   display: block; height: 100%; border-radius: var(--r-full);
-  background: linear-gradient(90deg, color-mix(in srgb, var(--tone, var(--accent)) 58%, transparent), var(--tone, var(--accent)));
-  transition: width .8s var(--ease);
+  background: var(--tone, var(--ok));
+  transition: width .8s var(--ease-out);
 }
 .bc-val { font-size: .8rem; font-weight: 700; color: var(--ink-2); min-width: 54px; text-align: right; }
 
 /* ── 9. Meals & plan ───────────────────────────────────────────────────── */
 
-.meal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.meal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 
 .meal {
-  display: grid; gap: 11px; padding: 18px;
+  display: grid; gap: 9px; padding: 16px;
   border: 1px solid var(--line); border-radius: var(--r-lg);
   background: var(--surface); box-shadow: var(--shadow-1);
   transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
@@ -533,19 +675,23 @@ b, strong { font-weight: 700; }
   font-size: .68rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3);
 }
 .meal-time { display: inline-flex; align-items: center; gap: 5px; letter-spacing: 0; text-transform: none; font-weight: 700; }
+/* Time, prep time and the recipe link share the tag line rather than owning a
+   status row of their own below the macros. */
+.meal-slot-right { display: flex; align-items: center; gap: 11px; margin-left: auto; }
+.meal-slot-right .meal-link { margin-left: 0; }
 .meal h3 { font-size: 1.02rem; line-height: 1.35; }
-.meal-macros { display: flex; flex-wrap: wrap; gap: 7px; }
+.meal-macros { display: flex; flex-wrap: wrap; gap: 6px; }
 .meal-macro {
   display: inline-flex; align-items: baseline; gap: 4px;
   padding: 3px 9px; border-radius: var(--r-full); background: var(--surface-3);
   font-size: .76rem; color: var(--ink-2);
 }
 .meal-macro b { color: var(--ink); font-weight: 750; }
-.meal-macro.kcal { background: var(--tint-gold); color: var(--gold); }
+.meal-macro.kcal { background: var(--tint-gold); color: var(--gold-text); }
 .meal-macro.kcal b { color: inherit; }
 .meal-actions { display: flex; gap: 7px; flex-wrap: wrap; }
 .meal-link {
-  margin-left: auto; font-size: .8rem; font-weight: 650; color: var(--accent);
+  margin-left: auto; font-size: .8rem; font-weight: 650; color: var(--ok-text);
   display: inline-flex; align-items: center; gap: 4px;
 }
 
@@ -566,7 +712,7 @@ b, strong { font-weight: 700; }
   width: 12px; height: 12px; border-radius: 50%;
   background: var(--surface); border: 2.5px solid var(--line-strong);
 }
-.tl-item.done .tl-dot { background: var(--accent); border-color: var(--accent); }
+.tl-item.done .tl-dot { background: var(--ok); border-color: var(--ok); }
 .tl-item.current .tl-dot {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
@@ -576,7 +722,7 @@ b, strong { font-weight: 700; }
 .tl-meta { font-size: .78rem; color: var(--ink-3); margin-top: 2px; }
 
 .week-nav { display: flex; align-items: center; gap: 10px; }
-.week-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.week-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
 .day-card {
   display: grid; gap: 9px; padding: 15px;
   border: 1px solid var(--line); border-radius: var(--r-lg);
@@ -598,7 +744,7 @@ b, strong { font-weight: 700; }
 
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-.recipe-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.recipe-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 
 .recipe-card {
   display: grid; gap: 10px; text-align: left; width: 100%;
@@ -609,10 +755,10 @@ b, strong { font-weight: 700; }
 .recipe-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: var(--line-strong); }
 .recipe-headmeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .recipe-slot { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.recipe-slot.breakfast { color: var(--gold); }
-.recipe-slot.lunch { color: var(--accent); }
-.recipe-slot.snack { color: var(--blue); }
-.recipe-slot.dinner { color: var(--rose); }
+.recipe-slot.breakfast { color: var(--gold-text); }
+.recipe-slot.lunch { color: var(--ok-text); }
+.recipe-slot.snack { color: var(--blue-text); }
+.recipe-slot.dinner { color: var(--rose-text); }
 .recipe-card h3 { font-size: .99rem; line-height: 1.35; }
 .recipe-ing { font-size: .78rem; color: var(--ink-3); line-height: 1.5; }
 
@@ -636,7 +782,7 @@ b, strong { font-weight: 700; }
 .scale-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; align-items: center; padding: 9px 12px; border-radius: var(--r-md); background: var(--surface-2); }
 .scale-row.is-current { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); }
 .scale-name { font-weight: 650; font-size: .88rem; }
-.scale-kcal { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
+.scale-kcal { font-family: var(--font-sans); font-size: 1.05rem; font-weight: 750; letter-spacing: -.02em; }
 .scale-macros { font-size: .74rem; color: var(--ink-3); }
 
 /* ── 11. Shopping ──────────────────────────────────────────────────────── */
@@ -659,7 +805,7 @@ b, strong { font-weight: 700; }
   padding: 3px 9px; border-radius: 999px; background: var(--surface-2);
   border: 1px solid var(--line); color: var(--ink-3); text-transform: none;
 }
-.shop-aisle-count.is-complete { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.shop-aisle-count.is-complete { background: var(--accent-soft); border-color: transparent; color: var(--ok-text); }
 .shop-item {
   display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 11px; align-items: center;
   padding: 10px 13px; border-radius: var(--r-sm); border: 1px solid transparent;
@@ -675,7 +821,7 @@ b, strong { font-weight: 700; }
   transition: all .16s var(--ease);
 }
 .shop-check:hover { border-color: var(--accent); }
-.shop-item.is-checked .shop-check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.shop-item.is-checked .shop-check { background: var(--ok); border-color: var(--ok); color: var(--ok-ink); }
 .shop-meta { min-width: 0; }
 .shop-name { font-weight: 600; }
 .shop-src { font-size: .74rem; color: var(--ink-3); }
@@ -698,12 +844,15 @@ b, strong { font-weight: 700; }
   transition: all .16s var(--ease);
 }
 .shop-chip:hover { border-color: var(--accent); color: var(--accent); }
-.shop-chip.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+/* The active filter is a solid INK pill — the only filled dark pill in the
+   app. "Which filter am I on" becomes legible at a glance without spending
+   another chromatic surface, and the count badge inverts with it. */
+.shop-chip.is-on { background: var(--ink); border-color: transparent; color: var(--bg); box-shadow: var(--shadow-1); }
 .shop-chip-n {
   font-size: .72rem; font-weight: 800; padding: 1px 7px; border-radius: 999px;
   background: var(--surface-2); color: var(--ink-3);
 }
-.shop-chip.is-on .shop-chip-n { background: rgba(255, 255, 255, .28); color: var(--accent-ink); }
+.shop-chip.is-on .shop-chip-n { background: color-mix(in srgb, var(--bg) 24%, transparent); color: inherit; }
 
 .shop-done {
   display: flex; align-items: center; gap: 13px; margin-top: 16px;
@@ -778,8 +927,8 @@ textarea { resize: vertical; min-height: 78px; }
   border-radius: 50%; background: var(--surface); box-shadow: var(--shadow-1);
   transition: transform .2s var(--ease);
 }
-.switch input:checked + .switch-track { background: var(--accent); border-color: transparent; }
-.switch input:checked + .switch-track::after { transform: translateX(18px); background: var(--accent-ink); }
+.switch input:checked + .switch-track { background: var(--ok); border-color: transparent; }
+.switch input:checked + .switch-track::after { transform: translateX(18px); background: var(--ok-ink); }
 .switch input:focus-visible + .switch-track { box-shadow: 0 0 0 3px var(--accent-soft); }
 
 .water-tracker { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -791,7 +940,7 @@ textarea { resize: vertical; min-height: 78px; }
 .glass:hover { transform: translateY(-2px); border-color: var(--accent); }
 .glass::after {
   content: ""; position: absolute; inset: auto 0 0 0; height: 0;
-  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  background: linear-gradient(180deg, var(--brand-2), var(--ok));
   transition: height .3s var(--ease);
 }
 .glass.filled { border-color: var(--accent); }
@@ -902,7 +1051,7 @@ kbd {
 .empty-ic {
   display: flex; align-items: center; justify-content: center;
   width: 54px; height: 54px; border-radius: 50%;
-  background: var(--accent-soft); color: var(--accent);
+  background: var(--accent-soft); color: var(--ok-text);
 }
 .empty h3 { font-size: 1.02rem; }
 .empty p { color: var(--ink-2); font-size: .875rem; max-width: 46ch; }
@@ -949,7 +1098,9 @@ kbd {
   margin-left: auto; align-self: flex-start; flex: none;
   font-size: .66rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
   padding: 5px 11px; border-radius: 999px;
-  background: var(--surface-2); color: var(--pa, var(--accent));
+  /* The member colour can be amber (#D98A16), which is unreadable as small text on
+     a light surface. The rail beside it already carries the member's identity. */
+  background: var(--surface-2); color: var(--ink-2);
   border: 1px solid var(--line);
 }
 /* Family role shown next to a member's real name in the Family view. */
@@ -972,11 +1123,11 @@ kbd {
 .ppoint-ic {
   width: 30px; height: 30px; border-radius: 9px; flex: none;
   display: grid; place-items: center;
-  background: var(--tint-accent); color: var(--accent);
+  background: var(--tint-accent); color: var(--ok-text);
 }
-.ppoint.tone-blue .ppoint-ic { background: var(--tint-blue); color: var(--blue); }
-.ppoint.tone-rose .ppoint-ic { background: var(--tint-rose); color: var(--rose); }
-.ppoint.tone-gold .ppoint-ic { background: var(--tint-gold); color: var(--gold); }
+.ppoint.tone-blue .ppoint-ic { background: var(--tint-blue); color: var(--blue-text); }
+.ppoint.tone-rose .ppoint-ic { background: var(--tint-rose); color: var(--rose-text); }
+.ppoint.tone-gold .ppoint-ic { background: var(--tint-gold); color: var(--gold-text); }
 .ppoint-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .ppoint-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; color: var(--ink-3); }
 .ppoint-value { font-size: .86rem; font-weight: 750; white-space: nowrap; }
@@ -992,7 +1143,10 @@ kbd {
 .fuel-ic { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; background: var(--tint-gold); color: var(--gold); }
 .fuel-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: .82rem; }
 .fuel-top span { color: var(--ink-3); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; }
-.fuel-top b { white-space: nowrap; }
+/* Was `white-space: nowrap`, which let this value push 7px past the viewport on a
+   390px phone once the fuel card carried the training-load row — a flex item will
+   not shrink below its content width without min-width:0. It wraps now. */
+.fuel-top b { min-width: 0; text-align: right; }
 
 /* Next-meal card */
 .next-head { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
@@ -1012,7 +1166,7 @@ kbd {
 .cook-counter { font-size: .84rem; color: var(--ink-2); }
 .cook-counter b { color: var(--ink); font-size: 1.08rem; }
 .cook-bar { height: 6px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; margin: 11px 0 20px; }
-.cook-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s var(--ease); }
+.cook-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ok); transition: width .35s var(--ease-out); }
 .cook-step { font-family: var(--font-display); font-size: clamp(1.18rem, 2.4vw, 1.5rem); line-height: 1.55; margin: 0 0 18px; }
 
 .cook-timerbox { margin-bottom: 16px; }
@@ -1068,7 +1222,7 @@ kbd {
   width: 17px; height: 17px; border-radius: 5px; flex: none;
   border: 1.5px solid var(--line-strong); display: grid; place-items: center;
 }
-.cook-ing.is-done .cook-check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.cook-ing.is-done .cook-check { background: var(--ok); border-color: var(--ok); color: var(--ok-ink); }
 .cook-ing.is-done .cook-ing-name { text-decoration: line-through; opacity: .55; }
 .cook-ing-name { flex: 1; min-width: 0; }
 .cook-ing-qty { font-variant-numeric: tabular-nums; font-weight: 650; color: var(--ink); white-space: nowrap; }
@@ -1221,7 +1375,10 @@ kbd {
   gap: 22px; flex-wrap: wrap; margin-bottom: 18px;
 }
 .dash-head .dash-greet { min-width: 0; }
-.dash-head h1 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); }
+.dash-head h1 {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: -.015em;
+  font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+}
 .dash-meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 
 .date-chip {
@@ -1241,7 +1398,7 @@ kbd {
  * orphaned card reads as a mistake. Two columns everywhere, four only when
  * there is genuinely room for four. */
 .kpi-row {
-  display: grid; gap: 14px; margin-bottom: 16px;
+  display: grid; gap: 16px; margin-bottom: 20px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 @media (min-width: 1280px) {
@@ -1259,7 +1416,9 @@ kbd {
   content: ""; position: absolute; inset: 0 0 auto; height: 1px;
   background: var(--ring-hi); pointer-events: none;
 }
-.kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: var(--line-strong); }
+/* KPI cards are READ-ONLY. Lifting them on hover promises a click that does not
+   exist; the hover affordance is reserved for surfaces that actually act. */
+.kpi.is-static { cursor: default; }
 .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; }
 .kpi-ic {
   width: 34px; height: 34px; border-radius: 11px; flex: none;
@@ -1269,11 +1428,13 @@ kbd {
 .kpi.tone-blue  .kpi-ic { background: var(--tint-blue);  color: var(--blue); }
 .kpi.tone-rose  .kpi-ic { background: var(--tint-rose);  color: var(--rose); }
 .kpi.tone-gold  .kpi-ic { background: var(--tint-gold);  color: var(--gold); }
+.kpi.tone-warn .kpi-ic { background: var(--tint-warn); color: var(--warn); }
+.kpi.tone-ok   .kpi-ic { background: var(--tint-ok);   color: var(--ok); }
 .kpi.tone-danger .kpi-ic { background: var(--tint-danger); color: var(--danger); }
 
 .kpi-val {
-  font-family: var(--font-display); font-size: 1.95rem; font-weight: 600; line-height: 1.05;
-  letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums;
+  font-family: var(--font-sans); font-size: 2rem; font-weight: 700; line-height: 1.02;
+  letter-spacing: -.03em; color: var(--ink); font-variant-numeric: tabular-nums;
   display: flex; align-items: baseline; gap: 5px;
 }
 .kpi-val small { font-family: var(--font-sans); font-size: .82rem; font-weight: 650; color: var(--ink-3); letter-spacing: 0; }
@@ -1284,14 +1445,18 @@ kbd {
  * read at a glance before the number is parsed — which is the whole point of
  * a dashboard. */
 .kpi-foot { margin-top: auto; padding-top: 11px; display: grid; gap: 7px; }
+/* 5px on a 6% track read as a divider rather than a progress bar — the empty
+   part of the bar has to be visible for the filled part to mean anything. */
 .kpi-bar {
-  height: 5px; border-radius: var(--r-full);
-  background: var(--surface-3); overflow: hidden;
+  height: 6px; border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--ink-3) 20%, transparent); overflow: hidden;
 }
 .kpi-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .5s var(--ease); }
 .kpi.tone-blue  .kpi-bar > i { background: var(--blue); }
 .kpi.tone-rose  .kpi-bar > i { background: var(--rose); }
 .kpi.tone-gold  .kpi-bar > i { background: var(--gold); }
+.kpi.tone-warn .kpi-bar > i { background: var(--warn); }
+.kpi.tone-ok   .kpi-bar > i { background: var(--ok); }
 .kpi.tone-danger .kpi-bar > i { background: var(--danger); }
 
 .kpi-note {
@@ -1302,20 +1467,41 @@ kbd {
 
 /* The one accent-filled card. A soft two-stop gradient rather than a flat fill
  * keeps it from looking like a solid block of paint. */
+/* The signature card: exactly one per row, and the only deep surface in the
+ * app. It is the anchor the eye lands on first — every reference dashboard
+ * breaks its white grid with ONE dark card rather than tinting all four.
+ *
+ * Two v6 corrections live here:
+ *  1. It no longer paints itself with the MEMBER'S colour, so selecting
+ *     Αλεξάνδρα can no longer turn the headline card pink.
+ *  2. It no longer paints itself with the SUCCESS colour either. A hero card
+ *     filled with the success hue made a day with 0 kcal logged look like an
+ *     achievement. A dark, brand-lit card stays neutral about how you are
+ *     doing — the number inside it does the talking. */
 .kpi.is-hero {
-  background: linear-gradient(150deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 78%, #04120e) 100%);
-  border-color: transparent; color: var(--accent-ink);
-  box-shadow: 0 2px 4px rgba(9, 42, 33, .1), 0 22px 44px -20px color-mix(in srgb, var(--accent) 70%, transparent);
+  background:
+    radial-gradient(130% 150% at 100% 0%, color-mix(in srgb, var(--brand) 46%, transparent), transparent 62%),
+    linear-gradient(155deg, #0c2c23 0%, #05130f 100%);
+  border-color: transparent; color: #eafaf3;
+  box-shadow: 0 2px 4px rgba(8, 38, 30, .14), 0 26px 50px -26px rgba(8, 38, 30, .50);
 }
-.kpi.is-hero::before { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent); }
+.kpi.is-hero::before { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .38), transparent); }
 .kpi.is-hero .kpi-val,
-.kpi.is-hero .kpi-label { color: var(--accent-ink); }
+.kpi.is-hero .kpi-label { color: #ffffff; }
 .kpi.is-hero .kpi-val small,
-.kpi.is-hero .kpi-note { color: color-mix(in srgb, var(--accent-ink) 78%, transparent); }
+.kpi.is-hero .kpi-note { color: rgba(234, 250, 243, .74); }
 .kpi.is-hero .kpi-note .ic { color: currentColor; }
-.kpi.is-hero .kpi-ic { background: rgba(255, 255, 255, .18); color: var(--accent-ink); }
-.kpi.is-hero .kpi-bar { background: rgba(255, 255, 255, .22); }
-.kpi.is-hero .kpi-bar > i { background: var(--accent-ink); }
+.kpi.is-hero .kpi-ic { background: rgba(255, 255, 255, .16); color: #eafaf3; }
+.kpi.is-hero .kpi-bar { background: rgba(255, 255, 255, .30); }
+.kpi.is-hero .kpi-bar > i { background: linear-gradient(90deg, var(--brand-2), var(--brand)); }
+/* In dark theme the app background is already near-black, so the signature card
+   has to get LIGHTER to separate rather than darker. */
+[data-theme="dark"] .kpi.is-hero {
+  background:
+    radial-gradient(130% 150% at 100% 0%, color-mix(in srgb, var(--brand) 32%, transparent), transparent 66%),
+    linear-gradient(155deg, #10352a 0%, #07211a 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 26px 52px -26px rgba(0, 0, 0, .8);
+}
 
 /* Status pill with a leading dot. */
 .pill-dot { padding-left: 9px; }
@@ -1332,7 +1518,7 @@ kbd {
  * energy ring — not as decoration for bars that already carry their own label. */
 .legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
 .legend-center { justify-content: center; gap: 14px; margin-top: 12px; }
-.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--ink-2); font-weight: 600; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-cap); color: var(--ink-2); font-weight: 600; }
 .legend-item i { width: 9px; height: 9px; border-radius: 3px; flex: none; background: var(--accent); }
 .legend-item.is-blue i { background: var(--blue); }
 .legend-item.is-rose i { background: var(--rose); }
@@ -1347,3 +1533,82 @@ kbd {
   .kpi-val { font-size: 1.6rem; }
   .kpi-ic { width: 30px; height: 30px; border-radius: 10px; }
 }
+
+/* ── 20. v6 refinements ────────────────────────────────────────────────── */
+/* Consolidations that would otherwise mean editing thirty scattered rules.
+ * Appended last on purpose: every declaration here targets a property that no
+ * breakpoint in section 17 sets, so nothing above is overridden responsively. */
+
+/* Micro-label scale. The app had drifted into eight near-identical sizes doing
+ * the same job (.62rem through .78rem, tracking from .04em to .15em). Two
+ * steps now, applied by role rather than by whichever rule was edited last. */
+.nav-label, .hm-dow, .ring-sub, .ppoint-label, .brand-sub,
+.meal-slot, .day-slot span, .shop-aisle-head, .cook-block h4, .rd-section h3 {
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-micro);
+}
+.brand-sub, .ppoint-label, .fuel-top span { letter-spacing: .12em; }
+
+/* Headings balance their last line instead of leaving one orphaned word, and
+ * body copy avoids a single word on its own final line. Cheap, and it is most
+ * of what separates "web page" from "typeset". Degrades silently where
+ * unsupported. */
+h1, h2, h3, .hero h1, .dash-head h1, .persona-title, .card-title { text-wrap: balance; }
+p, .hero p, .sec-sub, .persona-lead, .notice span { text-wrap: pretty; }
+
+/* Ambient. The drifting aurora was strong enough to compete with the content
+ * and to tint the "white" cards. It stays — it is much of why the app does not
+ * look like every other dashboard — but at the volume of a background. */
+.aurora {
+  background:
+    radial-gradient(1100px 560px at 90% -10%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 62%),
+    radial-gradient(820px 470px at 4% 2%, color-mix(in srgb, var(--blue) 6%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+.aurora::after { opacity: .5; }
+
+/* Next-meal eyebrow carries a live state pill next to it (Τώρα / Σε 42′ /
+ * Εκκρεμεί), so the two share a baseline row. */
+.next-eyebrow { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 5px; }
+.next-eyebrow .eyebrow { margin-bottom: 0; }
+
+/* Swap sheet. Each option is a full-width button because the whole row is the
+ * target — the mother is choosing one-handed, standing up. */
+.swap-current {
+  display: flex; align-items: center; gap: 13px;
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.swap-opt {
+  display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left;
+  padding: 13px 14px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  transition: border-color .18s var(--ease-out), box-shadow .18s var(--ease-out), transform .18s var(--ease-out);
+}
+.swap-opt:hover { border-color: var(--accent-line); box-shadow: var(--shadow-2); transform: translateY(-1px); }
+.swap-opt-body { display: grid; gap: 6px; min-width: 0; }
+.swap-opt-name { font-weight: 700; font-size: .92rem; line-height: 1.3; }
+
+/* Selection, scrollbars and focus: small things, but they are the difference
+ * between a web page and something that feels installed on the device. */
+::selection { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+.sheet-body, .palette-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.sheet-body::-webkit-scrollbar, .palette-list::-webkit-scrollbar { width: 10px; height: 10px; }
+.sheet-body::-webkit-scrollbar-thumb, .palette-list::-webkit-scrollbar-thumb {
+  background: var(--line-strong); border-radius: var(--r-full);
+  border: 3px solid transparent; background-clip: content-box;
+}
+.sheet-body::-webkit-scrollbar-track, .palette-list::-webkit-scrollbar-track { background: transparent; }
+
+/* Hover motion: one shared curve and one shared distance across every
+ * interactive surface, instead of each rule picking its own -2px or -3px. */
+.meal, .recipe-card, .day-card, .kpi {
+  transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out),
+              border-color .2s var(--ease-out), background .2s var(--ease-out);
+}
+.meal:hover, .recipe-card:hover, .day-card:hover { transform: translateY(-2px); }
