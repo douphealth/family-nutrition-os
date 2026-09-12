@@ -406,9 +406,18 @@ if (editBtn) {
   if (form) {
     const id = form.dataset.id;
     const nameInput = form.querySelector('[name="name"]');
+    const relInput = form.querySelector('[name="relation"]');
+    // Remember the real values: this test renames a real family member, so it
+    // must put everything back before later sections assert on the names.
+    const originalName = nameInput?.value || '';
+    const originalRelation = relInput?.value || '';
     const newName = 'Δοκιμή Σμόουκ';
+
+    ok(!!relInput, 'the member form exposes the family relation field');
+
     if (nameInput) {
       nameInput.value = newName;
+      if (relInput) relInput.value = 'Δοκιμή';
       form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
       await tick(250);
 
@@ -416,7 +425,26 @@ if (editBtn) {
       const saved = profiles.find(p => p.id === id);
       ok(!!saved, 'submitting the member form persists a profile record');
       ok(saved?.name === newName, `edited name is saved (got "${saved?.name}")`);
+      ok(saved?.relation === 'Δοκιμή', `edited relation is saved (got "${saved?.relation}")`);
       ok(!window.document.getElementById('sheet')?.classList.contains('is-open'), 'sheet closes after submit');
+
+      // ── Restore the member's real name and relation ──
+      await clickSel('#sideNav [data-act="nav"][data-view="family"]', window.document, 90);
+      const editAgain = window.document.querySelector(`[data-act="editMember"][data-id="${id}"]`);
+      if (editAgain) {
+        await click(editAgain, 150);
+        const f2 = window.document.getElementById('memberForm');
+        const n2 = f2?.querySelector('[name="name"]');
+        const r2 = f2?.querySelector('[name="relation"]');
+        if (n2) {
+          n2.value = originalName;
+          if (r2) r2.value = originalRelation;
+          f2.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+          await tick(250);
+        }
+      }
+      const restored = (await readStore('profiles')).find(p => p.id === id);
+      ok(restored?.name === originalName, `member name restored to "${originalName}" after the edit test`);
     }
   }
 }
@@ -436,6 +464,15 @@ for (const id of memberIds) {
 }
 ok(memberIds.length === 4, `four members are switchable (found ${memberIds.length})`);
 ok(personaSeen === memberIds.length, `persona brief renders for all ${memberIds.length} members (got ${personaSeen})`);
+
+/* The household is named after real people, and the placeholder labels must be
+ * gone from the UI entirely — including after the stored-profile upgrade. */
+const stripText = text(window.document.getElementById('memberStrip'));
+for (const name of ['Αναστασία', 'Αλέξης', 'Αλεξάνδρα', 'Δημήτρης']) {
+  ok(stripText.includes(name), `member strip shows "${name}"`);
+}
+ok(!/Μητέρα|Πατέρας|Κόρη|Γιος/.test(stripText),
+  'no placeholder labels remain in the member strip');
 
 /* The fuelling protocol is athlete-only — that is the whole point of it. */
 await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'), 130);

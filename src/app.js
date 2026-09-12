@@ -13,12 +13,12 @@
 
 import {
   APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, AISLES,
-  PERSONA_FOCUS, IRON_RICH
+  PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES
 } from './data.js';
 import {
   isMinor, targetsFor, dayMacros, planCoverage, mealMacros, weightTrend,
   loggingStreak, hydrationTarget, contextualGuidance, energyRange,
-  personaPoints, trainingFueling, ironMeals, householdServings
+  personaPoints, trainingFueling, ironMeals, householdServings, upgradeMemberNames
 } from './nutrition-engine.js';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
@@ -358,6 +358,7 @@ async function submitMemberForm(e) {
   const weight = Number(fd.get('weight'));
   if (![age, height, weight].every(Number.isFinite)) { toast('Έλεγξε τα αριθμητικά πεδία.', { tone: 'danger' }); return; }
   profile.name = String(fd.get('name') || '').trim().slice(0, 24) || profile.name;
+  profile.relation = String(fd.get('relation') || '').trim().slice(0, 16);
   profile.role = String(fd.get('role') || '').trim().slice(0, 60) || profile.role;
   profile.age = Math.round(age);
   profile.sex = fd.get('sex') === 'm' ? 'm' : 'f';
@@ -417,6 +418,7 @@ async function boot() {
     }
     const profiles = await all('profiles');
     if (profiles.length) cache.profiles = profiles;
+    await applyMemberNameUpgrade();
     cache.logs = (await all('logs')).map(migrateLog);
     cache.measurements = await all('measurements');
     cache.plans = await all('plans');
@@ -440,6 +442,20 @@ async function boot() {
 
 function splash() {
   return `<div class="splash">${logo(52)}<div><b>${esc(APP.name)}</b><br><span class="tiny">Φόρτωση τοπικών δεδομένων…</span></div></div>`;
+}
+
+/**
+ * Applies the v4.1 member rename to the persisted profiles. The decision itself
+ * lives in the engine (`upgradeMemberNames`) so it is unit-testable; this is only
+ * the storage side-effect, and it is skipped entirely when nothing changed.
+ */
+async function applyMemberNameUpgrade() {
+  const { profiles, changed } = upgradeMemberNames(cache.profiles, LEGACY_MEMBER_NAMES, FAMILY);
+  if (!changed) return;
+  cache.profiles = profiles;
+  for (const p of cache.profiles) {
+    try { await put('profiles', p); } catch (err) { console.error('[ZENITH] member rename save failed', err); }
+  }
 }
 
 async function refreshDiagnostics() {

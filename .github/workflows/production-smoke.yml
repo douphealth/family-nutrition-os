@@ -39,6 +39,10 @@ jobs:
               && grep -q 'trainingFueling' /tmp/engine.js \
               && grep -q 'householdServings' /tmp/engine.js \
               && grep -q 'memberShare' /tmp/engine.js \
+              && grep -q 'upgradeMemberNames' /tmp/engine.js \
+              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/data.js" -o /tmp/data.js \
+              && grep -q 'Αναστασία' /tmp/data.js \
+              && grep -q 'Δημήτρης' /tmp/data.js \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/styles/app.css" -o /tmp/app.css \
               && grep -q 'cook-cols' /tmp/app.css \
               && grep -q 'why-body' /tmp/app.css \

@@ -2,6 +2,40 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [4.1.0] — 2026-09-12
+
+The household finally has names. The four members were shipped as placeholder labels
+(Μητέρα / Πατέρας / Κόρη / Γιος); they are now **Αναστασία** (mother), **Αλέξης**
+(father), **Αλεξάνδρα** (daughter) and **Δημήτρης** (son).
+
+### Added
+- **`relation` on every member** — the family role ("Μητέρα", "Κόρη"…) is now a separate
+  editable field, so a real name and a family role can coexist. It is shown as a tag next
+  to the name in the Family view and is editable in the member form.
+- **Conservative name upgrade** (`upgradeMemberNames()`). Profiles are persisted, so an
+  existing install would have kept the old labels forever. On boot, a stored name is
+  replaced **only** when it still equals the shipped placeholder for that id. A name the
+  user typed is never overwritten, and `id` never changes — so portions, plans, logs and
+  measurements stay attached to the right person. The decision is a pure function in the
+  engine and is unit-tested; `app.js` only performs the storage write, and skips it
+  entirely when nothing changed.
+
+### Changed
+- **Persona brief is now addressed by name** — the card reads "Αναστασία · Τι μετράει για
+  σένα" with the goal framing ("Ο ΡΥΘΜΟΣ ΜΕΤΡΑΕΙ") as a tag beside the title, so it is
+  unambiguous whose brief is on screen.
+- **Avatar initials are upper-cased** (`Αλέξης` → `ΑΛ`), which matters now that the badges
+  carry real names rather than two-letter placeholders.
+- `APP.version` → `4.1.0`; service-worker cache → `zenith-v4-2026-09-12-2`.
+- Smoke test grew to **120 checks**: it asserts all four real names render, that no
+  placeholder label survives in the member strip, and that the member form round-trips the
+  new `relation` field. The member-form test now **restores the member's real name** after
+  its rename assertion instead of leaving the household renamed for later sections.
+
+### Fixed
+- The member-form smoke test renamed a real family member and never put it back, which
+  silently corrupted the household for every later assertion in the run.
+
 ## [4.0.0] — 2026-09-12
 
 Built for the three people who actually use this app: **the mother** (51, gradual fat

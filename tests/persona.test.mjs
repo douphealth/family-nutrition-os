@@ -13,10 +13,10 @@
  */
 
 import assert from 'node:assert/strict';
-import { RECIPES, FAMILY, IRON_RICH, RECIPE_ART, PERSONA_FOCUS, FUELING } from '../src/data.js';
+import { RECIPES, FAMILY, IRON_RICH, RECIPE_ART, PERSONA_FOCUS, FUELING, LEGACY_MEMBER_NAMES } from '../src/data.js';
 import {
   personaPoints, trainingFueling, ironMeals, targetsFor, isMinor,
-  memberShare, householdServings
+  memberShare, householdServings, upgradeMemberNames
 } from '../src/nutrition-engine.js';
 import { parseStepTimers, clockText } from '../src/ui.js';
 
@@ -230,5 +230,54 @@ for (const p of FAMILY) {
   const s = memberShare(p);
   assert.ok(Number.isFinite(s) && s > 0, `member ${p.id} must have a positive finite share, got ${s}`);
 }
+
+/* ── Member names ──────────────────────────────────────────────────────────
+ * v4.1 replaced the placeholder labels with the real people. Profiles are
+ * persisted, so a stale install is only upgraded when the stored name still
+ * equals the shipped placeholder — a name the user typed is never overwritten.
+ */
+
+assert.equal(FAMILY.length, 4, 'the household is four members');
+for (const p of FAMILY) {
+  assert.ok(p.name && p.name !== LEGACY_MEMBER_NAMES[p.id],
+    `member ${p.id} must carry its real name, not the placeholder`);
+  assert.ok(p.relation, `member ${p.id} must carry a family relation`);
+}
+
+// Every legacy placeholder must map to a real id, or the upgrade silently skips it.
+for (const [id, legacy] of Object.entries(LEGACY_MEMBER_NAMES)) {
+  assert.ok(FAMILY.some(f => f.id === id), `legacy name "${legacy}" maps to a live member id`);
+}
+
+// Names must be unique, and the two ΑΛ- initial badges must still be told apart
+// by the full name shown next to the avatar.
+const names = FAMILY.map(p => p.name);
+assert.equal(new Set(names).size, names.length, 'member names must be unique');
+
+/* ── Legacy name upgrade ───────────────────────────────────────────────────
+ * An install that predates the rename still holds the placeholder labels. The
+ * upgrade must fix those, must never touch a name the user chose, and must
+ * never change an id (portions, plans and history hang off the id).
+ */
+
+const legacyInstall = FAMILY.map(p => ({ ...p, name: LEGACY_MEMBER_NAMES[p.id], relation: undefined }));
+const upgraded = upgradeMemberNames(legacyInstall, LEGACY_MEMBER_NAMES, FAMILY);
+assert.equal(upgraded.changed, 4, 'all four placeholder names are upgraded');
+assert.deepEqual(upgraded.profiles.map(p => p.name), names, 'upgraded names match the shipped family');
+assert.deepEqual(upgraded.profiles.map(p => p.id), FAMILY.map(p => p.id), 'ids survive the upgrade');
+assert.ok(upgraded.profiles.every(p => p.relation), 'the upgrade fills in the family relation');
+
+// A name the user typed must survive untouched.
+const customised = [{ ...FAMILY[0], name: 'Μαμά' }, { ...FAMILY[1], name: LEGACY_MEMBER_NAMES.father }];
+const partial = upgradeMemberNames(customised, LEGACY_MEMBER_NAMES, FAMILY);
+assert.equal(partial.profiles[0].name, 'Μαμά', 'a user-chosen name is never overwritten');
+assert.equal(partial.profiles[1].name, FAMILY[1].name, 'a placeholder next to it is still upgraded');
+assert.equal(partial.changed, 1, 'only the placeholder counts as a change');
+
+// Idempotent, and safe on junk input.
+const twice = upgradeMemberNames(upgraded.profiles, LEGACY_MEMBER_NAMES, FAMILY);
+assert.equal(twice.changed, 0, 'running the upgrade twice is a no-op');
+assert.equal(upgradeMemberNames(null, LEGACY_MEMBER_NAMES, FAMILY).changed, 0, 'null profiles are tolerated');
+assert.equal(upgradeMemberNames([{}], LEGACY_MEMBER_NAMES, FAMILY).changed, 0, 'a member without an id is skipped');
 
 console.log('persona & kitchen tests: PASS');

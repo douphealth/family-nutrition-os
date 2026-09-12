@@ -179,7 +179,9 @@ export function logo(size = 34) {
 /* ── Avatar ────────────────────────────────────────────────────────────── */
 
 export function avatar(profile, size = 40) {
-  const initials = String(profile?.name || '?').trim().slice(0, 2);
+  // Real first names, so the initials are upper-cased for a consistent badge
+  // (Αλέξης -> ΑΛ) rather than the title-case "Αλ" a plain slice would give.
+  const initials = String(profile?.name || '?').trim().slice(0, 2).toUpperCase();
   return `<span class="avatar" style="--av:${esc(profile?.accent || 'var(--accent)')};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px" aria-hidden="true">${esc(initials)}</span>`;
 }
 

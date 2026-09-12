@@ -69,9 +69,10 @@ function personaCard(ctx) {
     <div class="persona-head">
       ${avatar(profile, 46)}
       <div>
-        <div class="eyebrow">${esc(personaFocus.eyebrow)} · Τι μετράει για σένα</div>
+        <div class="eyebrow">${esc(profile.name)} · Τι μετράει για σένα</div>
         <h2 class="persona-title">${esc(personaFocus.title)}</h2>
       </div>
+      <span class="persona-tag">${esc(personaFocus.eyebrow)}</span>
     </div>
     <p class="persona-lead">${esc(personaFocus.lead)}</p>
     <div class="persona-points">
@@ -834,7 +835,7 @@ export function familyView(ctx) {
           <div style="display:flex;gap:12px;align-items:center">
             ${avatar(p, 44)}
             <div>
-              <div class="card-title" style="font-size:1.05rem">${esc(p.name)}</div>
+              <div class="card-title" style="font-size:1.05rem">${esc(p.name)}${p.relation ? ` <span class="rel-tag">${esc(p.relation)}</span>` : ''}</div>
               <div class="muted tiny">${esc(p.role)}</div>
             </div>
           </div>
@@ -944,7 +945,15 @@ export function memberForm(ctx, p) {
   return `<form class="form" id="memberForm" data-id="${esc(p.id)}">
     <div class="grid g2">
       <div class="field"><label for="fName">Όνομα</label><input id="fName" name="name" maxlength="24" value="${esc(p.name)}" required></div>
-      <div class="field"><label for="fRole">Ρόλος / στόχος σε μια φράση</label><input id="fRole" name="role" maxlength="60" value="${esc(p.role)}"></div>
+      <div class="field"><label for="fRelation">Σχέση στην οικογένεια</label>
+        <input id="fRelation" name="relation" maxlength="16" value="${esc(p.relation || '')}" placeholder="π.χ. Μητέρα" list="relationHints">
+        <datalist id="relationHints">
+          ${['Μητέρα', 'Πατέρας', 'Κόρη', 'Γιος', 'Γιαγιά', 'Παππούς'].map(r => `<option value="${r}"></option>`).join('')}
+        </datalist>
+      </div>
+    </div>
+    <div class="field"><label for="fRole">Ρόλος / στόχος σε μια φράση</label><input id="fRole" name="role" maxlength="60" value="${esc(p.role)}"></div>
+    <div class="grid g2">
       <div class="field"><label for="fAge">Ηλικία</label><input id="fAge" name="age" type="number" min="2" max="110" value="${p.age}" required></div>
       <div class="field"><label for="fSex">Φύλο</label><select id="fSex" name="sex">
         <option value="f" ${p.sex === 'f' ? 'selected' : ''}>Γυναίκα</option>

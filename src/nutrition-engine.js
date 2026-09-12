@@ -481,3 +481,32 @@ export function householdServings(profiles) {
   if (!members.length) return 1;
   return members.reduce((sum, p) => sum + memberShare(p), 0) || 1;
 }
+
+/* ── Member name upgrade ───────────────────────────────────────────────────
+ * v4.1 renamed the four household members from their placeholder labels
+ * (Μητέρα / Πατέρας / Κόρη / Γιος) to their real names. Profiles are persisted,
+ * so an existing install would otherwise keep the old labels forever.
+ *
+ * The upgrade is deliberately conservative: a stored name is only replaced when
+ * it still equals the shipped placeholder for that id. A name the user typed is
+ * never overwritten, and `id` never changes — so portions, plans, logs and
+ * measurements stay attached to the right person.
+ *
+ * Returns { profiles, changed } so the caller can skip the write when nothing
+ * moved.
+ */
+export function upgradeMemberNames(profiles, legacyNames, shippedFamily) {
+  const list = Array.isArray(profiles) ? profiles : [];
+  const shipped = new Map(
+    (Array.isArray(shippedFamily) ? shippedFamily : []).map(f => [f.id, f])
+  );
+  let changed = 0;
+  const next = list.map(p => {
+    const legacy = legacyNames?.[p?.id];
+    const target = shipped.get(p?.id);
+    if (!legacy || !target || p.name !== legacy) return p;
+    changed += 1;
+    return { ...p, name: target.name, relation: target.relation };
+  });
+  return { profiles: next, changed };
+}
