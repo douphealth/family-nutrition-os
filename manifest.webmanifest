@@ -1,23 +1,28 @@
 {
-  "name":"ZENITH PRO · Family Nutrition OS",
-  "short_name":"ZENITH PRO",
-  "description":"Privacy-first family nutrition, meal planning, athlete fueling and progress PWA.",
-  "id":"./",
-  "start_url":"./",
-  "scope":"./",
-  "display":"standalone",
-  "orientation":"any",
-  "background_color":"#07100f",
-  "theme_color":"#07100f",
-  "lang":"el",
-  "categories":["health","lifestyle","food"],
-  "icons":[
-    {"src":"assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
-    {"src":"assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  "name": "ZENITH PRO · Οικογενειακό Σύστημα Διατροφής",
+  "short_name": "ZENITH PRO",
+  "description": "Ένα μενού για όλη την οικογένεια, μερίδες ανά μέλος. Πλάνο 28 ημερών, λίστα αγορών, καταγραφή και τάσεις — εκτός σύνδεσης, χωρίς λογαριασμό.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#F4F8F6",
+  "theme_color": "#0E9F6E",
+  "lang": "el",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle", "food", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "shortcuts":[
-    {"name":"Σήμερα","url":"./?view=today","icons":[{"src":"assets/icon-192.png","sizes":"192x192"}]},
-    {"name":"Πλάνο","url":"./?view=plan","icons":[{"src":"assets/icon-192.png","sizes":"192x192"}]},
-    {"name":"Γεύματα","url":"./?view=meals","icons":[{"src":"assets/icon-192.png","sizes":"192x192"}]}
+  "shortcuts": [
+    { "name": "Σήμερα", "short_name": "Σήμερα", "url": "./?view=today", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Πλάνο εβδομάδας", "short_name": "Πλάνο", "url": "./?view=plan", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Λίστα αγορών", "short_name": "Αγορές", "url": "./?view=shopping", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Συνταγές", "short_name": "Γεύματα", "url": "./?view=meals", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
   ]
 }

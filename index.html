@@ -1,9 +1,93 @@
-<!doctype html><html lang="el"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07100f">
-<title>ZENITH PRO · Family Nutrition OS</title><meta name="description" content="Privacy-first family nutrition, meal planning, athlete fueling and progress PWA.">
-<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/favicon.png"><link rel="apple-touch-icon" href="assets/icon-180.png"><link rel="stylesheet" href="styles/app.css">
-</head><body><div class="app">
-<aside class="side"><div class="brand">ZENITH PRO<small>Family Nutrition OS · v2</small></div><nav class="nav" id="sideNav"></nav><div class="side-foot">Private by default · Offline-first<br>Educational wellness tool — not medical care.</div></aside>
-<main class="main"><header class="top"><div class="member-switch" id="memberSwitch"></div><div class="spacer"></div><button class="btn" id="themeBtn" aria-label="Αλλαγή θέματος">Theme</button></header><div id="view" class="content"></div></main>
-</div><nav class="mobile-nav" id="mobileNav"></nav><div id="toast" class="toast hidden"></div><input id="backupImport" type="file" accept="application/json" class="hidden">
-<script type="module" src="src/app.js"></script></body></html>
+<!doctype html>
+<html lang="el" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZENITH PRO · Οικογενειακή Διατροφή</title>
+
+<meta name="description" content="ZENITH PRO — οικογενειακό σύστημα διατροφής που δουλεύει εκτός σύνδεσης. Μερίδες ανά μέλος, πλάνο 28 ημερών, λίστα αγορών, καταγραφή και τάσεις. Ιδιωτικότητα από προεπιλογή: όλα τα δεδομένα μένουν στη συσκευή.">
+<meta name="author" content="douphealth">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0E9F6E" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#04100D" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ZENITH PRO">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="ZENITH PRO · Οικογενειακό Σύστημα Διατροφής">
+<meta property="og:description" content="Ένα μενού για όλη την οικογένεια, μερίδες ανά μέλος. Λειτουργεί εκτός σύνδεσης, χωρίς λογαριασμό και χωρίς διακομιστή.">
+<meta property="og:locale" content="el_GR">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/favicon.png" sizes="any">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"></div>
+
+<a class="sr-only" href="#view">Μετάβαση στο περιεχόμενο</a>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span id="brandMark"></span>
+      <span class="brand-text">
+        <span class="brand-name">ZENITH PRO</span>
+        <span class="brand-sub">Οικογενειακή διατροφή</span>
+      </span>
+    </div>
+
+    <nav class="nav" id="sideNav" aria-label="Κύρια πλοήγηση"></nav>
+
+    <div class="side-foot">
+      <p class="side-note">
+        Ιδιωτικότητα από προεπιλογή. Τα δεδομένα μένουν σε αυτή τη συσκευή —
+        χωρίς λογαριασμό, χωρίς διακομιστή, χωρίς παρακολούθηση.
+      </p>
+      <p class="side-note" style="margin-top:10px">
+        Εκπαιδευτικό εργαλείο ευεξίας. Δεν αποτελεί ιατρική φροντίδα.
+      </p>
+      <div class="side-ver" id="sideVer"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="member-strip" id="memberStrip" role="group" aria-label="Επιλογή μέλους οικογένειας"></div>
+      <div class="spacer"></div>
+      <button type="button" class="icon-btn" id="paletteBtn" data-act="palette" aria-label="Γρήγορες εντολές (Ctrl+K)"></button>
+      <button type="button" class="icon-btn" id="themeBtn" data-act="theme" aria-label="Αλλαγή θέματος"></button>
+    </header>
+
+    <div id="view" class="content" tabindex="-1"></div>
+  </main>
+
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Πλοήγηση κινητού"></nav>
+
+<div id="toast" class="hidden" role="status" aria-live="polite"></div>
+<div id="sheet" class="hidden"></div>
+<div id="palette" class="hidden"></div>
+
+<input id="backupImport" type="file" accept="application/json" class="hidden" aria-hidden="true" tabindex="-1">
+
+<noscript>
+  <div class="content">
+    <section class="notice notice-warn">
+      <b>Χρειάζεται JavaScript.</b>
+      Το ZENITH PRO εκτελεί όλους τους υπολογισμούς τοπικά στη συσκευή σου, χωρίς διακομιστή.
+      Ενεργοποίησε τη JavaScript για να λειτουργήσει.
+    </section>
+  </div>
+</noscript>
+
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

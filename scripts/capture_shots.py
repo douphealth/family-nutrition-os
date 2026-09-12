@@ -1,30 +1,133 @@
 #!/usr/bin/env python3
-"""Recapture screenshots with tour dismissed + DOM state verified."""
+"""
+ZENITH PRO v3 · screenshot capture
+---------------------------------------------------------------------------
+Renders the real app in headless Chromium and writes the docs/ screenshots.
+
+Usage:
+    python scripts/capture_shots.py [base_url] [out_dir]
+
+Defaults: http://127.0.0.1:8137/index.html  ->  docs/
+Requires: pip install playwright && playwright install chromium
+"""
+
+import os
+import sys
+
 from playwright.sync_api import sync_playwright
 
-URL = "http://127.0.0.1:8137/index.html"
+BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8137/index.html"
+OUT = sys.argv[2] if len(sys.argv) > 2 else "docs"
+
+VIEWS = [
+    ("today", "screenshot-today.png"),
+    ("plan", "screenshot-plan.png"),
+    ("meals", "screenshot-meals.png"),
+    ("shopping", "screenshot-shopping.png"),
+    ("progress", "screenshot-progress.png"),
+    ("family", "screenshot-family.png"),
+    ("guide", "screenshot-guide.png"),
+]
+
+os.makedirs(OUT, exist_ok=True)
+
+
+def settle(page, ms=700):
+    page.wait_for_timeout(ms)
+
+
+def dismiss_overlays(page):
+    """Close any open sheet and dismiss the onboarding card."""
+    page.evaluate(
+        """() => {
+            document.querySelectorAll('[data-act="closeSheet"]').forEach(b => b.click());
+            document.querySelector('[data-act="dismissOnboarding"]')?.click();
+        }"""
+    )
+    page.wait_for_timeout(250)
+
+
+def seed(page):
+    """Log a meal and some water so the Today view looks alive, not empty."""
+    page.evaluate("""() => document.querySelector('[data-act="meal"][data-portion]')?.click()""")
+    page.wait_for_timeout(350)
+    page.evaluate(
+        """() => {
+            const glasses = document.querySelectorAll('[data-act="water"][data-set]');
+            glasses[3]?.click();
+        }"""
+    )
+    page.wait_for_timeout(350)
+
+
 with sync_playwright() as p:
-    b = p.chromium.launch()
-    page = b.new_page(viewport={"width": 1280, "height": 900}, device_scale_factor=2)
-    page.goto(URL, wait_until="networkidle", timeout=30000)
-    page.wait_for_timeout(1800)
-    # Dismiss tour robustly: find open modal overlay & close, plus set flag
-    page.evaluate("""(function(){
-      if(window.S && S.tourDone===false){ S.tourDone=true; }
-      var ids=['tourModal','palModal','pickModal','smModal','editModal','setModal'];
-      for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el&&el.classList.contains('open')){el.classList.remove('open');}}
-      if(window.Tour && Tour.close) Tour.close();
-    })()""")
-    page.wait_for_timeout(400)
-    # Confirm visible text at capture time
-    txt = page.evaluate("document.getElementById('view')?.innerText?.length || 0")
-    print("view text len at capture:", txt)
-    page.screenshot(path="docs/screenshot-dashboard.png")
-    page.evaluate("go('nutrition')")
-    page.wait_for_timeout(600)
-    page.screenshot(path="docs/screenshot-nutrition.png")
-    page.evaluate("go('planner')")
-    page.wait_for_timeout(600)
-    page.screenshot(path="docs/screenshot-planner.png")
-    b.close()
-print("done")
+    browser = p.chromium.launch()
+    page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=2)
+
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)[:200]))
+
+    # ── 1. Today (seeded) ────────────────────────────────────────────────
+    page.goto(f"{BASE}?view=today", wait_until="networkidle", timeout=45000)
+    settle(page, 1200)
+    dismiss_overlays(page)
+    seed(page)
+    dismiss_overlays(page)
+    page.screenshot(path=os.path.join(OUT, "screenshot-today.png"))
+    print("captured: today")
+
+    # ── 2. Remaining views ───────────────────────────────────────────────
+    for view, filename in VIEWS[1:]:
+        page.evaluate(
+            """(v) => document.querySelector(`#sideNav [data-act="nav"][data-view="${v}"]`)?.click()""",
+            view,
+        )
+        settle(page, 800)
+        dismiss_overlays(page)
+        if view == "shopping":
+            # check a few items so the progress bar is meaningful
+            page.evaluate(
+                """() => {
+                    const items = [...document.querySelectorAll('[data-act="shop"][data-key]')];
+                    items.slice(0, 3).forEach(i => i.click());
+                }"""
+            )
+            settle(page, 600)
+        page.screenshot(path=os.path.join(OUT, filename))
+        print(f"captured: {view}")
+
+    # ── 3. Recipe sheet (light) ──────────────────────────────────────────
+    page.evaluate(
+        """() => document.querySelector('#sideNav [data-act="nav"][data-view="meals"]')?.click()"""
+    )
+    settle(page, 700)
+    page.evaluate("""() => document.querySelector('[data-act="recipe"][data-id]')?.click()""")
+    settle(page, 800)
+    page.screenshot(path=os.path.join(OUT, "screenshot-recipe.png"))
+    print("captured: recipe sheet")
+
+    # ── 4. Recipe sheet (dark) — shows per-member portion scaling ────────
+    page.evaluate("""() => document.getElementById('themeBtn')?.click()""")
+    settle(page, 600)
+    page.screenshot(path=os.path.join(OUT, "screenshot-recipe-dark.png"))
+    print("captured: recipe sheet (dark)")
+
+    # ── 5. Dark theme, main view ─────────────────────────────────────────
+    page.keyboard.press("Escape")  # the sheet closes on Escape
+    settle(page, 500)
+    if page.evaluate("""() => !!document.getElementById('sheet')?.classList.contains('is-open')"""):
+        page.evaluate("""() => document.querySelector('[data-act="closeSheet"]')?.click()""")
+        settle(page, 400)
+    page.evaluate(
+        """() => document.querySelector('#sideNav [data-act="nav"][data-view="progress"]')?.click()"""
+    )
+    settle(page, 900)
+    page.screenshot(path=os.path.join(OUT, "screenshot-dark.png"))
+    print("captured: dark theme")
+
+    browser.close()
+
+if errors:
+    print("\npage errors:", errors)
+    sys.exit(1)
+print("\nscreenshots written to", os.path.abspath(OUT))

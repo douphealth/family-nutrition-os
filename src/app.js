@@ -1,79 +1,866 @@
-import { FAMILY, PLAN_28, RECIPES, TRAINING_LOADS, SOURCES } from './data.js';
-import { isMinor, canUseAdultBmi, bmi, adultBmiLabel, energyRange, proteinRange, hydrationTarget, portionProfile, contextualGuidance } from './nutrition-engine.js';
-import { get, put, all, exportBackup, importBackup } from './storage.js';
+/**
+ * ZENITH PRO · application shell
+ * ---------------------------------------------------------------------------
+ * Owns state, persistence, routing and the single delegated event dispatcher.
+ * Views are pure functions (views.js); this file is the only place that
+ * mutates anything.
+ *
+ * Persistence model: the whole dataset is a family's worth of records — small
+ * enough to hold in memory — so it is loaded once at boot into `cache` and
+ * every view renders synchronously from it. Writes update the cache and the
+ * backing store together.
+ */
 
-const slots=['breakfast','lunch','snack','dinner'];
-const slotLabel={breakfast:'Πρωινό',lunch:'Μεσημεριανό',snack:'Σνακ',dinner:'Βραδινό'};
-const nav=[['today','Σήμερα'],['plan','Πλάνο'],['meals','Γεύματα'],['progress','Πρόοδος'],['family','Οικογένεια']];
-const allowedViews=new Set(nav.map(x=>x[0]));
-const allowedLoads=new Set(TRAINING_LOADS.map(x=>x[0]));
-let state={view:'today',member:'mother',theme:'dark',trainingLoad:'normal',profiles:structuredClone(FAMILY),today:{}};
+import {
+  APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, AISLES
+} from './data.js';
+import {
+  isMinor, targetsFor, dayMacros, planCoverage, mealMacros, weightTrend,
+  loggingStreak, hydrationTarget, contextualGuidance, energyRange
+} from './nutrition-engine.js';
+import {
+  get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
+  storageInfo, requestPersistence, activeBackend
+} from './storage.js';
+import {
+  esc, icon, logo, byId, $, $$, avatar,
+  localDateKey, addDays, mondayOf, cycleDayIndex, cycleWeek, dateFromKey,
+  num, num1, pct, mlToText, bytesToText, longDate, shortDate, GREEK_DAYS_SHORT,
+  toast, openSheet, closeSheet, isSheetOpen
+} from './ui.js';
+import {
+  todayView, planView, mealsView, shoppingView, progressView, familyView,
+  guideView, recipeDetail, memberForm, dayDetail, paletteView
+} from './views.js';
 
-const el=id=>document.getElementById(id);
-const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-const recipe=id=>RECIPES.find(r=>r.id===id);
-const profile=()=>state.profiles.find(p=>p.id===state.member)||state.profiles[0];
-function localDateKey(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
-function mondayIndex(d=new Date()){const start=new Date(d.getFullYear(),0,1);const startDow=(start.getDay()+6)%7;const days=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-start)/86400000);return ((days+startDow)%28)+1;}
-function planForToday(){return PLAN_28[mondayIndex()-1];}
-function toast(msg){const t=el('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),2600);}
-function currentTrainingLoad(p){return p.athlete?state.trainingLoad:'normal';}
-function normalizeState(){if(!allowedViews.has(state.view))state.view='today';if(!allowedLoads.has(state.trainingLoad))state.trainingLoad='normal';if(!state.profiles.some(p=>p.id===state.member))state.member=state.profiles[0]?.id||'mother';}
+/* ── Constants ─────────────────────────────────────────────────────────── */
 
-async function load(){
-  try{
-    const settings=await get('settings','app');
-    if(settings) state={...state,...settings};
-    const profiles=await all('profiles'); if(profiles.length)state.profiles=profiles;
-    const requested=new URLSearchParams(location.search).get('view'); if(allowedViews.has(requested))state.view=requested;
-    normalizeState();
-    document.documentElement.dataset.theme=state.theme;
-    document.documentElement.style.setProperty('--accent',profile().accent||'#55d6a7');
-    const log=await get('logs',`${localDateKey()}:${state.member}`);if(log)state.today[state.member]=log;
-    renderShell();await render();
-  }catch(error){console.error(error);el('view').innerHTML='<section class="notice">Δεν ήταν δυνατή η φόρτωση των τοπικών δεδομένων. Δοκίμασε επαναφόρτωση ή private backup restore.</section>';toast('Σφάλμα τοπικής αποθήκευσης');}
+const NAV = [
+  ['today', 'Σήμερα', 'sun'],
+  ['plan', 'Πλάνο', 'calendar'],
+  ['meals', 'Γεύματα', 'utensils'],
+  ['shopping', 'Αγορές', 'cart'],
+  ['progress', 'Πρόοδος', 'chart'],
+  ['family', 'Οικογένεια', 'users'],
+  ['guide', 'Γνώση', 'book']
+];
+const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'progress'];
+const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
+
+/* ── State ─────────────────────────────────────────────────────────────── */
+
+let state = {
+  view: 'today',
+  member: 'mother',
+  theme: 'light',
+  trainingLoad: 'normal',
+  weekOffset: 0,
+  onboarded: false,
+  filters: { q: '', slot: '', tag: '', sort: 'slot' },
+  shopChecked: {},
+  version: APP.version
+};
+
+const cache = {
+  profiles: structuredClone(FAMILY),
+  logs: [],
+  measurements: [],
+  plans: [],
+  checklists: []
+};
+
+let updateReady = false;
+let paletteItems = [];
+let paletteIndex = 0;
+
+/* ── Derived helpers ───────────────────────────────────────────────────── */
+
+const recipeById = id => RECIPES.find(r => r.id === id) || null;
+const currentProfile = () => cache.profiles.find(p => p.id === state.member) || cache.profiles[0];
+const currentLoad = p => (p?.athlete ? state.trainingLoad : 'normal');
+
+function planForDate(date) {
+  return PLAN_28[cycleDayIndex(dateFromKey(date)) - 1];
 }
-async function persist(){await put('settings',{id:'app',view:state.view,member:state.member,theme:state.theme,trainingLoad:state.trainingLoad});for(const p of state.profiles)await put('profiles',p);}
 
-function renderShell(){
-  const html=nav.map(([id,label])=>`<button data-view="${id}" class="${state.view===id?'active':''}">${label}</button>`).join('');el('sideNav').innerHTML=html;el('mobileNav').innerHTML=html;
-  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{state.view=b.dataset.view;history.replaceState(null,'',`${location.pathname}?view=${state.view}`);await persist();renderShell();await render();});
-  el('memberSwitch').innerHTML=state.profiles.map(p=>`<button class="chip ${p.id===state.member?'active':''}" data-member="${esc(p.id)}">${esc(p.name)}</button>`).join('');
-  document.querySelectorAll('[data-member]').forEach(b=>b.onclick=async()=>{state.member=b.dataset.member;document.documentElement.style.setProperty('--accent',profile().accent||'#55d6a7');const log=await get('logs',`${localDateKey()}:${state.member}`);state.today[state.member]=log||{};await persist();renderShell();await render();});
-  el('themeBtn').textContent=state.theme==='dark'?'Light':'Dark';el('themeBtn').onclick=async()=>{state.theme=state.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=state.theme;el('themeBtn').textContent=state.theme==='dark'?'Light':'Dark';await persist();};
+function emptyLog(memberId, date) {
+  return { id: `${date}:${memberId}`, date, memberId, meals: {}, waterMl: 0, waterLog: [], extras: [], schema: 2 };
 }
 
-function todayPlanHtml(){const day=planForToday(),log=state.today[profile().id]||{};return `<div class="meal-grid">${slots.map(s=>{const r=recipe(day[s]);const done=log[s]?.status==='done';return `<article class="meal"><div class="slot">${slotLabel[s]}</div><h3>${esc(r.name)}</h3><div class="muted">${r.time}′ · ~${r.base.kcal} kcal base recipe</div><div class="meal-actions"><button class="chip ${done&&log[s]?.portion===.75?'active':''}" data-meal="${s}" data-portion="0.75">Μικρότερη</button><button class="chip ${done&&log[s]?.portion===1?'active':''}" data-meal="${s}" data-portion="1">${done&&log[s]?.portion===1?'✓ Έγινε':'Όπως το πλάνο'}</button><button class="chip ${done&&log[s]?.portion===1.25?'active':''}" data-meal="${s}" data-portion="1.25">Μεγαλύτερη</button></div></article>`}).join('')}</div>`;}
-
-function todayView(){
-  const p=profile(),load=currentTrainingLoad(p),day=planForToday(),portions=portionProfile(p,load),er=energyRange(p,load),pr=proteinRange(p),hyd=hydrationTarget(p,load),log=state.today[p.id]||{};
-  const nextSlot=slots.find(s=>log[s]?.status!=='done')||'dinner',next=recipe(day[nextSlot]),guidance=contextualGuidance({profile:p,trainingLoad:load,today:log,plannedMeal:next});
-  return `<section class="hero"><div class="eyebrow">${esc(p.role)}</div><h1>${esc(p.name)}: τι χρειάζεται τώρα</h1><p>Action-first καθημερινό πλάνο με διαφορετικούς κανόνες για ενήλικες, εφήβους και αθλητές.</p></section><section class="card next"><div class="eyebrow">NEXT</div><div class="name">${esc(next.name)}</div><p class="muted">${slotLabel[nextSlot]} · ${p.athlete?esc(TRAINING_LOADS.find(x=>x[0]===load)?.[1]||'Training'):'Οικογενειακό πλάνο'}</p></section>
-  <div class="grid g3" style="margin-top:16px"><section class="card"><div class="muted">Energy planning estimate</div><div class="metric">${er.lower}–${er.upper}<small> kcal/day</small></div><p class="muted">${esc(er.note)}</p></section><section class="card"><div class="muted">Protein planning range</div><div class="metric">${pr.min}–${pr.max}<small> g/day</small></div><p class="muted">${esc(pr.note)}</p></section><section class="card"><div class="muted">Hydration starting estimate</div><div class="metric">${(hyd.ml/1000).toFixed(1)}<small> L/day</small></div><p class="muted">${esc(hyd.note)}</p></section></div>
-  ${p.athlete?`<section class="card" style="margin-top:16px"><div class="eyebrow">ATHLETE MODE</div><h2>Training load</h2><div class="member-switch" style="margin-top:12px">${TRAINING_LOADS.map(([id,label])=>`<button class="chip ${id===load?'active':''}" data-load="${id}">${esc(label)}</button>`).join('')}</div><p class="muted">Training load changes carbohydrate portions and hydration estimates; it never creates a weight-loss target for this minor profile.</p></section>`:''}
-  <section class="card" style="margin-top:16px"><h2>Σήμερα</h2><div class="timeline">${slots.map(s=>`<div class="step ${log[s]?.status==='done'?'done':s===nextSlot?'current':''}"><i class="dot"></i><div><b>${slotLabel[s]}</b><div class="muted">${esc(recipe(day[s]).name)}${log[s]?.portion?` · ${log[s].portion}×`:''}</div></div></div>`).join('')}</div></section><section style="margin-top:16px">${todayPlanHtml()}</section>
-  <div class="grid g2" style="margin-top:16px"><section class="card"><h3>Portion profile · ${esc(portions.label)}</h3><div class="portion-row" style="margin-top:12px"><div class="portion"><b>${portions.vegetables}×</b><span class="muted">Vegetables</span></div><div class="portion"><b>${portions.protein}×</b><span class="muted">Protein</span></div><div class="portion"><b>${portions.carbs}×</b><span class="muted">Carbs</span></div><div class="portion"><b>${portions.fats}×</b><span class="muted">Fats</span></div></div></section><section class="card"><h3>Context, όχι αυθαίρετο score</h3>${guidance.map(t=>`<div class="status"><span>${esc(t)}</span><b class="good">✓</b></div>`).join('')}</section></div>`;
+function logFor(memberId, date) {
+  return cache.logs.find(l => l.memberId === memberId && l.date === date) || emptyLog(memberId, date);
 }
 
-function planView(){const currentWeek=Math.ceil(mondayIndex()/7),days=PLAN_28.filter(d=>d.week===currentWeek);return `<section class="hero"><div class="eyebrow">28-DAY ROTATION</div><h1>Το πλάνο της εβδομάδας</h1><p>Ο κύκλος είναι ευθυγραμμισμένος με Δευτέρα–Κυριακή και προσαρμόζεται με member-specific portions.</p></section><div class="plan-week">${days.map(d=>`<section class="card day"><div class="eyebrow">W${d.week}</div><h3>${d.dow}</h3>${slots.map(s=>`<div class="tiny-meal"><span>${slotLabel[s]}</span>${esc(recipe(d[s]).name)}</div>`).join('')}</section>`).join('')}</div><section class="card" style="margin-top:16px"><h2>Batch-cook priority</h2><p class="muted">Μαγείρεψε 1 όσπριο, 1 tray-bake πρωτεΐνη, 1 cooked grain και πλύνε σαλάτες.</p><button class="btn" id="shoppingBtn">Λίστα αγορών εβδομάδας</button><div id="shoppingOut"></div></section>`;}
-function mealsView(){return `<section class="hero"><div class="eyebrow">MEAL LIBRARY</div><h1>Λιγότερες, καλύτερες συνταγές</h1><p>Τα macros είναι estimates της βασικής συνταγής και δεν καταγράφονται ως κατανάλωση χωρίς επιβεβαίωση.</p></section><div class="recipe-list">${RECIPES.map(r=>`<article class="recipe"><div class="eyebrow">${slotLabel[r.slot]||esc(r.slot)}</div><h3>${esc(r.name)}</h3><p class="meta">${r.time}′ · ${r.base.kcal} kcal · P ${r.base.p}g · C ${r.base.c}g · F ${r.base.f}g</p><p class="muted">${r.ingredients.map(esc).join(' · ')}</p></article>`).join('')}</div>`;}
-
-async function progressView(){const p=profile(),logs=(await all('logs')).filter(x=>x.memberId===p.id),measurements=(await all('measurements')).filter(x=>x.memberId===p.id).sort((a,b)=>a.date.localeCompare(b.date)),adultBmi=canUseAdultBmi(p),bmiValue=bmi(p),label=adultBmiLabel(p),last=measurements.at(-1);return `<section class="hero"><div class="eyebrow">PROGRESS</div><h1>Τάσεις, όχι ενοχές</h1><p>Διαφανείς καταγραφές χωρίς αυθαίρετο health score.</p></section><div class="grid g3"><section class="card"><div class="muted">Logged days</div><div class="metric">${logs.length}</div></section><section class="card"><div class="muted">Measurements</div><div class="metric">${measurements.length}</div></section><section class="card"><div class="muted">BMI</div><div class="metric">${adultBmi?bmiValue:'—'}<small>${adultBmi?` · ${esc(label)}`:' age-specific interpretation required'}</small></div></section></div>${!adultBmi?'<div class="notice" style="margin-top:16px">Για ηλικίες κάτω των 20 το ZENITH δεν εμφανίζει adult BMI κατηγορίες. Παιδιά/έφηβοι χρειάζονται age- and sex-specific αξιολόγηση.</div>':''}<section class="card" style="margin-top:16px"><h2>Καταγραφή βάρους</h2><form class="form measure-form" id="measurementForm"><div class="grid g2"><label>Ημερομηνία<input name="date" type="date" value="${localDateKey()}" required></label><label>Βάρος kg<input name="weight" type="number" min="20" max="300" step="0.1" value="${last?.weight??p.weight}" required></label></div><button class="btn" type="submit">Αποθήκευση μέτρησης</button></form>${last?`<p class="muted">Τελευταία καταγραφή: ${esc(last.date)} · ${last.weight} kg</p>`:''}</section>`;}
-
-function familyView(){const p=profile();return `<section class="hero"><div class="eyebrow">FAMILY</div><h1>Προφίλ & ασφάλεια</h1><p>Οι ρυθμίσεις καθορίζουν ποια nutrition logic επιτρέπεται.</p></section><div class="grid g2"><section class="card"><form class="form" id="profileForm"><label>Όνομα<input name="name" maxlength="40" value="${esc(p.name)}" required></label><div class="grid g2"><label>Ηλικία<input name="age" type="number" min="2" max="110" value="${p.age}" required></label><label>Φύλο<select name="sex"><option value="f" ${p.sex==='f'?'selected':''}>Female</option><option value="m" ${p.sex==='m'?'selected':''}>Male</option></select></label><label>Ύψος cm<input name="height" type="number" min="80" max="230" value="${p.height}" required></label><label>Βάρος kg<input name="weight" type="number" min="20" max="300" step="0.1" value="${p.weight}" required></label></div><label>Goal<select name="goal" ${isMinor(p)?'disabled':''}><option value="maintain" ${p.goal==='maintain'?'selected':''}>Maintain</option><option value="gradual_fat_loss" ${p.goal==='gradual_fat_loss'?'selected':''}>Gradual fat loss (adults only)</option><option value="growth" ${p.goal==='growth'?'selected':''}>Growth</option><option value="performance" ${p.goal==='performance'?'selected':''}>Performance</option></select></label><button class="btn" type="submit">Αποθήκευση</button></form></section><section class="card"><h3>Privacy & backup</h3><p class="muted">Τα δεδομένα μένουν στη συσκευή σε IndexedDB. Το JSON export είναι portable backup· το restore γίνεται atomically.</p><div class="meal-actions"><button class="btn" id="exportBtn">Export JSON</button><button class="btn" id="importBtn">Import JSON</button></div><h3 style="margin-top:20px">Evidence links</h3><div class="source-list">${SOURCES.map(s=>`<p><a href="${s.url}" target="_blank" rel="noopener noreferrer">${esc(s.label)}</a></p>`).join('')}</div></section></div>`;}
-
-async function render(){const view=el('view');if(state.view==='today')view.innerHTML=todayView();else if(state.view==='plan')view.innerHTML=planView();else if(state.view==='meals')view.innerHTML=mealsView();else if(state.view==='progress')view.innerHTML=await progressView();else view.innerHTML=familyView();bind();}
-function bind(){
-  document.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{if(!profile().athlete)return;state.trainingLoad=b.dataset.load;await persist();await render();});
-  document.querySelectorAll('[data-meal]').forEach(b=>b.onclick=async()=>{const p=profile(),date=localDateKey();state.today[p.id]??={};state.today[p.id][b.dataset.meal]={status:'done',portion:Number(b.dataset.portion)};await put('logs',{id:`${date}:${p.id}`,date,memberId:p.id,...state.today[p.id]});await render();toast('Γεύμα καταγράφηκε.');});
-  el('shoppingBtn')?.addEventListener('click',()=>{const week=PLAN_28.filter(d=>d.week===Math.ceil(mondayIndex()/7)),counts=new Map();for(const d of week)for(const s of slots)for(const item of recipe(d[s]).ingredients)counts.set(item,(counts.get(item)||0)+1);el('shoppingOut').innerHTML=`<div class="recipe-list" style="margin-top:12px">${[...counts.entries()].sort((a,b)=>a[0].localeCompare(b[0],'el')).map(([x,n])=>`<div class="recipe"><b>${esc(x)}</b><div class="muted">Χρησιμοποιείται σε ${n} γεύμα${n===1?'':'τα'} της εβδομάδας</div></div>`).join('')}</div>`;});
-  el('profileForm')?.addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target),p=profile(),age=Number(fd.get('age')),height=Number(fd.get('height')),weight=Number(fd.get('weight'));if(!Number.isFinite(age)||!Number.isFinite(height)||!Number.isFinite(weight))return toast('Έλεγξε τα αριθμητικά πεδία.');p.name=String(fd.get('name')||'').trim().slice(0,40)||p.name;p.age=age;p.sex=fd.get('sex');p.height=height;p.weight=weight;if(!isMinor(p))p.goal=fd.get('goal');else p.goal=p.athlete?'performance':'growth';await persist();renderShell();await render();toast('Το προφίλ ενημερώθηκε.');});
-  el('measurementForm')?.addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target),p=profile(),date=fd.get('date'),weight=Number(fd.get('weight'));if(!date||!Number.isFinite(weight)||weight<20||weight>300)return toast('Μη έγκυρη μέτρηση.');await put('measurements',{id:`${p.id}:${date}`,memberId:p.id,date,weight});p.weight=weight;await persist();await render();toast('Η μέτρηση αποθηκεύτηκε.');});
-  el('exportBtn')?.addEventListener('click',async()=>{const data=await exportBackup(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`zenith-backup-${localDateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-  el('importBtn')?.addEventListener('click',()=>el('backupImport').click());
+function dayMacrosFor(planDay, profile, load, log) {
+  return dayMacros(planDay, profile, load, log, recipeById);
 }
 
-el('backupImport').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{await importBackup(JSON.parse(await file.text()));toast('Backup restored. Reloading…');setTimeout(()=>location.reload(),700);}catch(err){console.error(err);toast('Μη έγκυρο backup — δεν έγινε καμία αλλαγή.');}finally{e.target.value='';}});
+function measurementsFor(memberId) {
+  return cache.measurements
+    .filter(m => m.memberId === memberId)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{reg.update().catch(()=>{});reg.addEventListener('updatefound',()=>{const w=reg.installing;w?.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)toast('Νέα έκδοση εγκαταστάθηκε — ανανέωσε την εφαρμογή.');});});}).catch(console.error);}
-load();
+function loggedDateKeys(memberId) {
+  return cache.logs
+    .filter(l => l.memberId === memberId && Object.values(l.meals || {}).some(m => m?.status === 'done' || m?.status === 'skipped'))
+    .map(l => l.date);
+}
+
+function heatCellsFor(memberId) {
+  const start = addDays(mondayOf(), -21);
+  const today = localDateKey();
+  const out = [];
+  for (let i = 0; i < 28; i++) {
+    const date = addDays(start, i);
+    const log = logFor(memberId, date);
+    const meals = Object.values(log.meals || {}).filter(m => m?.status === 'done').length;
+    const skipped = Object.values(log.meals || {}).filter(m => m?.status === 'skipped').length;
+    out.push({ date, meals, skipped, logged: meals > 0 || skipped > 0 });
+  }
+  return out;
+}
+
+function weekDaysFor(offset) {
+  const monday = addDays(mondayOf(), offset * 7);
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(monday, i);
+    return { date, dateObj: dateFromKey(date), plan: planForDate(date), recipeById };
+  });
+}
+
+function buildShopping(weekDays) {
+  const household = Math.max(1, cache.profiles.length);
+  const map = new Map();
+  for (const day of weekDays) {
+    for (const slot of SLOTS) {
+      const r = recipeById(day.plan[slot]);
+      if (!r) continue;
+      for (const ing of r.ingredients) {
+        const key = `${ing.a}::${ing.n}`;
+        const cur = map.get(key) || { key, name: ing.n, aisle: ing.a, unit: ing.u, qty: 0, count: 0 };
+        cur.qty += ing.q * household;
+        cur.count += 1;
+        map.set(key, cur);
+      }
+    }
+  }
+  return [...map.values()]
+    .map(i => ({ ...i, qty: roundQty(i.qty, i.unit) }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'el'));
+}
+
+function roundQty(q, unit) {
+  if (unit === 'τεμ') return Math.round(q);
+  if (q >= 1000) return Math.round(q / 100) * 100;
+  if (q >= 100) return Math.round(q / 10) * 10;
+  if (q >= 20) return Math.round(q / 5) * 5;
+  return Math.round(q);
+}
+
+/* ── Context for views ─────────────────────────────────────────────────── */
+
+function buildCtx() {
+  const profile = currentProfile();
+  const load = currentLoad(profile);
+  const dateKey = localDateKey();
+  const planDay = planForDate(dateKey);
+  const log = logFor(profile.id, dateKey);
+  const targets = targetsFor(profile, load);
+  const totals = dayMacrosFor(planDay, profile, load, log);
+  const snackPool = RECIPES.filter(r => r.slot === 'snack');
+  const coverage = planCoverage(profile, load, totals, targets, snackPool);
+  const completeness = {
+    mealsDone: Object.values(log.meals || {}).filter(m => m?.status === 'done').length,
+    mealsTotal: SLOTS.filter(s => planDay[s]).length
+  };
+  const streak = loggingStreak(loggedDateKeys(profile.id), dateKey);
+  const measurements = measurementsFor(profile.id);
+  const trend = weightTrend(measurements);
+  const weekDays = weekDaysFor(state.weekOffset);
+  const shopList = buildShopping(weekDays);
+  const shopChecked = state.shopChecked[shopKey(weekDays)] || {};
+
+  return {
+    state, profiles: cache.profiles, profile, load, loadLabel: TRAINING_LOADS.find(l => l[0] === load)?.[1] || 'Κανονική',
+    dateKey, planDay, log, targets, totals, coverage, completeness, streak, updateReady,
+    onboarded: state.onboarded, trainingLoads: TRAINING_LOADS, guidance: contextualGuidance({ profile, trainingLoad: load, today: log, plannedMeal: recipeById(planDay[SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner']) }),
+    recipeById, planForDate, logFor, dayMacrosFor, recipes: RECIPES, filters: state.filters,
+    weekDays, weekOffset: state.weekOffset, shopList, shopChecked,
+    shopStats: { total: shopList.length, checked: shopList.filter(i => shopChecked[i.key]).length, pct: shopList.length ? shopList.filter(i => shopChecked[i.key]).length / shopList.length : 0 },
+    measurements, trend, heatCells: heatCellsFor(profile.id),
+    loggedDays: loggedDateKeys(profile.id).length,
+    loggedDays28: heatCellsFor(profile.id).filter(c => c.logged).length,
+    weekAdherence: weekDays.map(d => {
+      const l = logFor(profile.id, d.date);
+      return { date: d.date, meals: Object.values(l.meals || {}).filter(m => m?.status === 'done').length };
+    }),
+    coverageByMember: cache.profiles.map(p => {
+      const l = p.athlete ? state.trainingLoad : 'normal';
+      const t = targetsFor(p, l);
+      const tot = dayMacrosFor(planDay, p, l, emptyLog(p.id, dateKey));
+      const c = planCoverage(p, l, tot, t, snackPool);
+      return { id: p.id, name: p.name, pct: c.pct, status: c.status, gap: c.gapKcal };
+    }),
+    targetsByMember: Object.fromEntries(cache.profiles.map(p => [p.id, targetsFor(p, p.athlete ? state.trainingLoad : 'normal')])),
+    diagnostics: diagnosticsCache
+  };
+}
+
+let diagnosticsCache = { backend: 'idb', persisted: false, usageText: '—', quotaText: '—', sw: '—', online: navigator.onLine };
+
+const shopKey = weekDays => weekDays.length ? `w:${weekDays[0].date}` : 'w:none';
+
+/* ── Shell rendering ───────────────────────────────────────────────────── */
+
+function renderShell() {
+  const profile = currentProfile();
+  document.documentElement.dataset.theme = state.theme;
+  document.documentElement.style.setProperty('--accent', profile?.accent || '#0E9F6E');
+  document.documentElement.style.setProperty('--accent-2', profile?.accent || '#0E9F6E');
+
+  byId('brandMark').innerHTML = logo(38);
+  byId('paletteBtn').innerHTML = icon('search', 18);
+  byId('sideVer').innerHTML = `${icon('shield', 13)}<span>v${esc(APP.version)} · τοπικά δεδομένα</span>`;
+
+  byId('sideNav').innerHTML = NAV.map(([id, label, ic]) =>
+    `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
+      ${icon(ic, 18)}<span>${esc(label)}</span></button>`).join('');
+
+  byId('memberStrip').innerHTML = cache.profiles.map(p =>
+    `<button type="button" class="member-chip ${p.id === state.member ? 'active' : ''}" data-act="member" data-id="${esc(p.id)}" aria-pressed="${p.id === state.member}">
+      ${avatar(p, 30)}<span>${esc(p.name)}</span></button>`).join('');
+
+  byId('tabbar').innerHTML = PRIMARY_TABS.map(id => {
+    const entry = NAV.find(n => n[0] === id);
+    return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}">
+      ${icon(entry[2], 20)}<span>${esc(entry[1])}</span></button>`;
+  }).join('') + `<button type="button" class="tab-btn" data-act="more">${icon('more', 20)}<span>Περισσότερα</span></button>`;
+
+  byId('themeBtn').innerHTML = icon(state.theme === 'light' ? 'moon' : 'sun', 18);
+  byId('themeBtn').setAttribute('aria-label', state.theme === 'light' ? 'Σκούρο θέμα' : 'Φωτεινό θέμα');
+}
+
+function render() {
+  const view = byId('view');
+  try {
+    const ctx = buildCtx();
+    let html;
+    if (state.view === 'today') html = todayView(ctx);
+    else if (state.view === 'plan') html = planView(ctx);
+    else if (state.view === 'meals') html = mealsView(ctx);
+    else if (state.view === 'shopping') html = shoppingView(ctx);
+    else if (state.view === 'progress') html = progressView(ctx);
+    else if (state.view === 'family') html = familyView(ctx);
+    else if (state.view === 'guide') html = guideView(ctx);
+    else html = todayView(ctx);
+
+    view.innerHTML = html;
+    view.classList.remove('view-enter');
+    void view.offsetWidth;
+    view.classList.add('view-enter');
+    bindViewInputs();
+  } catch (err) {
+    console.error('[ZENITH] render failed', err);
+    view.innerHTML = `<section class="notice notice-danger">${icon('alert', 18)}
+      <span><b>Κάτι πήγε στραβά στην προβολή.</b> Τα δεδομένα σου είναι ασφαλή. Δοκίμασε να αλλάξεις προβολή ή να φορτώσεις ξανά.</span></section>`;
+  }
+}
+
+function renderAll() { renderShell(); render(); }
+
+/* ── View-local input bindings (not delegated) ─────────────────────────── */
+
+function bindViewInputs() {
+  const search = byId('recipeSearch');
+  if (search) {
+    search.addEventListener('input', debounce(() => {
+      state.filters.q = search.value;
+      const pos = search.selectionStart;
+      render();
+      const next = byId('recipeSearch');
+      if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+    }, 220));
+  }
+  byId('recipeSort')?.addEventListener('change', e => { state.filters.sort = e.target.value; render(); });
+
+  byId('measureForm')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const date = String(fd.get('date') || '');
+    const weight = Number(fd.get('weight'));
+    const note = String(fd.get('note') || '').trim().slice(0, 80);
+    if (!date || !Number.isFinite(weight) || weight < 20 || weight > 300) { toast('Μη έγκυρη μέτρηση.', { tone: 'danger' }); return; }
+    const profile = currentProfile();
+    const record = { id: `${profile.id}:${date}`, memberId: profile.id, date, weight, note };
+    await put('measurements', record);
+    cache.measurements = cache.measurements.filter(m => m.id !== record.id).concat(record);
+    profile.weight = weight;
+    await persistProfiles();
+    render();
+    toast('Η μέτρηση αποθηκεύτηκε.', { actionLabel: 'Αναίρεση', onAction: async () => {
+      await del('measurements', record.id);
+      cache.measurements = cache.measurements.filter(m => m.id !== record.id);
+      render(); toast('Η μέτρηση αφαιρέθηκε.');
+    } });
+  });
+}
+
+/** Sheet forms live outside #view, so they are bound on mount instead. */
+function bindMemberForm() {
+  const form = byId('memberForm');
+  if (!form || form.dataset.bound === '1') return;
+  form.dataset.bound = '1';
+  form.addEventListener('submit', submitMemberForm);
+}
+
+async function submitMemberForm(e) {
+  e.preventDefault();
+  const id = e.target.dataset.id;
+  const profile = cache.profiles.find(p => p.id === id);
+  if (!profile) return;
+  const fd = new FormData(e.target);
+  const age = Number(fd.get('age'));
+  const height = Number(fd.get('height'));
+  const weight = Number(fd.get('weight'));
+  if (![age, height, weight].every(Number.isFinite)) { toast('Έλεγξε τα αριθμητικά πεδία.', { tone: 'danger' }); return; }
+  profile.name = String(fd.get('name') || '').trim().slice(0, 24) || profile.name;
+  profile.role = String(fd.get('role') || '').trim().slice(0, 60) || profile.role;
+  profile.age = Math.round(age);
+  profile.sex = fd.get('sex') === 'm' ? 'm' : 'f';
+  profile.height = height;
+  profile.weight = weight;
+  profile.activityFactor = Number(fd.get('activityFactor')) || 1.4;
+  profile.athlete = fd.get('athlete') === 'on';
+  profile.accent = String(fd.get('accent') || profile.accent);
+  profile.notes = String(fd.get('notes') || '').trim().slice(0, 90);
+  // Minors can never hold a deficit goal — enforced here, not just disabled in the UI.
+  if (isMinor(profile)) profile.goal = profile.athlete ? 'performance' : 'growth';
+  else profile.goal = String(fd.get('goal') || 'maintain');
+
+  await persistProfiles();
+  closeSheet();
+  renderAll();
+  toast(`Το προφίλ «${profile.name}» ενημερώθηκε.`);
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+/* ── Persistence ───────────────────────────────────────────────────────── */
+
+async function persistSettings() {
+  try {
+    await put('settings', {
+      id: 'app', view: state.view, member: state.member, theme: state.theme,
+      trainingLoad: state.trainingLoad, onboarded: state.onboarded,
+      filters: state.filters, shopChecked: state.shopChecked, version: APP.version
+    });
+  } catch (err) { console.error('[ZENITH] settings save failed', err); }
+}
+
+async function persistProfiles() {
+  for (const p of cache.profiles) {
+    try { await put('profiles', p); } catch (err) { console.error('[ZENITH] profile save failed', err); }
+  }
+}
+
+async function saveLog(log) {
+  cache.logs = cache.logs.filter(l => l.id !== log.id).concat(log);
+  try { await put('logs', log); } catch (err) { console.error('[ZENITH] log save failed', err); toast('Δεν αποθηκεύτηκε η καταγραφή.', { tone: 'danger' }); }
+}
+
+/* ── Boot ──────────────────────────────────────────────────────────────── */
+
+async function boot() {
+  byId('view').innerHTML = splash();
+  try {
+    const settings = await get('settings', 'app');
+    if (settings) {
+      state = { ...state, ...settings, filters: { ...state.filters, ...(settings.filters || {}) }, shopChecked: settings.shopChecked || {} };
+    }
+    const profiles = await all('profiles');
+    if (profiles.length) cache.profiles = profiles;
+    cache.logs = (await all('logs')).map(migrateLog);
+    cache.measurements = await all('measurements');
+    cache.plans = await all('plans');
+    cache.checklists = await all('checklists');
+
+    const requested = new URLSearchParams(location.search).get('view');
+    if (NAV.some(n => n[0] === requested)) state.view = requested;
+    if (!cache.profiles.some(p => p.id === state.member)) state.member = cache.profiles[0]?.id || 'mother';
+    if (!NAV.some(n => n[0] === state.view)) state.view = 'today';
+    if (state.theme !== 'dark' && state.theme !== 'light') state.theme = 'light';
+    if (!TRAINING_LOADS.some(l => l[0] === state.trainingLoad)) state.trainingLoad = 'normal';
+
+    renderAll();
+    refreshDiagnostics();
+  } catch (err) {
+    console.error('[ZENITH] boot failed', err);
+    byId('view').innerHTML = `<section class="notice notice-danger">${icon('alert', 18)}
+      <span><b>Δεν ήταν δυνατή η φόρτωση των τοπικών δεδομένων.</b> Δοκίμασε επαναφόρτωση. Τα δεδομένα στη συσκευή δεν έχουν αλλάξει.</span></section>`;
+  }
+}
+
+function splash() {
+  return `<div class="splash">${logo(52)}<div><b>${esc(APP.name)}</b><br><span class="tiny">Φόρτωση τοπικών δεδομένων…</span></div></div>`;
+}
+
+async function refreshDiagnostics() {
+  const info = await storageInfo();
+  diagnosticsCache = {
+    backend: activeBackend() === 'local' ? 'local' : 'idb',
+    persisted: info.persisted,
+    usageText: bytesToText(info.usage),
+    quotaText: bytesToText(info.quota),
+    sw: 'serviceWorker' in navigator ? (navigator.serviceWorker.controller ? 'Ενεργό' : 'Σε αναμονή') : 'Μη διαθέσιμο',
+    online: navigator.onLine
+  };
+}
+
+/* ── Action dispatcher ─────────────────────────────────────────────────── */
+
+document.addEventListener('click', async e => {
+  const target = e.target.closest('[data-act]');
+  if (!target) return;
+  const act = target.dataset.act;
+  const profile = currentProfile();
+
+  switch (act) {
+    case 'nav': {
+      state.view = target.dataset.view;
+      state.weekOffset = 0;
+      history.replaceState(null, '', `${location.pathname}?view=${state.view}`);
+      await persistSettings();
+      renderAll();
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch { /* not supported in this webview */ }
+      break;
+    }
+    case 'more': {
+      openSheet({
+        title: 'Περισσότερα',
+        size: 'sm',
+        body: `<div class="stack">
+          <button type="button" class="palette-item" data-act="nav" data-view="family">${icon('users', 18)}<span>Οικογένεια & προφίλ</span></button>
+          <button type="button" class="palette-item" data-act="nav" data-view="guide">${icon('book', 18)}<span>Μεθοδολογία & πηγές</span></button>
+          <button type="button" class="palette-item" data-act="theme">${icon('moon', 18)}<span>Αλλαγή θέματος</span></button>
+          <button type="button" class="palette-item" data-act="print">${icon('printer', 18)}<span>Εκτύπωση</span></button>
+          <button type="button" class="palette-item" data-act="export">${icon('download', 18)}<span>Export δεδομένων</span></button>
+          <button type="button" class="palette-item" data-act="import">${icon('upload', 18)}<span>Import δεδομένων</span></button>
+        </div>`
+      });
+      break;
+    }
+    case 'member': {
+      state.member = target.dataset.id;
+      document.documentElement.style.setProperty('--accent', currentProfile()?.accent || '#0E9F6E');
+      await persistSettings();
+      renderAll();
+      break;
+    }
+    case 'theme': {
+      state.theme = state.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = state.theme;
+      await persistSettings();
+      renderShell();
+      break;
+    }
+    case 'load': {
+      state.trainingLoad = target.dataset.load;
+      await persistSettings();
+      render();
+      break;
+    }
+    case 'week': {
+      state.weekOffset = target.dataset.reset ? 0 : state.weekOffset + Number(target.dataset.delta);
+      state.weekOffset = Math.max(-4, Math.min(8, state.weekOffset));
+      render();
+      break;
+    }
+    case 'meal': {
+      const date = target.dataset.date || localDateKey();
+      const slot = target.dataset.slot;
+      const portion = Number(target.dataset.portion) || 1;
+      const log = logFor(profile.id, date);
+      log.meals = { ...(log.meals || {}), [slot]: { status: 'done', portion, at: new Date().toISOString() } };
+      await saveLog(log);
+      render();
+      toast(`Καταγράφηκε: ${SLOT_LABEL[slot]} ${portion}×`, {
+        actionLabel: 'Αναίρεση',
+        onAction: async () => {
+          const l = logFor(profile.id, date);
+          delete l.meals[slot];
+          await saveLog(l);
+          render();
+          toast('Η καταγραφή αφαιρέθηκε.');
+        }
+      });
+      break;
+    }
+    case 'skip': {
+      const date = target.dataset.date || localDateKey();
+      const slot = target.dataset.slot;
+      const log = logFor(profile.id, date);
+      const already = log.meals?.[slot]?.status === 'skipped';
+      log.meals = { ...(log.meals || {}) };
+      if (already) delete log.meals[slot];
+      else log.meals[slot] = { status: 'skipped', at: new Date().toISOString() };
+      await saveLog(log);
+      render();
+      toast(already ? 'Η παράλειψη αφαιρέθηκε.' : 'Καταγράφηκε παράλειψη.');
+      break;
+    }
+    case 'water': {
+      const date = localDateKey();
+      const log = logFor(profile.id, date);
+      const cur = Number(log.waterMl) || 0;
+      const next = target.dataset.set != null ? Number(target.dataset.set) : Math.max(0, cur + Number(target.dataset.delta));
+      log.waterMl = next;
+      log.waterLog = Array.isArray(log.waterLog) ? log.waterLog : [];
+      log.waterLog.push({ at: new Date().toISOString(), ml: next - cur });
+      await saveLog(log);
+      render();
+      break;
+    }
+    case 'addExtra': {
+      const date = localDateKey();
+      const log = logFor(profile.id, date);
+      log.extras = Array.isArray(log.extras) ? log.extras : [];
+      log.extras.push({ id: `x${Date.now()}`, recipeId: target.dataset.recipe, portion: 1 });
+      await saveLog(log);
+      render();
+      toast('Προστέθηκε στη σημερινή καταγραφή.');
+      break;
+    }
+    case 'delExtra': {
+      const log = logFor(profile.id, localDateKey());
+      log.extras = (log.extras || []).filter(x => x.id !== target.dataset.id);
+      await saveLog(log);
+      render();
+      break;
+    }
+    case 'clearExtras': {
+      const log = logFor(profile.id, localDateKey());
+      log.extras = [];
+      await saveLog(log);
+      render();
+      break;
+    }
+    case 'recipe': {
+      const r = recipeById(target.dataset.id);
+      if (!r) break;
+      openSheet({ title: r.name, size: 'lg', body: recipeDetail(buildCtx(), r) });
+      break;
+    }
+    case 'day': {
+      openSheet({ title: 'Λεπτομέρειες ημέρας', size: 'md', body: dayDetail(buildCtx(), target.dataset.date) });
+      break;
+    }
+    case 'shop': {
+      const key = shopKey(weekDaysFor(state.weekOffset));
+      const bag = { ...(state.shopChecked[key] || {}) };
+      if (bag[target.dataset.key]) delete bag[target.dataset.key];
+      else bag[target.dataset.key] = true;
+      state.shopChecked = { ...state.shopChecked, [key]: bag };
+      await persistSettings();
+      render();
+      break;
+    }
+    case 'shopReset': {
+      const key = shopKey(weekDaysFor(state.weekOffset));
+      state.shopChecked = { ...state.shopChecked, [key]: {} };
+      await persistSettings();
+      render();
+      toast('Η λίστα καθαρίστηκε.');
+      break;
+    }
+    case 'shopCopy': {
+      const ctx = buildCtx();
+      const lines = [];
+      for (const aisle of AISLES) {
+        const items = ctx.shopList.filter(i => i.aisle === aisle.id);
+        if (!items.length) continue;
+        lines.push(`— ${aisle.label} —`);
+        for (const i of items) lines.push(`• ${i.name}: ${num(i.qty)} ${i.unit}`);
+        lines.push('');
+      }
+      const text = `ZENITH PRO · Λίστα αγορών (${cache.profiles.length} άτομα)\n\n${lines.join('\n')}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Η λίστα αντιγράφηκε στο πρόχειρο.');
+      } catch { toast('Δεν ήταν δυνατή η αντιγραφή.', { tone: 'danger' }); }
+      break;
+    }
+    case 'filter': {
+      const { key, value } = target.dataset;
+      if (key === 'reset') state.filters = { q: '', slot: '', tag: '', sort: 'slot' };
+      else state.filters = { ...state.filters, [key]: state.filters[key] === value ? '' : value };
+      render();
+      break;
+    }
+    case 'dismissOnboarding': {
+      state.onboarded = true;
+      await persistSettings();
+      render();
+      break;
+    }
+    case 'editMember': {
+      const p = cache.profiles.find(x => x.id === target.dataset.id);
+      if (!p) break;
+      openSheet({
+        title: `Επεξεργασία: ${p.name}`, size: 'lg',
+        body: memberForm(buildCtx(), p),
+        onMount: bindMemberForm,
+        footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
+                 <button type="submit" form="memberForm" class="btn btn-primary">${icon('check', 16)} Αποθήκευση</button>`
+      });
+      break;
+    }
+    case 'addMember': {
+      const id = `m${Date.now()}`;
+      const p = {
+        id, name: 'Νέο μέλος', role: 'Συντήρηση & υγεία', sex: 'f', age: 30, height: 170, weight: 70,
+        activityFactor: 1.4, goal: 'maintain', athlete: false,
+        accent: ACCENTS[cache.profiles.length % ACCENTS.length], notes: ''
+      };
+      cache.profiles.push(p);
+      await persistProfiles();
+      openSheet({
+        title: 'Νέο μέλος', size: 'lg',
+        body: memberForm(buildCtx(), p),
+        onMount: bindMemberForm,
+        footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
+                 <button type="submit" form="memberForm" class="btn btn-primary">${icon('check', 16)} Δημιουργία</button>`
+      });
+      break;
+    }
+    case 'delMember': {
+      const p = cache.profiles.find(x => x.id === target.dataset.id);
+      if (!p || cache.profiles.length <= 1) break;
+      openSheet({
+        title: `Διαγραφή «${p.name}»`, size: 'sm',
+        body: `<div class="notice notice-danger">${icon('alert', 18)}<span>Θα διαγραφεί το προφίλ και <b>όλες οι καταγραφές και μετρήσεις</b> του μέλους. Δεν αναιρείται.</span></div>
+               <p class="muted tiny" style="margin-top:12px">Κάνε export πρώτα αν δεν είσαι σίγουρος/η.</p>`,
+        footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
+                 <button type="button" class="btn btn-danger" data-act="confirmDelMember" data-id="${esc(p.id)}">${icon('trash', 16)} Διαγραφή</button>`
+      });
+      break;
+    }
+    case 'confirmDelMember': {
+      const id = target.dataset.id;
+      for (const l of cache.logs.filter(l => l.memberId === id)) { await del('logs', l.id); }
+      for (const m of cache.measurements.filter(m => m.memberId === id)) { await del('measurements', m.id); }
+      await del('profiles', id);
+      cache.logs = cache.logs.filter(l => l.memberId !== id);
+      cache.measurements = cache.measurements.filter(m => m.memberId !== id);
+      cache.profiles = cache.profiles.filter(p => p.id !== id);
+      if (state.member === id) state.member = cache.profiles[0].id;
+      await persistSettings();
+      closeSheet();
+      renderAll();
+      toast('Το μέλος διαγράφηκε.');
+      break;
+    }
+    case 'delMeasure': {
+      const id = target.dataset.id;
+      await del('measurements', id);
+      cache.measurements = cache.measurements.filter(m => m.id !== id);
+      render();
+      toast('Η μέτρηση διαγράφηκε.');
+      break;
+    }
+    case 'export': {
+      const data = await exportBackup();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = `zenith-backup-${localDateKey()}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      toast('Το backup κατέβηκε.');
+      break;
+    }
+    case 'import': byId('backupImport').click(); break;
+    case 'persist': {
+      const ok = await requestPersistence();
+      await refreshDiagnostics();
+      render();
+      toast(ok ? 'Η μόνιμη αποθήκευση ενεργοποιήθηκε.' : 'Ο περιηγητής δεν παραχώρησε μόνιμη αποθήκευση.', { tone: ok ? 'default' : 'danger' });
+      break;
+    }
+    case 'wipe': {
+      openSheet({
+        title: 'Διαγραφή όλων των δεδομένων', size: 'sm',
+        body: `<div class="notice notice-danger">${icon('alert', 18)}<span><b>⚠️ Μη αναστρέψιμη ενέργεια.</b> Θα διαγραφούν προφίλ, καταγραφές και μετρήσεις από αυτή τη συσκευή.</span></div>
+               <p class="muted tiny" style="margin-top:12px">Αν δεν έχεις κάνει export, δεν θα μπορείς να τα ανακτήσεις.</p>`,
+        footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
+                 <button type="button" class="btn btn-danger" data-act="confirmWipe">${icon('trash', 16)} Διαγραφή όλων</button>`
+      });
+      break;
+    }
+    case 'confirmWipe': {
+      await clearAll();
+      closeSheet();
+      toast('Τα δεδομένα διαγράφηκαν. Επαναφόρτωση…');
+      setTimeout(() => location.reload(), 900);
+      break;
+    }
+    case 'print': window.print(); break;
+    case 'closeSheet': closeSheet(); break;
+    case 'reload': location.reload(); break;
+    case 'palette': openPalette(); break;
+    case 'palettePick': {
+      const item = paletteItems[Number(target.dataset.index)];
+      closePalette();
+      item?.run?.();
+      break;
+    }
+    default: break;
+  }
+});
+
+/* ── Command palette ───────────────────────────────────────────────────── */
+
+function paletteCommands() {
+  const cmds = NAV.map(([id, label, ic]) => ({
+    label: `Μετάβαση: ${label}`, icon: ic, hint: `G ${id[0].toUpperCase()}`,
+    run: () => { state.view = id; state.weekOffset = 0; persistSettings(); renderAll(); }
+  }));
+  cmds.push(
+    { label: 'Κατέγραψε το επόμενο γεύμα', icon: 'check', run: () => {
+        const p = currentProfile(); const date = localDateKey(); const plan = planForDate(date);
+        const log = logFor(p.id, date);
+        const slot = SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner';
+        log.meals = { ...(log.meals || {}), [slot]: { status: 'done', portion: 1, at: new Date().toISOString() } };
+        saveLog(log).then(() => { render(); toast(`Καταγράφηκε: ${SLOT_LABEL[slot]}`); });
+      } },
+    { label: 'Πρόσθεσε 250 ml νερό', icon: 'droplet', run: () => {
+        const p = currentProfile(); const date = localDateKey(); const log = logFor(p.id, date);
+        log.waterMl = (Number(log.waterMl) || 0) + 250;
+        saveLog(log).then(() => { render(); toast('+250 ml'); });
+      } },
+    { label: 'Άνοιξε τη λίστα αγορών', icon: 'cart', run: () => { state.view = 'shopping'; renderAll(); } },
+    { label: 'Εκτύπωσε', icon: 'printer', run: () => window.print() },
+    { label: 'Εναλλαγή θέματος', icon: 'moon', run: () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = state.theme; persistSettings(); renderShell(); } },
+    { label: 'Export δεδομένων', icon: 'download', run: () => document.querySelector('[data-act="export"]')?.click() }
+  );
+  for (const p of cache.profiles) {
+    cmds.push({ label: `Μέλος: ${p.name}`, icon: 'users', run: () => { state.member = p.id; persistSettings(); renderAll(); } });
+  }
+  for (const r of RECIPES) {
+    cmds.push({ label: `Συνταγή: ${r.name}`, icon: 'utensils', run: () => openSheet({ title: r.name, size: 'lg', body: recipeDetail(buildCtx(), r) }) });
+  }
+  return cmds;
+}
+
+function openPalette() {
+  const host = byId('palette');
+  host.innerHTML = `<div class="palette-panel">
+    <div class="palette-input">${icon('search', 18)}<input id="paletteInput" type="text" placeholder="Γράψε εντολή, μέλος ή συνταγή…" aria-label="Αναζήτηση εντολών"></div>
+    <div id="paletteList"></div>
+  </div>`;
+  host.classList.remove('hidden');
+  const input = byId('paletteInput');
+  const all2 = paletteCommands();
+  paletteIndex = 0;
+  const update = () => {
+    const q = input.value.trim().toLowerCase();
+    paletteItems = q ? all2.filter(c => c.label.toLowerCase().includes(q)).slice(0, 40) : all2.slice(0, 12);
+    paletteIndex = 0;
+    byId('paletteList').innerHTML = paletteView(paletteItems, input.value);
+  };
+  update();
+  input.addEventListener('input', update);
+  input.addEventListener('keydown', e => {
+    const nodes = $$('.palette-item', byId('paletteList'));
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      paletteIndex = Math.max(0, Math.min(nodes.length - 1, paletteIndex + (e.key === 'ArrowDown' ? 1 : -1)));
+      nodes.forEach((n, i) => n.classList.toggle('active', i === paletteIndex));
+      nodes[paletteIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const item = paletteItems[paletteIndex];
+      closePalette();
+      item?.run?.();
+    }
+  });
+  input.focus();
+  host.onclick = e => { if (e.target === host) closePalette(); };
+}
+
+function closePalette() {
+  const host = byId('palette');
+  if (!host) return;
+  host.classList.add('hidden');
+  host.innerHTML = '';
+  host.onclick = null;
+}
+
+/* ── Global keyboard ───────────────────────────────────────────────────── */
+
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    isSheetOpen() ? closeSheet() : openPalette();
+    return;
+  }
+  if (e.key === 'Escape') { closePalette(); return; }
+  if (typing) return;
+  if (e.key >= '1' && e.key <= '7') {
+    const entry = NAV[Number(e.key) - 1];
+    if (entry) { state.view = entry[0]; state.weekOffset = 0; persistSettings(); renderAll(); }
+  }
+  if (e.key === 't' || e.key === 'T') {
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = state.theme;
+    persistSettings(); renderShell();
+  }
+});
+
+/* ── Import file input ─────────────────────────────────────────────────── */
+
+byId('backupImport')?.addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    await importBackup(JSON.parse(await file.text()));
+    toast('Η επαναφορά ολοκληρώθηκε. Επαναφόρτωση…');
+    setTimeout(() => location.reload(), 800);
+  } catch (err) {
+    console.error('[ZENITH] import failed', err);
+    toast('Μη έγκυρο backup — δεν άλλαξε τίποτα.', { tone: 'danger', duration: 6000 });
+  } finally {
+    e.target.value = '';
+  }
+});
+
+/* ── Error boundary ────────────────────────────────────────────────────── */
+
+window.addEventListener('error', e => console.error('[ZENITH] uncaught', e.error || e.message));
+window.addEventListener('unhandledrejection', e => console.error('[ZENITH] unhandled rejection', e.reason));
+
+/* ── Service worker ────────────────────────────────────────────────────── */
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+    reg.update().catch(() => {});
+    reg.addEventListener('updatefound', () => {
+      const worker = reg.installing;
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          updateReady = true;
+          if (state.view === 'today') render();
+        }
+      });
+    });
+  }).catch(err => console.error('[ZENITH] sw registration failed', err));
+}
+
+/* ── Go ────────────────────────────────────────────────────────────────── */
+
+boot();

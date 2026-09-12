@@ -24,6 +24,10 @@ jobs:
               && grep -q 'type="module" src="src/app.js"' /tmp/index.html \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/app.js" -o /tmp/app.js \
               && grep -q 'localDateKey' /tmp/app.js \
+              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/views.js" -o /tmp/views.js \
+              && grep -q 'todayView' /tmp/views.js \
+              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/ui.js" -o /tmp/ui.js \
+              && grep -q 'openSheet' /tmp/ui.js \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/styles/app.css" -o /tmp/app.css \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/manifest.webmanifest" -o /tmp/manifest.webmanifest \
               && node -e "JSON.parse(require('fs').readFileSync('/tmp/manifest.webmanifest','utf8'))"; then
@@ -33,4 +37,4 @@ jobs:
             sleep 5
           done
           test "$ok" -eq 1
-          echo "Live GitHub Pages smoke test: PASS"
+          echo "Live GitHub Pages smoke test: PASS (v3 bundle is being served)"
