@@ -2,6 +2,51 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [5.0.0] — 2026-09-12
+
+The Today view now reads as a dashboard instead of a page of stacked cards: a header row,
+a strip of four KPI cards with exactly one accent-filled, and rounded data visualisation
+below. The visual language follows the references the family asked for — a hero metric,
+icon chips, status pills and micro-bars — but it is still built from the app's own tokens,
+so light and dark come out of one palette and nothing new is downloaded.
+
+### Added
+- **KPI strip.** Four cards above the fold: Καταγεγραμμένη ενέργεια (the hero, filled with
+  the accent), Γεύματα, Ενυδάτωση and Κάλυψη πλάνου. `kpi()` in `src/ui.js` is a real
+  component, not markup inline in a view.
+- **A micro-bar in every KPI.** Each of the four metrics has a natural ratio — logged ÷
+  estimated energy, meals eaten ÷ meals planned, water ÷ target, plan coverage — so the
+  strip can be read at a glance before the number is parsed. Each bar is a real
+  `role="progressbar"` with `aria-valuenow`, not a decorative div.
+- **Functional legend under the energy ring.** The ring draws two arcs; the legend now
+  names them ("Καταγεγραμμένα" / "Πλάνο"). It replaces a first attempt that keyed bars
+  which already carry their own labels — a legend for something already labelled is
+  decoration, and decoration that lies is worse than none.
+- **A `mobile` CI job.** The layout audit now runs on every push against a real Chromium
+  at 390×844 and fails the build, rather than only being runnable by hand.
+
+### Changed
+- **The dashboard header** is a `.dash-head`: greeting on the left, a date chip and — once
+  there is one — a streak chip on the right.
+- **The KPI row steps its columns** (2 → 4 at 1280px) instead of using `auto-fit`.
+  `auto-fit` produced a 3 + 1 orphan at ~1180px once the sidebar was present, and an
+  orphaned card reads as a mistake.
+- **A chip may now wrap.** `.chip` is `white-space: nowrap`, which is right for a filter
+  pill and wrong for a chip carrying a whole food name ("Αποκατάσταση: γάλα, μπανάνα &
+  βρώμη · 326 kcal"). Inside an action row such a pill burst its card and scrolled the
+  whole page sideways on a phone. It now stays a pill and simply gets taller.
+- **`.ring-ghost` opacity 0.17 → 0.32**, so the planned arc is actually legible.
+
+### Fixed
+- **The mobile audit could not fail.** Its overflow assertion compared
+  `documentElement.scrollWidth` to `window.innerWidth` — but under `is_mobile=True` the
+  layout viewport *grows* to accommodate the overflow, so both numbers inflated together
+  and `405 <= 405` passed while the page scrolled sideways. It now compares against
+  `documentElement.clientWidth`, which stays pinned to the visual viewport, and names the
+  offending elements. Verified by injecting a deliberately too-wide element and confirming
+  the check fails and reports it.
+- **Dead CSS removed.** `.dash-grid` was defined but never used by any view.
+
 ## [4.2.0] — 2026-09-12
 
 The app is a PWA, so the phone is the surface that actually gets used — the mother in the

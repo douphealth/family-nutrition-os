@@ -21,15 +21,14 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
+from audit_probe import MIN_TAP, overflow_failure, overflow_report
+
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8137/index.html"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "docs"
 
 # iPhone 12/13/14 logical viewport.
 PHONE = {"width": 390, "height": 844}
 TOUCH = {"has_touch": True, "is_mobile": True, "device_scale_factor": 2}
-
-# WCAG 2.5.8 target size (minimum) is 24px; 36 is a comfortable thumb target.
-MIN_TAP = 36
 
 os.makedirs(OUT, exist_ok=True)
 errors = []
@@ -81,15 +80,14 @@ def shot(page, name):
 def audit(page, label):
     """Layout assertions that only a real engine can make."""
     # 1. Nothing may overflow the viewport horizontally.
-    overflow = page.evaluate(
-        """() => {
-            const de = document.documentElement;
-            return { scroll: de.scrollWidth, inner: window.innerWidth };
-        }"""
-    )
+    #    The probe lives in audit_probe.py so that verify_audit.py can test the
+    #    real assertion rather than a copy of it.
+    report = overflow_report(page)
+    failure = overflow_failure(report)
     check(
-        overflow["scroll"] <= overflow["inner"] + 1,
-        f"{label}: no horizontal overflow ({overflow['scroll']} <= {overflow['inner']})",
+        not failure,
+        f"{label}: no horizontal overflow ({report['scroll']} <= {report['vw']})"
+        + (f" -- {failure}" if failure else ""),
     )
 
     # 2. Interactive controls must be big enough to hit with a thumb.

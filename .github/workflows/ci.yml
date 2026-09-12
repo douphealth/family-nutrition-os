@@ -95,6 +95,9 @@ jobs:
           done
           curl -fsS --max-time 5 http://127.0.0.1:8137/index.html >/dev/null
 
+      - name: Verify the audit can fail
+        run: python scripts/verify_audit.py http://127.0.0.1:8137/index.html
+
       - name: Mobile layout audit
         run: python scripts/capture_mobile.py http://127.0.0.1:8137/index.html /tmp/mobile-shots
 

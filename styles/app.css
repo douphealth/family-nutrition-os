@@ -5,6 +5,7 @@
              6 controls · 7 cards · 8 data viz · 9 meals & plan · 10 library
              11 shopping · 12 forms · 13 overlays · 14 states
              15 persona, fuelling & Cook Mode · 16 print · 17 responsive · 18 motion
+             19 dashboard (KPI strip, header row, legend)
    Colour is driven by tokens so every surface works in light and dark.
    ========================================================================== */
 
@@ -330,6 +331,7 @@ b, strong { font-weight: 700; }
   padding: 7px 13px; border-radius: var(--r-full);
   border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
   font-weight: 650; font-size: .83rem; white-space: nowrap;
+  max-width: 100%;
   transition: all .16s var(--ease);
 }
 .chip:hover { color: var(--ink); border-color: var(--line-strong); }
@@ -338,6 +340,17 @@ b, strong { font-weight: 700; }
   border-color: var(--accent-line); font-weight: 700;
 }
 .chip.active .ic { color: var(--accent); }
+/* A chip can carry a whole sentence — "Αποκατάσταση: γάλα, μπανάνα, …".
+   `nowrap` on such a chip makes it burst its card and scroll the page
+   sideways on a phone. Inside an action row the pill may wrap instead:
+   it stays a pill, it just gets taller. */
+.meal-actions > .chip,
+.filters > .chip {
+  min-width: 0;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.32;
+}
 
 .segmented {
   display: inline-flex; padding: 3px; gap: 3px;
@@ -420,7 +433,7 @@ b, strong { font-weight: 700; }
 .hero-ring-caption { font-size: .74rem; color: var(--ink-3); text-align: center; max-width: 22ch; }
 
 .ring-track { stroke: var(--surface-3); }
-.ring-ghost { stroke: var(--accent); opacity: .17; }
+.ring-ghost { stroke: var(--accent); opacity: .32; }
 .ring-value {
   stroke: var(--accent);
   transition: stroke-dasharray .9s var(--ease);
@@ -1196,3 +1209,141 @@ kbd {
 
 .view-enter { animation: viewIn .3s var(--ease); }
 @keyframes viewIn { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+
+/* ── 19. Dashboard ─────────────────────────────────────────────────────── */
+/* The Today view reads as a dashboard: a header row, a strip of KPI cards
+ * where exactly one is filled with the accent, and rounded data visualisation
+ * below. Everything here is driven by the same tokens as the rest of the app,
+ * so it works in light and dark without a second palette. */
+
+.dash-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 22px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.dash-head .dash-greet { min-width: 0; }
+.dash-head h1 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); }
+.dash-meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+
+.date-chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 15px; border-radius: var(--r-full);
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow-1); font-size: .82rem; font-weight: 650; color: var(--ink-2);
+  white-space: nowrap;
+}
+.date-chip .ic { color: var(--accent); }
+
+/* KPI strip. One `.is-hero` card per row carries the accent fill — that is the
+ * whole point: it names the headline number instead of flattening four tiles.
+ *
+ * The column count is stepped rather than `auto-fit`, because auto-fit produced
+ * a 3 + 1 orphan at ~1180px (sidebar present, four cards no longer fit) and an
+ * orphaned card reads as a mistake. Two columns everywhere, four only when
+ * there is genuinely room for four. */
+.kpi-row {
+  display: grid; gap: 14px; margin-bottom: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 1280px) {
+  .kpi-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.kpi {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 17px 18px 16px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+.kpi::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 1px;
+  background: var(--ring-hi); pointer-events: none;
+}
+.kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: var(--line-strong); }
+.kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; }
+.kpi-ic {
+  width: 34px; height: 34px; border-radius: 11px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tint-accent); color: var(--accent);
+}
+.kpi.tone-blue  .kpi-ic { background: var(--tint-blue);  color: var(--blue); }
+.kpi.tone-rose  .kpi-ic { background: var(--tint-rose);  color: var(--rose); }
+.kpi.tone-gold  .kpi-ic { background: var(--tint-gold);  color: var(--gold); }
+.kpi.tone-danger .kpi-ic { background: var(--tint-danger); color: var(--danger); }
+
+.kpi-val {
+  font-family: var(--font-display); font-size: 1.95rem; font-weight: 600; line-height: 1.05;
+  letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums;
+  display: flex; align-items: baseline; gap: 5px;
+}
+.kpi-val small { font-family: var(--font-sans); font-size: .82rem; font-weight: 650; color: var(--ink-3); letter-spacing: 0; }
+.kpi-label { font-size: .8rem; font-weight: 650; color: var(--ink-2); }
+
+/* Micro-visual. Every KPI has a natural ratio (logged ÷ planned energy, meals
+ * eaten ÷ meals planned, water ÷ target, plan coverage), so the card can be
+ * read at a glance before the number is parsed — which is the whole point of
+ * a dashboard. */
+.kpi-foot { margin-top: auto; padding-top: 11px; display: grid; gap: 7px; }
+.kpi-bar {
+  height: 5px; border-radius: var(--r-full);
+  background: var(--surface-3); overflow: hidden;
+}
+.kpi-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .5s var(--ease); }
+.kpi.tone-blue  .kpi-bar > i { background: var(--blue); }
+.kpi.tone-rose  .kpi-bar > i { background: var(--rose); }
+.kpi.tone-gold  .kpi-bar > i { background: var(--gold); }
+.kpi.tone-danger .kpi-bar > i { background: var(--danger); }
+
+.kpi-note {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .74rem; color: var(--ink-3); line-height: 1.4;
+}
+.kpi-note .ic { flex: none; color: var(--accent); }
+
+/* The one accent-filled card. A soft two-stop gradient rather than a flat fill
+ * keeps it from looking like a solid block of paint. */
+.kpi.is-hero {
+  background: linear-gradient(150deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 78%, #04120e) 100%);
+  border-color: transparent; color: var(--accent-ink);
+  box-shadow: 0 2px 4px rgba(9, 42, 33, .1), 0 22px 44px -20px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.kpi.is-hero::before { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent); }
+.kpi.is-hero .kpi-val,
+.kpi.is-hero .kpi-label { color: var(--accent-ink); }
+.kpi.is-hero .kpi-val small,
+.kpi.is-hero .kpi-note { color: color-mix(in srgb, var(--accent-ink) 78%, transparent); }
+.kpi.is-hero .kpi-note .ic { color: currentColor; }
+.kpi.is-hero .kpi-ic { background: rgba(255, 255, 255, .18); color: var(--accent-ink); }
+.kpi.is-hero .kpi-bar { background: rgba(255, 255, 255, .22); }
+.kpi.is-hero .kpi-bar > i { background: var(--accent-ink); }
+
+/* Status pill with a leading dot. */
+.pill-dot { padding-left: 9px; }
+.pill-dot i {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: currentColor; opacity: .85;
+}
+
+/* Rounded-pill bar rows — softer than the default squared track. */
+.bc-fill { border-radius: var(--r-full); }
+.bc-track { border-radius: var(--r-full); }
+
+/* Legend. Used where a mark genuinely needs a key — e.g. the two arcs of the
+ * energy ring — not as decoration for bars that already carry their own label. */
+.legend { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.legend-center { justify-content: center; gap: 14px; margin-top: 12px; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--ink-2); font-weight: 600; }
+.legend-item i { width: 9px; height: 9px; border-radius: 3px; flex: none; background: var(--accent); }
+.legend-item.is-blue i { background: var(--blue); }
+.legend-item.is-rose i { background: var(--rose); }
+.legend-item.is-gold i { background: var(--gold); }
+.legend-item.is-muted i { background: var(--ink-3); opacity: .5; }
+
+@media (max-width: 760px) {
+  .dash-head { align-items: flex-start; gap: 14px; }
+  .dash-meta { width: 100%; }
+  .kpi-row { gap: 11px; }
+  .kpi { padding: 14px 15px 13px; }
+  .kpi-val { font-size: 1.6rem; }
+  .kpi-ic { width: 30px; height: 30px; border-radius: 10px; }
+}

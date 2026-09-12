@@ -122,6 +122,9 @@ const PATHS = {
   sparkles: '<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="m19 15 .7 1.8L21.5 17.5l-1.8.7L19 20l-.7-1.8L16.5 17.5l1.8-.7L19 15z"/>',
   command: '<path d="M15 6a3 3 0 1 1 3 3h-3V6zM9 6a3 3 0 1 0-3 3h3V6zM15 18a3 3 0 1 0 3-3h-3v3zM9 18a3 3 0 1 1-3-3h3v3zM9 9h6v6H9z"/>',
   arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  arrowDown: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  arrowUpRight: '<path d="M7 17 17 7M9 7h8v8"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
   trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
@@ -403,6 +406,38 @@ export function stat({ label, value, unit = '', iconName = null, tone = 'accent'
 
 export function pill(text, tone = 'neutral', iconName = null) {
   return `<span class="pill pill-${tone}">${iconName ? icon(iconName, 13) : ''}${esc(text)}</span>`;
+}
+
+/* ── Dashboard KPI card ───────────────────────────────────────────────────
+ * The dashboard's primary unit: a small icon chip, one big tabular number, a
+ * label and a single line of context. Exactly one card per row may be filled
+ * with the accent (`hero`) — that is what makes it read as the headline number
+ * rather than as one of four interchangeable tiles.
+ */
+export function kpi({
+  label, value, unit = '', iconName = 'target', tone = 'accent',
+  note = '', trend = null, hero = false, progress = null
+}) {
+  const trendIc = trend === 'up' ? 'arrowUp' : trend === 'down' ? 'arrowDown' : trend === 'flat' ? 'minus' : null;
+  const pctv = progress == null ? null : Math.max(0, Math.min(1, Number(progress) || 0));
+  // Bar and note travel together in one footer so they stay a single visual
+  // unit at the card floor, however tall the row's tallest card grows.
+  const foot = [
+    pctv == null ? '' : `<div class="kpi-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+      aria-valuenow="${Math.round(pctv * 100)}"><i style="width:${(pctv * 100).toFixed(1)}%"></i></div>`,
+    note ? `<div class="kpi-note">${trendIc ? icon(trendIc, 12) : ''}<span>${esc(note)}</span></div>` : ''
+  ].join('');
+  return `<article class="kpi tone-${tone}${hero ? ' is-hero' : ''}">
+    <div class="kpi-top"><span class="kpi-ic">${icon(iconName, 16)}</span></div>
+    <div class="kpi-val">${value}${unit ? `<small>${esc(unit)}</small>` : ''}</div>
+    <div class="kpi-label">${esc(label)}</div>
+    ${foot ? `<div class="kpi-foot">${foot}</div>` : ''}
+  </article>`;
+}
+
+/** A pill with a leading status dot — the visual language for meal states. */
+export function pillDot(text, tone = 'accent') {
+  return `<span class="pill pill-${tone} pill-dot"><i aria-hidden="true"></i>${esc(text)}</span>`;
 }
 
 export function sectionHead({ eyebrow = '', title = '', sub = '', action = '' }) {

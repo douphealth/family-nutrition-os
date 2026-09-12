@@ -182,9 +182,10 @@ There is no build step. Edit a file, reload the browser.
 
 ```bash
 npm test           # nutrition-engine + data-integrity + persona & kitchen suites
-npm run smoke      # DOM smoke test: localStorage path AND IndexedDB path (120 checks)
+npm run smoke      # DOM smoke test: localStorage path AND IndexedDB path (130 checks)
 npm run check      # syntax check every module
 npm run shots:mobile   # phone-width render + layout audit (needs Playwright)
+npm run audit:selftest # proves the layout audit can actually fail
 ```
 
 The DOM smoke test boots the real `index.html` in jsdom, imports the real `src/app.js`,
@@ -200,6 +201,13 @@ npm run smoke
 `npm run shots:mobile` needs Playwright and a local server on port 8137. jsdom has no
 layout engine, so this is the only suite that can catch a mobile layout regression; it
 runs in CI as its own job.
+
+One trap worth knowing before editing that audit: it must compare
+`documentElement.scrollWidth` against **`documentElement.clientWidth`**, never
+`window.innerWidth`. Under Playwright's `is_mobile=True` the layout viewport grows to
+accommodate the overflow, so `innerWidth` reports the inflated width and the assertion
+silently becomes `405 <= 405` — passing while the page scrolls sideways. It did exactly
+that for one release.
 
 ## License
 

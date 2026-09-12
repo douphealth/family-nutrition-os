@@ -8,7 +8,7 @@
  */
 
 import {
-  esc, icon, ring, macroBar, stat, pill, sectionHead, emptyState,
+  esc, icon, ring, macroBar, stat, pill, pillDot, kpi, sectionHead, emptyState,
   lineChart, heatmap, barChart, avatar, logo, illustration,
   num, num1, pct, mlToText, longDate, shortDate, dayName, greeting, timeNow,
   parseStepTimers, clockText,
@@ -239,10 +239,44 @@ export function todayView(ctx) {
 
   ${!onboarded ? onboardingCard() : ''}
 
-  <section class="hero">
-    <div class="eyebrow">${esc(profile.role)}</div>
-    <h1>${esc(greeting())}, <em>${esc(profile.name)}</em>.</h1>
-    <p>${esc(longDate(dateKey))} · ${esc(timeNow())} · Όλα τα νούμερα είναι εκτιμήσεις προγραμματισμού, όχι μετρήσεις.</p>
+  <section class="dash-head">
+    <div class="dash-greet">
+      <div class="eyebrow">${esc(profile.role)}</div>
+      <h1>${esc(greeting())}, <em>${esc(profile.name)}</em>.</h1>
+      <p class="muted tiny" style="margin-top:7px">Όλα τα νούμερα είναι εκτιμήσεις προγραμματισμού, όχι μετρήσεις.</p>
+    </div>
+    <div class="dash-meta">
+      <span class="date-chip">${icon('calendar', 15)}${esc(longDate(dateKey))} · ${esc(timeNow())}</span>
+      ${streak > 0 ? `<span class="date-chip">${icon('flame', 15)}${num(streak)} ${streak === 1 ? 'ημέρα' : 'ημέρες'} σε σειρά</span>` : ''}
+    </div>
+  </section>
+
+  <section class="kpi-row">
+    ${kpi({
+      label: 'Καταγεγραμμένη ενέργεια', value: num(ringValue), unit: 'kcal', iconName: 'flame',
+      hero: true, trend: ringValue >= totals.planned.kcal * 0.9 ? 'up' : null,
+      progress: ringValue / Math.max(1, coverage.center),
+      note: `Από εκτιμώμενες ${num(coverage.center)} kcal`
+    })}
+    ${kpi({
+      label: 'Γεύματα', value: `${completeness.mealsDone}<small>/${completeness.mealsTotal}</small>`,
+      iconName: 'checkCircle', tone: 'blue',
+      progress: completeness.mealsTotal ? completeness.mealsDone / completeness.mealsTotal : 0,
+      note: completeness.mealsTotal > completeness.mealsDone
+        ? `${completeness.mealsTotal - completeness.mealsDone} ακόμη σήμερα`
+        : 'Ολοκληρώθηκαν όλα'
+    })}
+    ${kpi({
+      label: 'Ενυδάτωση', value: num(log?.waterMl || 0), unit: 'ml', iconName: 'droplet', tone: 'accent',
+      progress: (log?.waterMl || 0) / Math.max(1, targets.hydration.ml),
+      note: `Στόχος ${mlToText(targets.hydration.ml)}`
+    })}
+    ${kpi({
+      label: 'Κάλυψη πλάνου', value: `${Math.round(coverage.pct * 100)}`, unit: '%', iconName: 'target',
+      tone: coverage.status === 'under' ? 'rose' : 'accent',
+      progress: coverage.pct,
+      note: coverage.status === 'under' ? 'Υπάρχει κενό ενέργειας' : 'Εντός εκτίμησης'
+    })}
   </section>
 
   ${personaCard(ctx)}
@@ -260,20 +294,26 @@ export function todayView(ctx) {
       })}
       <div class="hero-ring-caption">
         <b>${num(ringValue)}</b> καταγεγραμμένες<br>
-        <span style="opacity:.8">γκρι τόξο = πλάνο ${num(totals.planned.kcal)} kcal</span>
+        <span style="opacity:.8">ανοιχτό τόξο = πλάνο ${num(totals.planned.kcal)} kcal</span>
+      </div>
+      <div class="legend legend-center">
+        <span class="legend-item"><i></i>Καταγεγραμμένα</span>
+        <span class="legend-item is-muted"><i></i>Πλάνο</span>
       </div>
     </div>
     <div class="stack" style="width:100%">
+      <div class="card-head" style="margin-bottom:2px">
+        <div>
+          <div class="eyebrow">Μακροθρεπτικά</div>
+          <div class="card-title">Τι έχει καταγραφεί σήμερα</div>
+        </div>
+        ${pillDot('Καταγεγραμμένα', 'accent')}
+      </div>
       <div class="grid g2">
         ${macroBar({ label: 'Πρωτεΐνη', value: totals.confirmed.p, target: targets.protein.min, tone: 'blue', iconName: 'drumstick', note: `Εκτιμώμενο εύρος ${num(targets.protein.min)}–${num(targets.protein.max)} g` })}
         ${macroBar({ label: 'Υδατάνθρακες', value: totals.confirmed.c, target: Math.round(totals.planned.c), tone: 'gold', iconName: 'bread', note: 'Στόχος = το σημερινό πλάνο' })}
         ${macroBar({ label: 'Λιπαρά', value: totals.confirmed.f, target: Math.round(totals.planned.f), tone: 'rose', iconName: 'droplet', note: 'Κυρίως ελαιόλαδο, ξηροί καρποί, τυρί' })}
         ${macroBar({ label: 'Ενυδάτωση', value: log?.waterMl || 0, target: targets.hydration.ml, unit: 'ml', tone: 'accent', iconName: 'droplet', note: `Αρχική εκτίμηση ${mlToText(targets.hydration.ml)} · ${targets.hydration.glasses} ποτήρια` })}
-      </div>
-      <div class="grid g3" style="margin-top:4px">
-        ${stat({ label: 'Γεύματα', value: `${completeness.mealsDone}<small>/${completeness.mealsTotal}</small>`, iconName: 'checkCircle', tone: 'accent' })}
-        ${stat({ label: 'Σειρά ημερών', value: num(streak), unit: streak === 1 ? 'ημέρα' : 'ημέρες', iconName: 'flame', tone: 'gold' })}
-        ${stat({ label: 'Εκτίμηση πλάνου', value: `${Math.round(coverage.pct * 100)}<small>%</small>`, iconName: 'target', tone: coverage.status === 'under' ? 'rose' : 'accent', note: `της εκτιμώμενης ανάγκης (${num(coverage.center)} kcal)` })}
       </div>
     </div>
   </section>

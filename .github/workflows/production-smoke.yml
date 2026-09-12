@@ -30,10 +30,13 @@ jobs:
               && grep -q 'todayView' /tmp/views.js \
               && grep -q 'cookBody' /tmp/views.js \
               && grep -q 'personaCard' /tmp/views.js \
+              && grep -q 'kpi-row' /tmp/views.js \
               && grep -q 'shop-chip' /tmp/views.js \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/ui.js" -o /tmp/ui.js \
               && grep -q 'openSheet' /tmp/ui.js \
               && grep -q 'illustration' /tmp/ui.js \
+              && grep -q 'kpi-bar' /tmp/ui.js \
+              && grep -q 'aria-valuenow' /tmp/ui.js \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/nutrition-engine.js" -o /tmp/engine.js \
               && grep -q 'personaPoints' /tmp/engine.js \
               && grep -q 'trainingFueling' /tmp/engine.js \
@@ -46,6 +49,8 @@ jobs:
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/styles/app.css" -o /tmp/app.css \
               && grep -q 'cook-cols' /tmp/app.css \
               && grep -q 'why-body' /tmp/app.css \
+              && grep -q 'kpi-row' /tmp/app.css \
+              && grep -q 'kpi-foot' /tmp/app.css \
               && curl --fail --silent --show-error --location --max-time 15 "$BASE/manifest.webmanifest" -o /tmp/manifest.webmanifest \
               && node -e "JSON.parse(require('fs').readFileSync('/tmp/manifest.webmanifest','utf8'))"; then
               ok=1

@@ -489,6 +489,44 @@ const daughterCard = window.document.querySelector('.persona');
 ok(/σίδηρ/i.test(text(daughterCard)), 'the growth profile surfaces iron');
 ok(/έλλειμμα/i.test(text(daughterCard)), 'the growth profile states that no deficit is applied');
 
+/* ── 13b. Dashboard strip ──────────────────────────────────────────────── */
+
+section('Dashboard');
+
+await clickSel('#sideNav [data-act="nav"][data-view="today"]', window.document, 90);
+
+const kpis = [...window.document.querySelectorAll('.kpi-row .kpi')];
+ok(kpis.length === 4, `the dashboard shows four KPI cards (found ${kpis.length})`);
+ok(window.document.querySelectorAll('.kpi-row .kpi.is-hero').length === 1,
+  'exactly one KPI card carries the accent fill');
+
+/* Every KPI is a labelled number with a footnoted note — the label is what
+ * makes a tile a KPI instead of decoration. */
+ok(kpis.every(k => text(k.querySelector('.kpi-label') || k).length > 2),
+  'every KPI card carries a label');
+ok(kpis.every(k => !!k.querySelector('.kpi-foot')),
+  'every KPI card carries a footer');
+
+/* The micro-bar is the part that makes the strip readable at a glance, so it
+ * must be a real, accessible progressbar rather than a decorative div. */
+const bars = [...window.document.querySelectorAll('.kpi-row .kpi-bar')];
+ok(bars.length === 4, `every KPI card has a micro-bar (found ${bars.length})`);
+ok(bars.every(b => b.getAttribute('role') === 'progressbar'),
+  'each micro-bar is exposed as a progressbar');
+const vals = bars.map(b => Number(b.getAttribute('aria-valuenow')));
+ok(vals.every(v => Number.isFinite(v) && v >= 0 && v <= 100),
+  `each micro-bar reports a 0-100 value (${vals.join(', ')})`);
+ok(bars.every(b => {
+  const fill = b.querySelector('i');
+  return fill && /^width:\s*\d+(\.\d+)?%$/.test(fill.getAttribute('style') || '');
+}), 'each micro-bar has a width-styled fill');
+
+/* The header must name the day and, once a streak exists, the streak. */
+const dashHead = window.document.querySelector('.dash-head');
+ok(!!dashHead, 'the dashboard has a header row');
+ok(!!window.document.querySelector('.dash-head .date-chip'),
+  'the dashboard header shows a date chip');
+
 /* ── 14. Cook Mode ─────────────────────────────────────────────────────── */
 
 section('Cook Mode');
