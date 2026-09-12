@@ -174,12 +174,18 @@ export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, r
 
     const entry = log?.meals?.[slot];
     const done = entry?.status === 'done';
+    // A member can log a DIFFERENT dish for a slot ("I swapped the fish in").
+    // CONFIRMED must then follow what they actually ate, or the app would keep
+    // counting the plan's dish and quietly report numbers that never happened —
+    // the exact failure this file exists to prevent. PLANNED still describes the
+    // plan, so the two figures keep their separate meanings.
+    const eaten = done && entry?.recipeId ? (recipeById(entry.recipeId) || r) : r;
     if (done) {
-      const m = mealMacros(r, profile, trainingLoad, entry.portion ?? 1);
+      const m = mealMacros(eaten, profile, trainingLoad, entry.portion ?? 1);
       confirmed.p += m.p; confirmed.c += m.c; confirmed.f += m.f; confirmed.kcal += m.kcal;
       confirmedSlots.push(slot);
     }
-    detail.push({ slot, recipe: r, planned: plannedMacros, logged: done, portion: entry?.portion ?? null, skipped: entry?.status === 'skipped' });
+    detail.push({ slot, recipe: r, eaten, planned: plannedMacros, logged: done, swapped: !!(done && entry?.recipeId), portion: entry?.portion ?? null, skipped: entry?.status === 'skipped' });
   }
 
   const finish = o => ({ p: round(o.p, 1), c: round(o.c, 1), f: round(o.f, 1), kcal: Math.round(o.kcal) });
@@ -509,4 +515,101 @@ export function upgradeMemberNames(profiles, legacyNames, shippedFamily) {
     return { ...p, name: target.name, relation: target.relation };
   });
   return { profiles: next, changed };
+}
+
+/* ── Swap candidates ───────────────────────────────────────────────────────
+ * "I don't want that tonight" is a normal thing to say, so the app needs a
+ * real answer: other dishes for the SAME slot, ranked by how close they land
+ * to what was planned.
+ *
+ * The distance is measured in the MEMBER's own numbers, not the reference
+ * serving — the same recipe is a different plate for a fuelled athlete and a
+ * 0,75× adult, so the closest swap is genuinely per-person. A swap is
+ * portion-neutral by construction (same slot, same 1× portion), which keeps it
+ * on the right side of the product rule: this can suggest a different plate,
+ * never a smaller one.
+ *
+ * Pure: no storage, no clock, no randomness. Ties break on the recipe id so
+ * the list cannot reshuffle between two renders.
+ */
+const noNegativeZero = n => (n === 0 ? 0 : n);
+
+export function swapCandidates(recipe, profile, load, allRecipes, { limit = 4 } = {}) {
+  if (!recipe || !recipe.base || !recipe.slot) return [];
+  const max = Math.max(0, Math.trunc(Number(limit)) || 0);
+  if (!max) return [];
+
+  const pool = Array.isArray(allRecipes) ? allRecipes : [];
+  const original = mealMacros(recipe, profile, load, 1);
+
+  const ranked = pool
+    .filter(r => r && r.base && r.slot === recipe.slot && r !== recipe && r.id !== recipe.id)
+    .map(r => {
+      const macros = mealMacros(r, profile, load, 1);
+      return {
+        recipe: r,
+        macros,
+        kcalDelta: macros.kcal - original.kcal,
+        pDelta: noNegativeZero(round(macros.p - original.p, 1)),
+        cDelta: noNegativeZero(round(macros.c - original.c, 1)),
+        fDelta: noNegativeZero(round(macros.f - original.f, 1))
+      };
+    });
+
+  ranked.sort((a, b) =>
+    Math.abs(a.kcalDelta) - Math.abs(b.kcalDelta) ||
+    String(a.recipe.id).localeCompare(String(b.recipe.id))
+  );
+  return ranked.slice(0, max);
+}
+
+/* ── Next-meal nudge ───────────────────────────────────────────────────────
+ * The UI used to count "N meals left today" with no idea what time it was, so
+ * at 21:00 it still claimed four meals were ahead. This finds the first meal
+ * that is neither done nor skipped and reports how far off it is, so a dinner
+ * whose time has passed reads as OVERDUE rather than "coming up".
+ *
+ * Pure by construction: both the clock (`now`) and the schedule (`slotTimes`)
+ * are injected, so the same inputs always give the same answer and the file
+ * stays import-free. Plain clock arithmetic also makes the day boundary sane
+ * without a wrap: 00:30 to a 07:30 breakfast is +420 minutes.
+ *
+ * A slot with no parseable time cannot be nudged, so it is skipped rather than
+ * invented; a missing schedule therefore reports 'complete' (nothing to say).
+ */
+const MEAL_ORDER = ['breakfast', 'lunch', 'snack', 'dinner'];
+const MEAL_LABELS = { breakfast: 'Πρωινό', lunch: 'Μεσημεριανό', snack: 'Σνακ', dinner: 'Βραδινό' };
+/** Minutes either side of the slot time that still count as on time. */
+const NUDGE_WINDOW = 45;
+
+export function nextMealNudge({ log, slotTimes, now } = {}) {
+  const at = now instanceof Date && Number.isFinite(now.getTime()) ? now : null;
+  if (!at) return { slot: null, state: 'complete' };
+
+  const meals = log && typeof log === 'object' && log.meals && typeof log.meals === 'object' ? log.meals : {};
+  const schedule = slotTimes && typeof slotTimes === 'object' ? slotTimes : {};
+
+  for (const slot of MEAL_ORDER) {
+    const status = meals[slot]?.status;
+    if (status === 'done' || status === 'skipped') continue;
+
+    const time = typeof schedule[slot] === 'string' ? schedule[slot] : null;
+    const parsed = time && /^(\d{1,2}):(\d{2})$/.exec(time);
+    if (!parsed) continue;
+    const hh = Number(parsed[1]);
+    const mm = Number(parsed[2]);
+    if (hh > 23 || mm > 59) continue;
+
+    // Slot time on the same calendar day as `now`; the signed difference then
+    // reads naturally across midnight (breakfast tomorrow is a positive number).
+    const slotMs = new Date(at.getFullYear(), at.getMonth(), at.getDate(), hh, mm, 0, 0).getTime();
+    const minutesUntil = Math.round((slotMs - at.getTime()) / 60000);
+    const state = minutesUntil > NUDGE_WINDOW ? 'upcoming'
+      : minutesUntil < -NUDGE_WINDOW ? 'overdue'
+        : 'due';
+
+    return { slot, label: MEAL_LABELS[slot], time, minutesUntil, state };
+  }
+
+  return { slot: null, state: 'complete' };
 }

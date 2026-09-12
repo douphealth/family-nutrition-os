@@ -181,10 +181,85 @@ export function logo(size = 34) {
 
 /* ── Avatar ────────────────────────────────────────────────────────────── */
 
+/* ── Member initials ───────────────────────────────────────────────────────
+ * Two letters is not always enough to tell two people apart.
+ *
+ * This household contains Αλέξης and Αλεξάνδρα — father and daughter — whose
+ * names share their first FIVE letters. No prefix rule separates them inside a
+ * 30px badge, so the naive `slice(0, 2)` gave BOTH of them "ΑΛ": two identical
+ * avatars sitting centimetres apart in the member strip, distinguishable only
+ * by colour, which is exactly the cue a colour-blind or low-vision user does
+ * not have.
+ *
+ * Presentation data does not belong on the profile records, so the household is
+ * registered once and initials are resolved against it: use the shortest unique
+ * prefix (ΑΝ, ΔΗ), and when even three characters stay ambiguous, fall back to
+ * the member's first name letter plus their FAMILY ROLE letter — Αλέξης the
+ * Πατέρας becomes ΑΠ, Αλεξάνδρα the Κόρη becomes ΑΚ.
+ */
+const MAX_INITIALS = 3;
+let memberInitials = new Map();
+
+const namePrefix = (name, n) => String(name || '?').trim().slice(0, n).toUpperCase();
+
+/**
+ * Fold case AND accents before comparing two names.
+ *
+ * Without this the uniqueness test silently "resolved" Αλέξης against
+ * Αλεξάνδρα on the tonos: "ΑΛΈ" and "ΑΛΕ" are different strings, so a 3-letter
+ * prefix looked unique while being indistinguishable at 11px inside a 30px
+ * badge. Greek has accented and unaccented forms of the same vowel and they
+ * differ by a single mark, so any comparison that keeps the mark is not a
+ * comparison a human would recognise.
+ */
+const fold = value => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim()
+  .toUpperCase();
+
+/** Shortest ACCENT-FOLDED prefix of `name` that no other member shares, or
+ *  null if none within MAX_INITIALS. */
+function uniquePrefixLen(name, list) {
+  for (let n = 2; n <= MAX_INITIALS; n++) {
+    const p = fold(name).slice(0, n);
+    if (list.filter(m => fold(m.name).slice(0, n) === p).length === 1) return n;
+  }
+  return null;
+}
+
+export function registerMembers(profiles = []) {
+  const list = [...profiles].filter(Boolean);
+  memberInitials = new Map();
+  for (const m of list) {
+    const label2 = fold(m.name).slice(0, 2);
+    let label = label2;
+    const clashes = list.filter(x => fold(x.name).slice(0, 2) === label2).length > 1;
+    if (clashes) {
+      const len = uniquePrefixLen(m.name, list);
+      if (len) label = namePrefix(m.name, len);
+      else {
+        const role = String(m.relation || '').trim().slice(0, 1).toUpperCase();
+        label = role ? namePrefix(m.name, 1) + role : namePrefix(m.name, 2);
+      }
+    }
+    memberInitials.set(m.id, label);
+  }
+  return Object.fromEntries(memberInitials);
+}
+
 export function avatar(profile, size = 40) {
-  // Real first names, so the initials are upper-cased for a consistent badge
+  // Real first names, so the badge is upper-cased for a consistent look
   // (Αλέξης -> ΑΛ) rather than the title-case "Αλ" a plain slice would give.
-  const initials = String(profile?.name || '?').trim().slice(0, 2).toUpperCase();
+  const initials = memberInitials.get(profile?.id)
+    || String(profile?.name || '?').trim().slice(0, 2).toUpperCase();
+  // The badge deepens its own fill rather than using the member's colour at full
+  // strength. White type on the raw palette fails AA for three of the four
+  // members — worst of all Δημήτρης's amber at 2.76:1 — and no single ink fixes
+  // it, because white fails on the light accents and near-black fails on the
+  // dark ones. Blending 28% toward near-black puts the WORST of the six palette
+  // accents at 4.68:1 with white, so one rule covers every member and every
+  // future accent the picker offers.
   return `<span class="avatar" style="--av:${esc(profile?.accent || 'var(--accent)')};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px" aria-hidden="true">${esc(initials)}</span>`;
 }
 
@@ -311,7 +386,7 @@ export function ring({
 
 /* ── Macro bar ─────────────────────────────────────────────────────────── */
 
-export function macroBar({ label, value, target, unit = 'g', tone = 'accent', iconName = null, note = '' }) {
+export function macroBar({ label, value, target, unit = 'g', tone = 'ok', iconName = null, note = '' }) {
   const pctVal = target > 0 ? Math.min(1, value / target) : 0;
   return `<div class="mb">
     <div class="mb-head">

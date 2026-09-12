@@ -2,6 +2,87 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [6.0.0] — 2026-09-12
+
+A correctness-and-craft release. The app was already honest about its numbers and
+already worked offline; what it was not was *legible about itself*. Three of the four
+member colours were colliding with the app's own status colours, the same four meals
+were drawn three times on the Today screen, and the plan could not tell the time — at
+six in the evening it still called a 07:30 breakfast "up next".
+
+Everything below is measured, not asserted: 99 + 73 + 84 assertions across three
+suites (256 total), 129 DOM smoke checks, and a WCAG contrast audit over 7 views × 2 themes.
+
+### Added
+- **Meal swapping.** `swapCandidates()` in the engine ranks same-slot alternatives by
+  how close they land to the original *for that member* — a 0,75× adult and a fuelled
+  athlete get different closest plates, because the same recipe is a different dish for
+  each. Each option shows its kcal delta against the plan. A swap is portion-neutral by
+  construction: it can offer a different plate, never a smaller one.
+- **Confirmed macros now follow the dish actually eaten.** `dayMacros()` honours a
+  per-meal `recipeId` on the log entry, so logging "I had the fish instead" updates
+  CONFIRMED while PLANNED keeps describing the plan. Counting the plan's dish would have
+  reported intake that never happened — the exact failure this app exists to prevent.
+- **Time-aware guidance.** `nextMealNudge()` reports the next unlogged slot and whether
+  it is `upcoming`, `due` or `overdue`, so the next-meal card carries a live state pill
+  (Τώρα / Σε 42′ / Εκκρεμεί) and the meals KPI says *which* meal is outstanding instead
+  of promising "4 ακόμη σήμερα" at 21:00.
+- **A WCAG contrast audit** (`/root/contrast_audit.py`, outside the repo) that reads real
+  computed colours from the rendered app, resolves each element's effective background
+  through its ancestors, and applies the WCAG 2.1 luminance formula exactly.
+
+### Changed
+- **`--accent` no longer means three things at once.** It was the brand colour, the
+  selected member's identity *and* the success colour. Selecting Αλέξης turned every
+  progress bar blue (the protein data hue); selecting Δημήτρης turned them amber (the
+  "energy gap" warning); selecting Αλεξάνδρα turned them pink (the "under target" hue).
+  Member colour is now `--accent` and tints identity surfaces only — avatar, persona
+  rail, active nav rail, member chip. Progress is a fixed `--ok`, warnings a fixed
+  `--warn`, and the macro series a separate set entirely. A progress bar can no longer
+  change colour because a different family member is looking at it.
+- **The hero KPI card is a deep signature card, not a success-coloured one.** It was
+  filled with the accent, so a day with **0 kcal logged** was painted in the colour that
+  means "good". It is now a dark, brand-lit card (and *lighter* in dark theme, where it
+  has to separate from a near-black background) — neutral about whether you have eaten.
+  Exactly one hero per row, still enforced by the smoke suite.
+- **Elevation is hairline-first.** Card shadows were heavy enough that everything read as
+  floating; the card edge now does the work. Radii tightened 22 → 20px, spacing moved
+  onto a consistent 4px ladder (grid gaps 14 → 16px).
+- **Numerals are sans and tabular everywhere.** KPI values, stat values, ring centres and
+  calorie figures were set in `--font-display`, a system serif stack whose members
+  (Georgia, Palatino, Iowan) carry **old-style figures** — digits at inconsistent heights,
+  so `1.775` read as ragged and columns of shopping quantities never lined up. The serif
+  is now reserved for headings, where it is a deliberate editorial voice.
+- **The Today screen renders the day's meals once.** They appeared three times: the
+  next-meal card, the meal grid and a "Χρονολόγιο" timeline. The timeline is gone, the
+  meal card folds its status line into the header row, and the energy panel's three
+  restatements of "recorded vs planned" are one legend. **Measured on a 390px phone:
+  5,274 → 4,527 px (−14.2%)**, with zero horizontal overflow retained.
+- **Micro-labels are one scale, not eight.** Body captions and eyebrow labels had drifted
+  to eight sizes between .62 and .78rem with tracking from .04 to .15em. Two steps now,
+  applied by role.
+- **The active shop filter is an ink pill**, and the weekly bar chart colours only today
+  and greys the rest — selective emphasis, so the one mark that carries a signal is the
+  one mark that gets chroma.
+- **The macro chips are Greek.** They read **Π / Υ / Λ** rather than Latin `P / C / F`
+  inside an otherwise entirely Greek interface.
+
+### Fixed
+- **Two members had identical avatars.** Αλέξης (father) and Αλεξάνδρα (daughter) share
+  their first five letters, so both sliced to **ΑΛ** — identical badges centimetres apart
+  in the member strip, told apart only by colour. Initials are now resolved against the
+  whole household: shortest unique prefix where one exists (ΑΝ, ΔΗ), otherwise first name
+  letter plus family role (**ΑΠ** Αλέξης/Πατέρας, **ΑΚ** Αλεξάνδρα/Κόρη). The comparison
+  is accent-folded, because the first attempt "resolved" them on the tonos alone — ΑΛΈ
+  vs ΑΛΕ is unique in a string comparison and useless in an 11px badge.
+- **`greeting()` had an unreachable branch.** `if (h < 18) return 'Καλησπέρα'; return
+  'Καλησπέρα';` — two identical returns; the second could never produce a different value.
+- **The README erased a family member.** It described the household as "the three people
+  who actually use it: the mother, the son and the daughter", gave the father no section
+  at all, and its title still said v4.2 while the app shipped 5.0.0. Αλέξης is the
+  father (54, maintenance) — the code always modelled all four correctly; only the
+  documentation lost him.
+
 ## [5.0.0] — 2026-09-12
 
 The Today view now reads as a dashboard instead of a page of stacked cards: a header row,

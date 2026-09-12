@@ -12,3 +12,8 @@ Thumbs.db
 *.log
 .env
 .env.*
+
+# Python — scripts/capture_shots.py, capture_mobile.py and audit_probe.py are
+# run directly, and every run drops a __pycache__ next to them.
+__pycache__/
+*.pyc

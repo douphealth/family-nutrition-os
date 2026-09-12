@@ -103,6 +103,57 @@ assert.ok(withExtra.confirmed.kcal > 0, 'extras must add to confirmed intake');
 assert.equal(withExtra.planned.kcal, empty.planned.kcal, 'extras must not change the plan');
 assert.equal(withExtra.extras.length, 1);
 
+/* ── Swapped meals ─────────────────────────────────────────────────────────
+ * A member can log a DIFFERENT dish for a slot than the plan intended ("I
+ * swapped the fish in"). CONFIRMED must then follow what they actually ate:
+ * counting the plan's dish instead would report intake that never happened,
+ * which is the one failure this whole file exists to prevent. PLANNED must be
+ * left describing the plan.
+ */
+
+const breakfastAlt = RECIPES.find(r => r.slot === 'breakfast' && r.id !== day.breakfast);
+assert.ok(breakfastAlt, 'needs a second breakfast recipe to exercise a swap');
+
+const swapOneX = mealMacros(breakfastAlt, son, 'game', 1);
+const plannedOneX = mealMacros(breakfast, son, 'game', 1);
+assert.notEqual(swapOneX.kcal, plannedOneX.kcal,
+  'the two breakfast recipes must differ, or the swap assertions prove nothing');
+
+const swappedDay = dayMacros(day, son, 'game',
+  { meals: { breakfast: { status: 'done', portion: 1, recipeId: breakfastAlt.id } } }, recipeById);
+
+assert.equal(swappedDay.confirmed.kcal, swapOneX.kcal,
+  'confirmed energy must come from the dish that was actually eaten');
+assert.equal(swappedDay.planned.kcal, empty.planned.kcal,
+  'a swap must not rewrite the day plan');
+assert.deepEqual(swappedDay.confirmedSlots, ['breakfast']);
+
+const swapDetail = swappedDay.detail.find(d => d.slot === 'breakfast');
+assert.equal(swapDetail.swapped, true, 'the detail must record that the slot was swapped');
+assert.equal(swapDetail.eaten.id, breakfastAlt.id, 'detail.eaten is the substitute');
+assert.equal(swapDetail.recipe.id, day.breakfast, 'detail.recipe stays the planned dish');
+
+// Regression guard: a meal logged WITHOUT a recipeId is the pre-existing path
+// and must be completely untouched by the swap logic.
+const plainDay = dayMacros(day, son, 'game',
+  { meals: { breakfast: { status: 'done', portion: 1 } } }, recipeById);
+assert.equal(plainDay.confirmed.kcal, plannedOneX.kcal, 'a plain log still counts the planned dish');
+assert.equal(plainDay.detail.find(d => d.slot === 'breakfast').swapped, false);
+
+// An unknown id must never be a reason to lose the meal — fall back to the
+// plan rather than reporting that nothing was eaten.
+const brokenSwap = dayMacros(day, son, 'game',
+  { meals: { breakfast: { status: 'done', portion: 1, recipeId: 'does-not-exist' } } }, recipeById);
+assert.equal(brokenSwap.confirmed.kcal, plannedOneX.kcal,
+  'an unknown recipeId must not zero out confirmed intake');
+
+// The engine counts what was eaten and does not police slots; restricting a
+// swap to its own slot is the UI's job. Pinning the division of labour.
+const crossSlot = dayMacros(day, son, 'game',
+  { meals: { breakfast: { status: 'done', portion: 1, recipeId: 'chickenTray' } } }, recipeById);
+assert.equal(crossSlot.confirmed.kcal, mealMacros(byId.get('chickenTray'), son, 'game', 1).kcal,
+  'the engine reports reality; slot matching is enforced by the UI, not here');
+
 // Athlete training load raises carbohydrate portions, not fat.
 const restPortion = mealMacros(byId.get('pastaVeg'), son, 'rest', 1);
 const gamePortion = mealMacros(byId.get('pastaVeg'), son, 'game', 1);

@@ -20,7 +20,7 @@ import {
 } from './data.js';
 import {
   mealMacros, planCoverage, canUseAdultBmi, bmi, adultBmiLabel, isMinor,
-  personaPoints, trainingFueling
+  personaPoints, trainingFueling, swapCandidates
 } from './nutrition-engine.js';
 
 /* ── Small shared pieces ───────────────────────────────────────────────── */
@@ -35,9 +35,9 @@ function slotIcon(slot) {
 function macroChips(m, { compact = false } = {}) {
   return `<div class="meal-macros">
     <span class="meal-macro kcal">${icon('flame', 12)}<b>${num(m.kcal)}</b> kcal</span>
-    <span class="meal-macro">P <b>${num(m.p)}</b>g</span>
-    <span class="meal-macro">C <b>${num(m.c)}</b>g</span>
-    <span class="meal-macro">F <b>${num(m.f)}</b>g</span>
+    <span class="meal-macro" title="Πρωτεΐνη">Π <b>${num(m.p)}</b>g</span>
+    <span class="meal-macro" title="Υδατάνθρακες">Υ <b>${num(m.c)}</b>g</span>
+    <span class="meal-macro" title="Λιπαρά">Λ <b>${num(m.f)}</b>g</span>
     ${compact ? '' : `<span class="meal-macro">${esc(SLOT_LABEL[m.slot] || '')}</span>`}
   </div>`;
 }
@@ -113,6 +113,13 @@ function fuelCard(ctx) {
         ? `<span class="pill tone-gold">${icon('flame', 13)} Μέρα υψηλών απαιτήσεων</span>`
         : `<span class="pill tone-accent">${icon('check', 13)} Κανονικό φορτίο</span>`}
     </div>
+    <!-- The training-load switcher used to live in a separate "Λειτουργία
+         αθλητή" card further down the page, even though it only ever changes
+         what THIS card shows. It belongs here. -->
+    <div class="filters" style="margin-top:14px">
+      ${ctx.trainingLoads.map(([id, label]) => `<button type="button" class="chip ${id === ctx.load ? 'active' : ''}"
+        data-act="load" data-load="${id}" aria-pressed="${id === ctx.load}">${esc(label)}</button>`).join('')}
+    </div>
     <div class="fuel-grid">
       ${blocks.map(b => `<article class="fuel-block">
         <span class="fuel-ic">${icon(b.icon, 16)}</span>
@@ -122,6 +129,7 @@ function fuelCard(ctx) {
         </div>
       </article>`).join('')}
     </div>
+    <div class="notice" style="margin-top:14px">${icon('shield', 17)}<span>Το φορτίο αλλάζει <b>υδατάνθρακες και υγρά</b>. Δεν δημιουργεί ποτέ στόχο απώλειας βάρους για ανήλικο προφίλ.</span></div>
     <p class="tiny muted" style="margin-top:12px">${icon('info', 13)} Γενικές οδηγίες αθλητικής διατροφής, υπολογισμένες ανά κιλό σωματικού βάρους. Δεν αντικαθιστούν αθλητικό γιατρό ή διαιτολόγο.</p>
   </section>`;
 }
@@ -221,13 +229,91 @@ export function cookBody(ctx, recipe) {
   </div>`;
 }
 
+/* ── Next meal ─────────────────────────────────────────────────────────────
+ * The single most useful thing on the Today screen: what to eat next, and the
+ * buttons that resolve it. It now sits directly under the KPI strip and ABOVE
+ * the persona brief, because "what do I do now" beats "what matters this month"
+ * when someone opens the app standing in the kitchen with a pan already on.
+ */
+function nextMealCard(ctx) {
+  const { profile, load, planDay, log, targets } = ctx;
+  const nextSlot = SLOTS.find(s => log?.meals?.[s]?.status !== 'done' && log?.meals?.[s]?.status !== 'skipped') || 'dinner';
+  const nextRecipe = ctx.recipeById(planDay[nextSlot]);
+  if (!nextRecipe) return '';
+  /* Time-awareness, from the engine. Before this the card called a 07:30
+     breakfast "up next" at six in the evening, because "next" meant "first
+     unlogged" rather than "next in time". A plan that cannot tell the time
+     reads as broken even when every number in it is correct. */
+  const nudge = ctx.nudge && ctx.nudge.slot === nextSlot ? ctx.nudge : null;
+  const nudgeState = nudge?.state || null;
+  return `
+  <section class="card card-lg next-card">
+    <div class="next-head">
+      ${illustration(RECIPE_ART[nextRecipe.id], 64)}
+      <div class="next-text">
+        <div class="next-eyebrow">
+          <span class="eyebrow">${nudgeState === 'overdue' ? `Δεν καταγράφηκε · ${esc(SLOT_TIME[nextSlot])}` : 'Επόμενο γεύμα'}</span>
+          ${nudgeState === 'overdue'
+            ? `<span class="pill pill-warn">${icon('alert', 13)} Εκκρεμεί</span>`
+            : nudgeState === 'due'
+              ? `<span class="pill pill-ok">${icon('clock', 13)} Τώρα</span>`
+              : nudgeState === 'upcoming'
+                ? `<span class="pill pill-neutral">${icon('clock', 13)} Σε ${num(nudge.minutesUntil)}′</span>`
+                : ''}
+        </div>
+        <div class="card-title" style="font-size:1.15rem">${esc(nextRecipe.name)}</div>
+        <p class="muted tiny">${esc(SLOT_LABEL[nextSlot])} · ${esc(SLOT_TIME[nextSlot])} · ${nextRecipe.time}′ προετοιμασία
+          ${profile.athlete ? ` · ${esc(ctx.loadLabel)}` : ''}</p>
+      </div>
+      <div class="next-actions">
+        <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">
+          ${icon('check', 17)} Το έφαγα
+        </button>
+        <button type="button" class="btn" data-act="cook" data-id="${esc(nextRecipe.id)}">
+          ${icon('utensils', 17)} Μαγείρεψε
+        </button>
+      </div>
+    </div>
+    <div class="grid g2">
+      <div>
+        ${macroChips({ ...mealMacros(nextRecipe, profile, load, 1), slot: nextSlot })}
+        <div class="portion-note">${icon('target', 14)} Μερίδα για ${esc(profile.name)}: ${esc(targets.portions.label)}</div>
+      </div>
+      <div class="meal-actions" style="align-content:start">
+        <button type="button" class="chip" data-act="meal" data-slot="${nextSlot}" data-portion="0.75" data-recipe="${esc(nextRecipe.id)}">Μικρότερη</button>
+        <button type="button" class="chip" data-act="meal" data-slot="${nextSlot}" data-portion="1.25" data-recipe="${esc(nextRecipe.id)}">Μεγαλύτερη</button>
+        <button type="button" class="chip" data-act="skip" data-slot="${nextSlot}" data-recipe="${esc(nextRecipe.id)}">Παράλειψη</button>
+        <button type="button" class="chip" data-act="recipe" data-id="${esc(nextRecipe.id)}">${icon('book', 14)} Συνταγή</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ── Why today ─────────────────────────────────────────────────────────────
+ * The guidance list and the portion breakdown used to share a row with a
+ * timeline that repeated the four meals a THIRD time. The timeline is gone; the
+ * meals now render once, in the meal grid. This card moved next to the water
+ * tracker so the two short cards share a band instead of each taking a full row.
+ */
+function guidanceCard(ctx, guidance) {
+  const { targets } = ctx;
+  return `<section class="card">
+      <h3>Γιατί αυτό σήμερα</h3>
+      <div class="stack" style="margin-top:12px">
+        ${guidance.length ? guidance.map(t => `<div class="notice">${icon('info', 16)}<span>${esc(t)}</span></div>`).join('')
+          : `<p class="muted tiny">Δεν υπάρχουν ειδικές σημειώσεις για σήμερα. Ακολούθησε το πλάνο και κατέγραψε ό,τι έγινε.</p>`}
+      </div>
+      <div class="portion-note" style="margin-top:12px">
+        ${icon('target', 14)} Μερίδες: ${esc(targets.portions.label)} · Λαχανικά ×${targets.portions.vegetables} · Πρωτεΐνη ×${num1(targets.portions.protein)} · Υδατάνθρακες ×${num1(targets.portions.carbs)} · Λιπαρά ×${num1(targets.portions.fats)}
+      </div>
+    </section>`;
+}
+
 /* ── Today ─────────────────────────────────────────────────────────────── */
 
 export function todayView(ctx) {
   const { profile, load, planDay, log, targets, totals, coverage, dateKey, streak, updateReady, onboarded } = ctx;
   const completeness = ctx.completeness;
-  const nextSlot = SLOTS.find(s => log?.meals?.[s]?.status !== 'done' && log?.meals?.[s]?.status !== 'skipped') || 'dinner';
-  const nextRecipe = ctx.recipeById(planDay[nextSlot]);
   const guidance = ctx.guidance;
   const ringValue = totals.confirmed.kcal;
   const ringMax = coverage.center;
@@ -260,24 +346,33 @@ export function todayView(ctx) {
     })}
     ${kpi({
       label: 'Γεύματα', value: `${completeness.mealsDone}<small>/${completeness.mealsTotal}</small>`,
-      iconName: 'checkCircle', tone: 'blue',
+      iconName: 'checkCircle', tone: 'ok',
       progress: completeness.mealsTotal ? completeness.mealsDone / completeness.mealsTotal : 0,
-      note: completeness.mealsTotal > completeness.mealsDone
-        ? `${completeness.mealsTotal - completeness.mealsDone} ακόμη σήμερα`
-        : 'Ολοκληρώθηκαν όλα'
+      /* "N meals left today" was time-blind: at 21:00 it still promised four
+         meals ahead. When the engine says a slot is overdue, say which one. */
+      note: completeness.mealsTotal === completeness.mealsDone
+        ? 'Ολοκληρώθηκαν όλα'
+        : (ctx.nudge?.state === 'overdue' && ctx.nudge.label
+          ? `Εκκρεμεί: ${ctx.nudge.label}`
+          : `${completeness.mealsTotal - completeness.mealsDone} ακόμη σήμερα`)
     })}
     ${kpi({
-      label: 'Ενυδάτωση', value: num(log?.waterMl || 0), unit: 'ml', iconName: 'droplet', tone: 'accent',
+      label: 'Ενυδάτωση', value: num(log?.waterMl || 0), unit: 'ml', iconName: 'droplet', tone: 'ok',
       progress: (log?.waterMl || 0) / Math.max(1, targets.hydration.ml),
       note: `Στόχος ${mlToText(targets.hydration.ml)}`
     })}
     ${kpi({
       label: 'Κάλυψη πλάνου', value: `${Math.round(coverage.pct * 100)}`, unit: '%', iconName: 'target',
-      tone: coverage.status === 'under' ? 'rose' : 'accent',
+      /* `warn`, not `rose`. Rose was doing three jobs at once — the fat macro
+         bar, Αλεξάνδρα's member colour, and "you are under target" — so a
+         warning could be mistaken for a family member and vice versa. */
+      tone: coverage.status === 'under' ? 'warn' : 'ok',
       progress: coverage.pct,
       note: coverage.status === 'under' ? 'Υπάρχει κενό ενέργειας' : 'Εντός εκτίμησης'
     })}
   </section>
+
+  ${nextMealCard(ctx)}
 
   ${personaCard(ctx)}
 
@@ -292,13 +387,12 @@ export function todayView(ctx) {
         main: num(ringValue), sub: 'kcal σήμερα',
         caption: `Καταγεγραμμένες ${num(ringValue)} από εκτιμώμενες ${num(coverage.center)} kcal`
       })}
-      <div class="hero-ring-caption">
-        <b>${num(ringValue)}</b> καταγεγραμμένες<br>
-        <span style="opacity:.8">ανοιχτό τόξο = πλάνο ${num(totals.planned.kcal)} kcal</span>
-      </div>
+      <!-- The ring already states the recorded figure and the caption restated
+           it again; these three elements said the same thing twice over. One
+           legend now carries both numbers. -->
       <div class="legend legend-center">
-        <span class="legend-item"><i></i>Καταγεγραμμένα</span>
-        <span class="legend-item is-muted"><i></i>Πλάνο</span>
+        <span class="legend-item"><i></i>Καταγεγραμμένα ${num(ringValue)}</span>
+        <span class="legend-item is-muted"><i></i>Πλάνο ${num(totals.planned.kcal)} kcal</span>
       </div>
     </div>
     <div class="stack" style="width:100%">
@@ -318,76 +412,62 @@ export function todayView(ctx) {
     </div>
   </section>
 
-  <section class="card card-lg next-card" style="margin-top:16px">
-    <div class="next-head">
-      ${illustration(RECIPE_ART[nextRecipe.id], 64)}
-      <div class="next-text">
-        <div class="eyebrow">Επόμενο γεύμα</div>
-        <div class="card-title" style="font-size:1.15rem">${esc(nextRecipe.name)}</div>
-        <p class="muted tiny">${esc(SLOT_LABEL[nextSlot])} · ${esc(SLOT_TIME[nextSlot])} · ${nextRecipe.time}′ προετοιμασία
-          ${profile.athlete ? ` · ${esc(ctx.loadLabel)}` : ''}</p>
-      </div>
-      <div class="next-actions">
-        <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">
-          ${icon('check', 17)} Το έφαγα
-        </button>
-        <button type="button" class="btn" data-act="cook" data-id="${esc(nextRecipe.id)}">
-          ${icon('utensils', 17)} Μαγείρεψε
-        </button>
-      </div>
-    </div>
-    <div class="grid g2">
-      <div>
-        ${macroChips({ ...mealMacros(nextRecipe, profile, load, 1), slot: nextSlot })}
-        <div class="portion-note">${icon('target', 14)} Μερίδα για ${esc(profile.name)}: ${esc(targets.portions.label)}</div>
-      </div>
-      <div class="meal-actions" style="align-content:start">
-        <button type="button" class="chip" data-act="meal" data-slot="${nextSlot}" data-portion="0.75" data-recipe="${esc(nextRecipe.id)}">Μικρότερη μερίδα</button>
-        <button type="button" class="chip" data-act="meal" data-slot="${nextSlot}" data-portion="1.25" data-recipe="${esc(nextRecipe.id)}">Μεγαλύτερη μερίδα</button>
-        <button type="button" class="chip" data-act="skip" data-slot="${nextSlot}" data-recipe="${esc(nextRecipe.id)}">Παράλειψη σήμερα</button>
-        <button type="button" class="chip" data-act="recipe" data-id="${esc(nextRecipe.id)}">${icon('book', 14)} Δες τη συνταγή</button>
-      </div>
-    </div>
-  </section>
 
-  <section class="card" style="margin-top:16px">
-    <div class="card-head"><span class="card-title">Νερό</span>
-      <span class="muted tiny">${mlToText(log?.waterMl || 0)} από ${mlToText(targets.hydration.ml)}</span></div>
-    <div class="water-tracker">
-      ${Array.from({ length: Math.max(6, targets.hydration.glasses) }, (_, i) => {
-        const filled = (log?.waterMl || 0) >= (i + 1) * 250;
-        return `<button type="button" class="glass ${filled ? 'filled' : ''}" data-act="water" data-set="${(i + 1) * 250}"
-          aria-label="${i + 1} ποτήρια (${(i + 1) * 250} ml)"></button>`;
-      }).join('')}
-    </div>
-    <div class="meal-actions" style="margin-top:12px">
-      <button type="button" class="chip" data-act="water" data-delta="-250">${icon('minus', 14)} 250 ml</button>
-      <button type="button" class="chip" data-act="water" data-delta="250">${icon('plus', 14)} 250 ml</button>
-      <button type="button" class="chip" data-act="water" data-set="0">Μηδέν</button>
-    </div>
-  </section>
+  <div class="grid g2" style="margin-top:16px">
+    <section class="card">
+      <div class="card-head"><span class="card-title">Νερό</span>
+        <span class="muted tiny">${mlToText(log?.waterMl || 0)} από ${mlToText(targets.hydration.ml)}</span></div>
+      <div class="water-tracker">
+        ${Array.from({ length: Math.max(6, targets.hydration.glasses) }, (_, i) => {
+          const filled = (log?.waterMl || 0) >= (i + 1) * 250;
+          return `<button type="button" class="glass ${filled ? 'filled' : ''}" data-act="water" data-set="${(i + 1) * 250}"
+            aria-label="${i + 1} ποτήρια (${(i + 1) * 250} ml)"></button>`;
+        }).join('')}
+      </div>
+      <div class="meal-actions" style="margin-top:12px">
+        <button type="button" class="chip" data-act="water" data-delta="-250">${icon('minus', 14)} 250 ml</button>
+        <button type="button" class="chip" data-act="water" data-delta="250">${icon('plus', 14)} 250 ml</button>
+        <button type="button" class="chip" data-act="water" data-set="0">Μηδέν</button>
+      </div>
+    </section>
 
-  ${profile.athlete ? athleteCard(ctx) : ''}
+    ${guidanceCard(ctx, guidance)}
+  </div>
 
   <section style="margin-top:22px">
     ${sectionHead({ eyebrow: 'Το πλάνο της ημέρας', title: 'Τα τέσσερα γεύματα', sub: 'Οι μερίδες είναι προσαρμοσμένες στο προφίλ. Πάτησε για να καταγράψεις τι έγινε πραγματικά.' })}
     <div class="meal-grid">
       ${SLOTS.map(slot => {
-        const r = ctx.recipeById(planDay[slot]);
+        const planned = ctx.recipeById(planDay[slot]);
         const entry = log?.meals?.[slot];
+        // If this member logged a different dish for the slot, every number on
+        // the card must describe what they ate, not what the plan intended.
+        const swappedRecipe = entry?.recipeId ? ctx.recipeById(entry.recipeId) : null;
+        const swapped = !!swappedRecipe;
+        const r = swappedRecipe || planned;
         const done = entry?.status === 'done';
         const skipped = entry?.status === 'skipped';
         const m = mealMacros(r, profile, load, entry?.portion ?? 1);
+        /* One header row instead of two: the meal time, the prep time and the
+           recipe link all fit on the tag line, and the old dedicated status
+           line was restating what the portion chips below already show (the
+           active chip reads "✓ Έγινε", the skip chip reads "✓ Παραλείφθηκε").
+           Four cards × two saved rows is most of a phone screen. */
         return `<article class="meal ${done ? 'is-done' : ''} ${skipped ? 'is-skipped' : ''}">
           <div class="meal-slot">${slotTag(slot)}
-            <span class="meal-time">${icon('clock', 12)}${esc(SLOT_TIME[slot])}</span></div>
+            <span class="meal-slot-right">
+              <span class="meal-time">${icon('clock', 12)}${esc(SLOT_TIME[slot])} · ${r.time}′</span>
+              <button type="button" class="meal-link" data-act="recipe" data-id="${esc(r.id)}">Συνταγή ${icon('chevronRight', 13)}</button>
+            </span></div>
           <h3>${esc(r.name)}</h3>
           ${macroChips({ ...m, slot })}
-          <div class="portion-note">
-            ${done ? `${icon('checkCircle', 14)} Καταγράφηκε ${entry.portion}×` : skipped ? `${icon('x', 14)} Παραλείφθηκε` : `${icon('info', 14)} ${r.time}′ · δεν έχει καταγραφεί`}
-            <button type="button" class="meal-link" data-act="recipe" data-id="${esc(r.id)}">Συνταγή ${icon('chevronRight', 13)}</button>
-          </div>
           ${portionButtons(slot, entry, r.id)}
+          <div class="meal-actions">
+            <button type="button" class="chip" data-act="swap" data-slot="${slot}" data-date="${esc(dateKey)}">
+              ${icon('refresh', 14)} ${swapped ? 'Άλλο πιάτο' : 'Αλλαγή πιάτου'}
+            </button>
+            ${swapped ? `<span class="pill pill-accent">${icon('refresh', 12)} Αντικαταστάθηκε</span>` : ''}
+          </div>
         </article>`;
       }).join('')}
     </div>
@@ -408,35 +488,7 @@ export function todayView(ctx) {
     </div>
   </section>` : ''}
 
-  <div class="grid g2" style="margin-top:16px">
-    <section class="card">
-      <h3>Χρονολόγιο</h3>
-      <div class="timeline" style="margin-top:12px">
-        ${SLOTS.map(slot => {
-          const r = ctx.recipeById(planDay[slot]);
-          const entry = log?.meals?.[slot];
-          const state2 = entry?.status === 'done' ? 'done' : slot === nextSlot ? 'current' : '';
-          return `<div class="tl-item ${state2}">
-            <span class="tl-time">${esc(SLOT_TIME[slot])}</span>
-            <span class="tl-rail"><i class="tl-dot"></i></span>
-            <span class="tl-body">
-              <span class="tl-title">${esc(r.name)}</span>
-              <span class="tl-meta">${esc(SLOT_LABEL[slot])}${entry?.portion ? ` · ${entry.portion}×` : ''}${entry?.status === 'skipped' ? ' · παραλείφθηκε' : ''}</span>
-            </span></div>`;
-        }).join('')}
-      </div>
-    </section>
-    <section class="card">
-      <h3>Γιατί αυτό σήμερα</h3>
-      <div class="stack" style="margin-top:12px">
-        ${guidance.length ? guidance.map(t => `<div class="notice">${icon('info', 16)}<span>${esc(t)}</span></div>`).join('')
-          : `<p class="muted tiny">Δεν υπάρχουν ειδικές σημειώσεις για σήμερα. Ακολούθησε το πλάνο και κατέγραψε ό,τι έγινε.</p>`}
-      </div>
-      <div class="portion-note" style="margin-top:12px">
-        ${icon('target', 14)} Μερίδες: ${esc(targets.portions.label)} · Λαχανικά ×${targets.portions.vegetables} · Πρωτεΐνη ×${num1(targets.portions.protein)} · Υδατάνθρακες ×${num1(targets.portions.carbs)} · Λιπαρά ×${num1(targets.portions.fats)}
-      </div>
-    </section>
-  </div>`;
+`;
 }
 
 function onboardingCard() {
@@ -461,7 +513,7 @@ function coverageCard(ctx, coverage) {
   return `<section class="card" style="margin-bottom:16px;border-color:color-mix(in srgb,var(--gold) 30%,transparent);background:linear-gradient(150deg,var(--tint-gold),transparent 70%),var(--surface)">
     <div class="card-head">
       <div>
-        <div class="eyebrow" style="color:var(--gold)">${icon('alert', 12)} Κενό ενέργειας</div>
+        <div class="eyebrow" style="color:var(--gold-text)">${icon('alert', 12)} Κενό ενέργειας</div>
         <div class="card-title">Το κοινό οικογενειακό πλάνο καλύπτει το ${pct(coverage.pct)} της εκτίμησης</div>
         <p class="muted tiny">Εκτιμώμενη ανάγκη ~${num(coverage.center)} kcal · το πλάνο δίνει ~${num(coverage.planned)} kcal · διαφορά ~${num(coverage.gapKcal)} kcal${coverage.proteinGap ? ` · και ~${num(coverage.proteinGap)} g πρωτεΐνης` : ''}.</p>
       </div>
@@ -474,21 +526,6 @@ function coverageCard(ctx, coverage) {
           ${icon('plus', 14)} ${esc(r.name)} <span class="muted">· ${num(m.kcal)} kcal</span></button>`;
       }).join('')}
     </div>
-  </section>`;
-}
-
-function athleteCard(ctx) {
-  const { profile, load, loadLabel } = ctx;
-  return `<section class="card" style="margin-top:16px">
-    <div class="card-head">
-      <div><div class="eyebrow">${icon('zap', 12)} Λειτουργία αθλητή</div>
-        <div class="card-title">Φορτίο προπόνησης: ${esc(loadLabel)}</div></div>
-    </div>
-    <div class="filters">
-      ${ctx.trainingLoads.map(([id, label]) => `<button type="button" class="chip ${id === load ? 'active' : ''}"
-        data-act="load" data-load="${id}" aria-pressed="${id === load}">${esc(label)}</button>`).join('')}
-    </div>
-    <div class="notice" style="margin-top:14px">${icon('shield', 17)}<span>Το φορτίο αλλάζει <b>υδατάνθρακες και υγρά</b>. Δεν δημιουργεί ποτέ στόχο απώλειας βάρους για ανήλικο προφίλ.</span></div>
   </section>`;
 }
 
@@ -616,7 +653,7 @@ export function mealsView(ctx) {
         <h3>${esc(r.name)}</h3>
         ${macroChips({ ...m, slot: r.slot })}
         <span class="recipe-ing">${r.ingredients.slice(0, 4).map(i => esc(i.n)).join(' · ')}${r.ingredients.length > 4 ? ' …' : ''}</span>
-        <span class="recipe-ing" style="color:var(--accent);font-weight:650">Για ${esc(ctx.profile.name)} · ${esc(ctx.targets.portions.label)} ${icon('chevronRight', 12)}</span>
+        <span class="recipe-ing" style="color:var(--ok-text);font-weight:650">Για ${esc(ctx.profile.name)} · ${esc(ctx.targets.portions.label)} ${icon('chevronRight', 12)}</span>
       </button>`;
     }).join('')}
   </div>` : emptyState({
@@ -662,7 +699,7 @@ export function recipeDetail(ctx, recipe) {
           return `<div class="scale-row ${p.id === ctx.profile.id ? 'is-current' : ''}">
             ${avatar(p, 32)}
             <span><span class="scale-name">${esc(p.name)}</span>
-              <span class="scale-macros">P ${num(m.p)} · C ${num(m.c)} · F ${num(m.f)} g</span></span>
+              <span class="scale-macros">Π ${num(m.p)} · Υ ${num(m.c)} · Λ ${num(m.f)} g</span></span>
             <span class="scale-kcal">${num(m.kcal)} <small class="muted">kcal</small></span>
           </div>`;
         }).join('')}
@@ -838,7 +875,7 @@ export function progressView(ctx) {
 
   <section class="card" style="margin-top:16px">
     <div class="card-head"><span class="card-title">Αυτή η εβδομάδα</span></div>
-    ${barChart(ctx.weekDays.map(d => ({ label: GREEK_DAYS_SHORT[(d.dateObj.getDay() + 6) % 7], value: (weekAdherence.find(w => w.date === d.date)?.meals) || 0, tone: d.date === dateKey ? 'accent' : 'blue' })), { unit: '', max: 4 })}
+    ${barChart(ctx.weekDays.map(d => ({ label: GREEK_DAYS_SHORT[(d.dateObj.getDay() + 6) % 7], value: (weekAdherence.find(w => w.date === d.date)?.meals) || 0, tone: d.date === dateKey ? 'ok' : 'muted' })), { unit: '', max: 4 })}
     <p class="muted tiny" style="margin-top:10px">Γεύματα που επιβεβαιώθηκαν ανά ημέρα (μέγιστο 4).</p>
   </section>
 
@@ -1063,6 +1100,67 @@ export function dayDetail(ctx, date) {
         ${stat({ label: 'Καταγεγραμμένα', value: num(totals.confirmed.kcal), unit: 'kcal', iconName: 'checkCircle', tone: 'accent' })}
         ${stat({ label: 'Εκτίμηση ανάγκης', value: `${num(targets.energy.lower)}–${num(targets.energy.upper)}`, unit: 'kcal', iconName: 'flame', tone: 'gold' })}
       </div>
+    </div>
+  </div>`;
+}
+
+/* ── Swap sheet ────────────────────────────────────────────────────────────
+ * "I don't want that tonight." Real family life needs an answer that is not
+ * "skip the meal" — the alternatives are computed per member, so the closest
+ * plate for a 0,75x adult is not the closest plate for a fuelled athlete.
+ *
+ * The sheet is explicit about what does NOT change: same slot, same 1x portion.
+ * A swap can offer a different dish, never a smaller one.
+ */
+export function swapSheet(ctx, slot, recipe, date) {
+  const { profile, load } = ctx;
+  const options = swapCandidates(recipe, profile, load, ctx.recipes, { limit: 5 });
+  const current = mealMacros(recipe, profile, load, 1);
+
+  const delta = n => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${num(Math.abs(n))}`;
+  const tone = n => (Math.abs(n) <= 40 ? 'ok' : Math.abs(n) <= 110 ? 'neutral' : 'warn');
+
+  if (!options.length) {
+    return emptyState({
+      iconName: 'utensils',
+      title: 'Δεν υπάρχει άλλη επιλογή',
+      body: `Το πλάνο έχει μία συνταγή για ${SLOT_LABEL[slot].toLowerCase()}. Πρόσθεσε κάτι από τη βιβλιοθήκη ή άλλαξε το μενού στο Πλάνο.`
+    });
+  }
+
+  return `<div class="swap">
+    <div class="swap-current">
+      ${illustration(RECIPE_ART[recipe.id], 46)}
+      <div>
+        <div class="eyebrow">Τώρα στο πλάνο</div>
+        <div class="card-title">${esc(recipe.name)}</div>
+        <div class="muted tiny">${esc(SLOT_LABEL[slot])} · ${num(current.kcal)} kcal μερίδας</div>
+      </div>
+    </div>
+
+    <p class="muted tiny" style="margin:14px 0 12px">
+      ${icon('info', 13)} Ίδιο γεύμα, ίδια μερίδα 1× για ${esc(profile.name)} — αλλάζει μόνο το πιάτο.
+      Η εφαρμογή προτείνει πάντα <b>άλλο</b> πιάτο, ποτέ μικρότερο.
+    </p>
+
+    <div class="grid g2">
+      ${options.map(o => `<button type="button" class="swap-opt" data-act="swapPick" data-slot="${esc(slot)}" data-id="${esc(o.recipe.id)}" data-date="${esc(date)}">
+        ${illustration(RECIPE_ART[o.recipe.id], 46)}
+        <span class="swap-opt-body">
+          <span class="swap-opt-name">${esc(o.recipe.name)}</span>
+          <span class="meal-macros">
+            <span class="meal-macro kcal">${icon('flame', 12)}<b>${num(o.macros.kcal)}</b> kcal</span>
+            <span class="meal-macro" title="Πρωτεΐνη">Π <b>${num(o.macros.p)}</b>g</span>
+            <span class="meal-macro" title="Υδατάνθρακες">Υ <b>${num(o.macros.c)}</b>g</span>
+            <span class="meal-macro" title="Λιπαρά">Λ <b>${num(o.macros.f)}</b>g</span>
+          </span>
+          <span class="pill pill-${tone(o.kcalDelta)}">${delta(o.kcalDelta)} kcal έναντι του πλάνου</span>
+        </span>
+      </button>`).join('')}
+    </div>
+
+    <div class="meal-actions" style="margin-top:16px">
+      <button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
     </div>
   </div>`;
 }
