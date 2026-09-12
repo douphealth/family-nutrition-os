@@ -12,11 +12,13 @@
  */
 
 import {
-  APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, AISLES
+  APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, AISLES,
+  PERSONA_FOCUS, IRON_RICH
 } from './data.js';
 import {
   isMinor, targetsFor, dayMacros, planCoverage, mealMacros, weightTrend,
-  loggingStreak, hydrationTarget, contextualGuidance, energyRange
+  loggingStreak, hydrationTarget, contextualGuidance, energyRange,
+  personaPoints, trainingFueling, ironMeals, householdServings
 } from './nutrition-engine.js';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
@@ -26,11 +28,11 @@ import {
   esc, icon, logo, byId, $, $$, avatar,
   localDateKey, addDays, mondayOf, cycleDayIndex, cycleWeek, dateFromKey,
   num, num1, pct, mlToText, bytesToText, longDate, shortDate, GREEK_DAYS_SHORT,
-  toast, openSheet, closeSheet, isSheetOpen
+  toast, openSheet, closeSheet, isSheetOpen, clockText
 } from './ui.js';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
-  guideView, recipeDetail, memberForm, dayDetail, paletteView
+  guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody
 } from './views.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
@@ -57,6 +59,7 @@ let state = {
   weekOffset: 0,
   onboarded: false,
   filters: { q: '', slot: '', tag: '', sort: 'slot' },
+  shopFilter: 'all',
   shopChecked: {},
   version: APP.version
 };
@@ -73,10 +76,17 @@ let updateReady = false;
 let paletteItems = [];
 let paletteIndex = 0;
 
+/* Cook Mode. Kept out of `state` because it is transient UI, not a preference:
+ * it should never be persisted or restored. The timer is runtime-only too. */
+let cook = { open: false, recipeId: null, step: 0, done: {} };
+let cookTimer = { id: null, remaining: 0, total: 0, running: false };
+
 /* ── Derived helpers ───────────────────────────────────────────────────── */
 
 const recipeById = id => RECIPES.find(r => r.id === id) || null;
 const currentProfile = () => cache.profiles.find(p => p.id === state.member) || cache.profiles[0];
+/** Today's meals that are meaningful iron sources — used by the growth profile. */
+const ironTodayFor = planDay => ironMeals(planDay, recipeById, IRON_RICH);
 const currentLoad = p => (p?.athlete ? state.trainingLoad : 'normal');
 
 function planForDate(date) {
@@ -130,7 +140,7 @@ function weekDaysFor(offset) {
 }
 
 function buildShopping(weekDays) {
-  const household = Math.max(1, cache.profiles.length);
+  const servings = householdServings(cache.profiles);
   const map = new Map();
   for (const day of weekDays) {
     for (const slot of SLOTS) {
@@ -138,8 +148,8 @@ function buildShopping(weekDays) {
       if (!r) continue;
       for (const ing of r.ingredients) {
         const key = `${ing.a}::${ing.n}`;
-        const cur = map.get(key) || { key, name: ing.n, aisle: ing.a, unit: ing.u, qty: 0, count: 0 };
-        cur.qty += ing.q * household;
+        const cur = map.get(key) || { key, name: ing.n, aisle: ing.a, unit: ing.u, qty: 0, count: 0, perServing: ing.q };
+        cur.qty += ing.q * servings;
         cur.count += 1;
         map.set(key, cur);
       }
@@ -187,7 +197,16 @@ function buildCtx() {
     onboarded: state.onboarded, trainingLoads: TRAINING_LOADS, guidance: contextualGuidance({ profile, trainingLoad: load, today: log, plannedMeal: recipeById(planDay[SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner']) }),
     recipeById, planForDate, logFor, dayMacrosFor, recipes: RECIPES, filters: state.filters,
     weekDays, weekOffset: state.weekOffset, shopList, shopChecked,
-    shopStats: { total: shopList.length, checked: shopList.filter(i => shopChecked[i.key]).length, pct: shopList.length ? shopList.filter(i => shopChecked[i.key]).length / shopList.length : 0 },
+    shopFilter: state.shopFilter,
+    shopMembers: cache.profiles.length,
+    shopServings: householdServings(cache.profiles),
+    shopStats: (() => {
+      const checked = shopList.filter(i => shopChecked[i.key]).length;
+      return {
+        total: shopList.length, checked, remaining: shopList.length - checked,
+        pct: shopList.length ? checked / shopList.length : 0
+      };
+    })(),
     measurements, trend, heatCells: heatCellsFor(profile.id),
     loggedDays: loggedDateKeys(profile.id).length,
     loggedDays28: heatCellsFor(profile.id).filter(c => c.logged).length,
@@ -203,6 +222,20 @@ function buildCtx() {
       return { id: p.id, name: p.name, pct: c.pct, status: c.status, gap: c.gapKcal };
     }),
     targetsByMember: Object.fromEntries(cache.profiles.map(p => [p.id, targetsFor(p, p.athlete ? state.trainingLoad : 'normal')])),
+    persona: personaPoints(profile, {
+      trainingLoad: load,
+      targets,
+      totals,
+      coverage,
+      streak,
+      ironToday: ironTodayFor(planDay),
+      hydrationMl: Number(log?.waterMl) || 0,
+      measurements: measurements.length
+    }),
+    personaFocus: PERSONA_FOCUS[profile.goal] || null,
+    fueling: trainingFueling(profile, load),
+    ironToday: ironTodayFor(planDay),
+    cook,
     diagnostics: diagnosticsCache
   };
 }
@@ -356,7 +389,8 @@ async function persistSettings() {
     await put('settings', {
       id: 'app', view: state.view, member: state.member, theme: state.theme,
       trainingLoad: state.trainingLoad, onboarded: state.onboarded,
-      filters: state.filters, shopChecked: state.shopChecked, version: APP.version
+      filters: state.filters, shopChecked: state.shopChecked,
+      shopFilter: state.shopFilter, version: APP.version
     });
   } catch (err) { console.error('[ZENITH] settings save failed', err); }
 }
@@ -418,6 +452,78 @@ async function refreshDiagnostics() {
     sw: 'serviceWorker' in navigator ? (navigator.serviceWorker.controller ? 'Ενεργό' : 'Σε αναμονή') : 'Μη διαθέσιμο',
     online: navigator.onLine
   };
+}
+
+/* ── Cook Mode ─────────────────────────────────────────────────────────── */
+
+function openCook(recipeId) {
+  const recipe = recipeById(recipeId);
+  if (!recipe) return;
+  cook = { open: true, recipeId, step: 0, done: {} };
+  cookTimer = { id: null, remaining: 0, total: 0, running: false };
+  renderCookSheet(true);
+}
+
+/** Re-render the cook sheet in place, or create it on first open. */
+function renderCookSheet(create) {
+  const recipe = recipeById(cook.recipeId);
+  if (!recipe) return;
+  const host = byId('sheet');
+  const existing = host && !host.classList.contains('hidden') ? host.querySelector('.sheet-body') : null;
+  if (create || !existing) {
+    openSheet({
+      title: `Μαγείρεμα · ${recipe.name}`,
+      body: cookBody(buildCtx(), recipe),
+      size: 'xl',
+      onClose: () => { stopCookTimer(true); cook.open = false; }
+    });
+  } else {
+    existing.innerHTML = cookBody(buildCtx(), recipe);
+  }
+}
+
+function startCookTimer(seconds) {
+  stopCookTimer(false);
+  const secs = Math.max(1, Number(seconds) || 300);
+  cookTimer.total = secs;
+  cookTimer.remaining = secs;
+  cookTimer.running = true;
+  paintCookTimer();
+  cookTimer.id = setInterval(() => {
+    cookTimer.remaining = Math.max(0, cookTimer.remaining - 1);
+    if (cookTimer.remaining === 0) {
+      clearInterval(cookTimer.id);
+      cookTimer.id = null;
+      cookTimer.running = false;
+      paintCookTimer();
+      announceTimerDone();
+      return;
+    }
+    paintCookTimer();
+  }, 1000);
+}
+
+function stopCookTimer(reset) {
+  if (cookTimer.id) { clearInterval(cookTimer.id); cookTimer.id = null; }
+  cookTimer.running = false;
+  if (reset) { cookTimer.remaining = 0; cookTimer.total = 0; }
+}
+
+function paintCookTimer() {
+  const el = byId('cookTimerText');
+  if (!el) return;
+  el.textContent = clockText(cookTimer.remaining > 0 ? cookTimer.remaining : cookTimer.total);
+  el.classList.toggle('is-running', cookTimer.running);
+}
+
+function announceTimerDone() {
+  toast('Ο χρόνος τελείωσε.', { tone: 'accent' });
+  try {
+    if ('Notification' in window && window.Notification?.permission === 'granted') {
+      new window.Notification('ZENITH PRO', { body: 'Ο χρόνος τελείωσε.' });
+    }
+  } catch { /* notifications unavailable */ }
+  try { navigator.vibrate?.([220, 110, 220]); } catch { /* no haptics */ }
 }
 
 /* ── Action dispatcher ─────────────────────────────────────────────────── */
@@ -554,6 +660,44 @@ document.addEventListener('click', async e => {
       openSheet({ title: r.name, size: 'lg', body: recipeDetail(buildCtx(), r) });
       break;
     }
+    case 'cook': {
+      openCook(target.dataset.id);
+      break;
+    }
+    case 'cookStep': {
+      const recipe = recipeById(cook.recipeId);
+      if (!recipe) break;
+      const requested = target.dataset.to != null
+        ? Number(target.dataset.to)
+        : cook.step + Number(target.dataset.delta || 0);
+      const next = Math.max(0, Math.min(requested, recipe.steps.length - 1));
+      if (next === cook.step) break;
+      cook.step = next;
+      stopCookTimer(true); // a new step means a new timer
+      renderCookSheet(false);
+      break;
+    }
+    case 'cookIng': {
+      const i = Number(target.dataset.i);
+      cook.done = { ...cook.done, [i]: !cook.done[i] };
+      renderCookSheet(false);
+      break;
+    }
+    case 'timerStart': {
+      startCookTimer(target.dataset.sec);
+      break;
+    }
+    case 'timerPause': {
+      stopCookTimer(false);
+      paintCookTimer();
+      break;
+    }
+    case 'timerReset': {
+      stopCookTimer(false);
+      cookTimer.remaining = cookTimer.total;
+      paintCookTimer();
+      break;
+    }
     case 'day': {
       openSheet({ title: 'Λεπτομέρειες ημέρας', size: 'md', body: dayDetail(buildCtx(), target.dataset.date) });
       break;
@@ -576,20 +720,29 @@ document.addEventListener('click', async e => {
       toast('Η λίστα καθαρίστηκε.');
       break;
     }
+    case 'shopFilter': {
+      state.shopFilter = target.dataset.value || 'all';
+      await persistSettings();
+      render();
+      break;
+    }
     case 'shopCopy': {
       const ctx = buildCtx();
+      const onlyTodo = ctx.shopFilter === 'todo';
+      const visible = ctx.shopList.filter(i => !onlyTodo || !ctx.shopChecked[i.key]);
       const lines = [];
       for (const aisle of AISLES) {
-        const items = ctx.shopList.filter(i => i.aisle === aisle.id);
+        const items = visible.filter(i => i.aisle === aisle.id);
         if (!items.length) continue;
         lines.push(`— ${aisle.label} —`);
         for (const i of items) lines.push(`• ${i.name}: ${num(i.qty)} ${i.unit}`);
         lines.push('');
       }
-      const text = `ZENITH PRO · Λίστα αγορών (${cache.profiles.length} άτομα)\n\n${lines.join('\n')}`;
+      const head = onlyTodo ? 'Λίστα αγορών · ό,τι απομένει' : 'Λίστα αγορών';
+      const text = `ZENITH PRO · ${head} (${ctx.shopMembers} άτομα)\n\n${lines.join('\n')}`;
       try {
         await navigator.clipboard.writeText(text);
-        toast('Η λίστα αντιγράφηκε στο πρόχειρο.');
+        toast(onlyTodo ? 'Αντιγράφηκαν τα υπόλοιπα είδη.' : 'Η λίστα αντιγράφηκε στο πρόχειρο.');
       } catch { toast('Δεν ήταν δυνατή η αντιγραφή.', { tone: 'danger' }); }
       break;
     }

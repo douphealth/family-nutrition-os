@@ -183,6 +183,98 @@ export function avatar(profile, size = 40) {
   return `<span class="avatar" style="--av:${esc(profile?.accent || 'var(--accent)')};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px" aria-hidden="true">${esc(initials)}</span>`;
 }
 
+/* ── Recipe illustrations ──────────────────────────────────────────────────
+ * Inline SVG, so the app stays offline and dependency-free. Colours come from
+ * the --art-* tokens defined per theme in app.css, so the same artwork stays
+ * appetising in light and dark. Each motif is drawn inside a 64×64 badge.
+ */
+const ART = {
+  bowl: `<path d="M14 31h36a18 18 0 0 1-36 0z" fill="var(--art-d)"/>
+    <circle cx="24" cy="25" r="4.6" fill="var(--art-b)"/>
+    <circle cx="33" cy="22" r="4.1" fill="var(--art-c)"/>
+    <circle cx="41" cy="25.5" r="3.6" fill="var(--art-a)"/>
+    <rect x="11" y="28" width="42" height="5" rx="2.5" fill="var(--art-a)"/>`,
+  egg: `<ellipse cx="32" cy="34" rx="21" ry="15" fill="var(--art-d)"/>
+    <ellipse cx="26" cy="30" rx="10" ry="7" fill="#fff" opacity=".5"/>
+    <circle cx="34" cy="34" r="8" fill="var(--art-a)"/>
+    <circle cx="31" cy="31" r="2.4" fill="#fff" opacity=".55"/>`,
+  legume: `<ellipse cx="21" cy="28" rx="8.5" ry="5.8" transform="rotate(-28 21 28)" fill="var(--art-e)"/>
+    <ellipse cx="41" cy="25" rx="8.5" ry="5.8" transform="rotate(24 41 25)" fill="var(--art-a)"/>
+    <ellipse cx="30" cy="41" rx="8.5" ry="5.8" transform="rotate(-10 30 41)" fill="var(--art-b)"/>
+    <path d="M18 26c3 1 6 1 8 3M38 23c3 1 6 1 8 3M27 39c3 1 6 1 8 3" stroke="var(--art-ink)" stroke-width="1.4" opacity=".35" fill="none"/>`,
+  tray: `<rect x="11" y="21" width="42" height="23" rx="4.5" fill="var(--art-bg-2)" stroke="var(--art-e)" stroke-width="2.6"/>
+    <circle cx="23" cy="33" r="5.4" fill="var(--art-a)"/>
+    <circle cx="35" cy="29.5" r="5" fill="var(--art-c)"/>
+    <circle cx="43.5" cy="36" r="4.2" fill="var(--art-b)"/>`,
+  fish: `<ellipse cx="29" cy="32" rx="16" ry="9.5" fill="var(--art-a)"/>
+    <path d="M45 32l11-7.5v15z" fill="var(--art-b)"/>
+    <path d="M29 22.5c4 3 4 16 0 19" stroke="var(--art-ink)" stroke-width="1.4" opacity=".3" fill="none"/>
+    <circle cx="21" cy="30" r="1.9" fill="var(--art-ink)"/>`,
+  bread: `<rect x="15" y="22" width="34" height="24" rx="7" fill="var(--art-d)"/>
+    <path d="M15 30c0-6.5 7-10 17-10s17 3.5 17 10z" fill="var(--art-e)"/>
+    <path d="M25 36h14M25 41h10" stroke="var(--art-e)" stroke-width="1.8" opacity=".45" stroke-linecap="round"/>`,
+  glass: `<path d="M22 16h20l-2.6 31a4.5 4.5 0 0 1-4.5 4h-5.8a4.5 4.5 0 0 1-4.5-4z" fill="var(--art-bg-2)"/>
+    <path d="M24.4 27h15.2l-1.9 20a4.5 4.5 0 0 1-4.5 4h-2.4a4.5 4.5 0 0 1-4.5-4z" fill="var(--art-d)"/>
+    <rect x="21" y="15" width="22" height="4" rx="2" fill="var(--art-a)"/>`,
+  pasta: `<path d="M14 33h36a18 18 0 0 1-36 0z" fill="var(--art-d)"/>
+    <path d="M19 30c3-6 8-9.5 13-9.5S45 24 48 30" stroke="var(--art-a)" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <path d="M22 30c3-4.5 6.5-7 10-7s7 2.5 10 7" stroke="var(--art-b)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <rect x="11" y="30" width="42" height="5" rx="2.5" fill="var(--art-c)"/>`,
+  salad: `<path d="M14 33h36a18 18 0 0 1-36 0z" fill="var(--art-d)"/>
+    <circle cx="23" cy="26" r="6.4" fill="var(--art-c)"/>
+    <circle cx="34" cy="21.5" r="5.2" fill="var(--art-c)" opacity=".82"/>
+    <circle cx="43" cy="27" r="4.6" fill="var(--art-b)"/>
+    <rect x="11" y="30" width="42" height="5" rx="2.5" fill="var(--art-a)"/>`,
+  skewer: `<rect x="9" y="31" width="46" height="2.6" rx="1.3" fill="var(--art-e)"/>
+    <rect x="15" y="23.5" width="9.5" height="9.5" rx="2.4" fill="var(--art-a)"/>
+    <rect x="27.5" y="22.5" width="9.5" height="9.5" rx="2.4" fill="var(--art-b)"/>
+    <rect x="40" y="23.5" width="9.5" height="9.5" rx="2.4" fill="var(--art-c)"/>`,
+  meat: `<circle cx="24" cy="27" r="9.5" fill="var(--art-e)"/>
+    <circle cx="41" cy="30" r="8.6" fill="var(--art-b)"/>
+    <circle cx="30" cy="42" r="7.4" fill="var(--art-e)" opacity=".9"/>
+    <circle cx="21" cy="24" r="2.2" fill="#fff" opacity=".3"/>`,
+  leaf: `<path d="M47 15C30 15 16 26 16 40c0 4 2 7 2 7s12 2 20-6 9-26 9-26z" fill="var(--art-c)"/>
+    <path d="M18 47C27 36 35 28 45 19" stroke="var(--art-d)" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  fruit: `<circle cx="24" cy="33" r="10" fill="var(--art-b)"/>
+    <circle cx="39" cy="27" r="8.4" fill="var(--art-a)"/>
+    <circle cx="36" cy="42" r="7" fill="var(--art-c)"/>
+    <circle cx="21" cy="29" r="2.6" fill="#fff" opacity=".35"/>`
+};
+
+export function illustration(motif = 'bowl', size = 64, className = '') {
+  const art = ART[motif] || ART.bowl;
+  const cls = String(className || '').trim();
+  return `<svg class="art${cls ? ` ${cls}` : ''}" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false">
+    <circle cx="32" cy="32" r="30" fill="var(--art-bg)"/>
+    ${art}
+  </svg>`;
+}
+
+/* ── Step timing ───────────────────────────────────────────────────────────
+ * Pull timing cues out of a recipe step so Cook Mode can offer a real timer
+ * instead of making someone re-read the sentence. Handles the prime sign the
+ * recipe data uses ("~25′"), a plain apostrophe, and oven temperatures.
+ */
+export function parseStepTimers(text) {
+  const s = String(text || '');
+  const timers = [];
+  const minuteRe = /(\d{1,3})\s*[′']/g;
+  let match;
+  while ((match = minuteRe.exec(s)) !== null) {
+    const minutes = Number(match[1]);
+    if (minutes > 0 && minutes <= 600) timers.push({ minutes, seconds: minutes * 60 });
+  }
+  const oven = s.match(/(\d{2,3})\s*°C/);
+  return { timers, ovenC: oven ? Number(oven[1]) : null };
+}
+
+/** Seconds → "12:30" for the Cook Mode timer display. */
+export function clockText(totalSeconds) {
+  const s = Math.max(0, Math.round(Number(totalSeconds) || 0));
+  const m = Math.floor(s / 60);
+  return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
 /* ── Progress ring ─────────────────────────────────────────────────────── */
 
 /**
@@ -357,11 +449,13 @@ export function toast(message, { actionLabel = '', onAction = null, tone = 'defa
 /* ── Sheet / modal ─────────────────────────────────────────────────────── */
 
 let lastFocused = null;
+let sheetOnClose = null;
 
-export function openSheet({ title, body, footer = '', size = 'md', onMount = null }) {
+export function openSheet({ title, body, footer = '', size = 'md', onMount = null, onClose = null }) {
   const host = byId('sheet');
   if (!host) return;
   lastFocused = document.activeElement;
+  sheetOnClose = typeof onClose === 'function' ? onClose : null;
   host.innerHTML = `<div class="sheet-backdrop" data-sheet-close></div>
     <div class="sheet-panel sheet-${size}" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
       <header class="sheet-head">
@@ -399,6 +493,11 @@ export function closeSheet() {
   host.onkeydown = null;
   document.body.classList.remove('no-scroll');
   lastFocused?.focus?.();
+  // Fire the caller's cleanup AFTER the sheet is gone, so a callback that opens
+  // another sheet is not immediately torn down by this one.
+  const callback = sheetOnClose;
+  sheetOnClose = null;
+  if (callback) { try { callback(); } catch (err) { console.error('[ZENITH] sheet onClose failed', err); } }
 }
 
 export function isSheetOpen() {

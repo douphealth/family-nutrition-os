@@ -321,3 +321,163 @@ export function weeklyAdherence(logs, weekStartKeys) {
     return { date, meals, skipped, waterMl: Number(log?.waterMl) || 0, logged: meals > 0 || skipped > 0 };
   });
 }
+
+/* ── Persona brief ─────────────────────────────────────────────────────────
+ * The live numbers behind the "what matters for you today" card. Deliberately
+ * returns structure and numbers only — the framing sentences live in data.js
+ * (PERSONA_FOCUS) and are composed in the view, so this file stays pure and
+ * import-free.
+ *
+ * Safety rule restated: a minor profile never receives a deficit target, a
+ * weight-loss rate, or an adult BMI category — not even as a "point to watch".
+ */
+
+/** Recipes in a plan day that are meaningful dietary iron sources. */
+export function ironMeals(planDay = {}, recipeById = () => null, ironIds = []) {
+  const set = new Set(ironIds);
+  return Object.keys(planDay)
+    .map(slot => ({ slot, recipe: recipeById(planDay[slot]) }))
+    .filter(entry => entry.recipe && set.has(entry.recipe.id));
+}
+
+/**
+ * General sports-nutrition targets around a session, scaled per kg of body
+ * mass. Ranges, not prescriptions — and only ever for athlete profiles.
+ */
+export function trainingFueling(profile, trainingLoad = 'normal') {
+  if (!profile?.athlete) return null;
+  const w = Number(profile.weight) || 0;
+  const heavy = ['hard', 'game', 'tournament'].includes(trainingLoad);
+  const carbMultiplier = { rest: 0.5, light: 1, normal: 1.5, hard: 2, game: 2.5, tournament: 3 }[trainingLoad] ?? 1.5;
+  return {
+    load: trainingLoad,
+    heavy,
+    /** 1–3 g/kg 2–3 h before; the heavy end only on game/tournament days. */
+    preCarbs: { min: Math.round(1 * w), max: Math.round(3 * w) },
+    /** ~0.3 g/kg protein and ~1 g/kg carbohydrate within ~2 h after. */
+    postProtein: Math.round(0.3 * w),
+    postCarbs: Math.round(1.0 * w),
+    /** Rough session carbohydrate emphasis, for the portion multiplier. */
+    carbEmphasis: carbMultiplier
+  };
+}
+
+export function personaPoints(profile, {
+  trainingLoad = 'normal',
+  targets = {},
+  totals = {},
+  coverage = null,
+  streak = 0,
+  ironToday = [],
+  hydrationMl = 0,
+  measurements = 0
+} = {}) {
+  const points = [];
+  const minor = isMinor(profile);
+  const proteinMin = targets?.protein?.min ?? null;
+  const hydration = targets?.hydration?.ml ?? null;
+  const logged = totals?.confirmed?.kcal ?? 0;
+
+  /* ── Minor athlete: fuelling around the session ── */
+  if (minor && profile.athlete) {
+    const fuel = trainingFueling(profile, trainingLoad);
+    points.push({
+      key: 'carbs', icon: 'zap', tone: 'gold', label: 'Υδατάνθρακες',
+      value: fuel.heavy ? 'Αυξημένοι' : 'Κανονικοί',
+      body: fuel.heavy
+        ? 'Μέρα υψηλών απαιτήσεων: υδατάνθρακες στο γεύμα πριν και στο σνακ μετά. Η ποσότητα του πιάτου μεγαλώνει — όχι η πρωτεΐνη.'
+        : 'Το σημερινό φορτίο δεν απαιτεί επιπλέον υδατάνθρακες. Κράτα το κανονικό πιάτο και τακτικά γεύματα.'
+    });
+    points.push({
+      key: 'protein', icon: 'drumstick', tone: 'blue', label: 'Πρωτεΐνη',
+      value: proteinMin ? `${proteinMin}+ g` : '—',
+      body: 'Κατώτατο όριο για την ημέρα. Μοιράζεται στα γεύματα — δεν χρειάζεται συμπλήρωμα αν καλύπτεται από το πλάνο.'
+    });
+    points.push({
+      key: 'fluid', icon: 'droplet', tone: 'accent', label: 'Υγρά',
+      value: hydration ? `${hydrationMl} / ${hydration} ml` : `${hydrationMl} ml`,
+      body: 'Η ζέστη και η διπλή προπόνηση ανεβάζουν την ανάγκη. Μέτρα πριν και μετά την προπόνηση αν θέλεις ακρίβεια.'
+    });
+    return points;
+  }
+
+  /* ── Minor, non-athlete: growth, iron, variety. Never a deficit. ── */
+  if (minor) {
+    const ironNames = ironToday.map(e => e.recipe.name);
+    points.push({
+      key: 'iron', icon: 'leaf', tone: 'rose', label: 'Σίδηρος σήμερα',
+      value: `${ironToday.length} ${ironToday.length === 1 ? 'γεύμα' : 'γεύματα'}`,
+      body: ironNames.length
+        ? `${ironNames.join(' · ')}. Ο σίδηρος από όσπρια και λαχανικά απορροφάται καλύτερα μαζί με ντομάτα ή λεμόνι — τα περισσότερα γεύματα το έχουν ήδη.`
+        : 'Καμία πηγή σιδήρου στο σημερινό πλάνο. Οι φακές, τα ρεβίθια και τα μπιφτέκια είναι οι πιο εύκολες προσθήκες.'
+    });
+    points.push({
+      key: 'variety', icon: 'sparkles', tone: 'blue', label: 'Ποικιλία',
+      value: `${totals?.groups ?? 0} ομάδες`,
+      body: 'Στόχος είναι η ποικιλία μέσα στην εβδομάδα, όχι ο τέλειος κάθε μέρα. Δεν υπάρχει «καλό» και «κακό» φαγητό σε αυτό το προφίλ.'
+    });
+    points.push({
+      key: 'noDeficit', icon: 'shield', tone: 'accent', label: 'Προστασία προφίλ',
+      value: 'Χωρίς έλλειμμα',
+      body: 'Σε αυτή την ηλικία η εφαρμογή δεν εφαρμόζει ποτέ έλλειμμα θερμίδων και δεν εμφανίζει κατηγορία BMI ενηλίκων.'
+    });
+    return points;
+  }
+
+  /* ── Adult, gradual fat loss: rate over speed, protein to keep muscle ── */
+  if (profile.goal === 'gradual_fat_loss') {
+    points.push({
+      key: 'rate', icon: 'target', tone: 'accent', label: 'Ρυθμός',
+      value: '0,25–0,5 kg / εβδομάδα',
+      body: 'Πιο γρήγορο δεν είναι καλύτερο: χάνεται μυϊκή μάζα και ο ρυθμός δεν κρατά. Η εφαρμογή δεν μειώνει ποτέ μερίδα — προσθέτει όπου λείπει κάτι.'
+    });
+    points.push({
+      key: 'protein', icon: 'drumstick', tone: 'blue', label: 'Πρωτεΐνη',
+      value: proteinMin ? `${proteinMin}+ g` : '—',
+      body: 'Η πρωτεΐνη προστατεύει τη μυϊκή μάζα όσο το βάρος πέφτει. Είναι ο μόνος αριθμός που αξίζει να κοιτάς καθημερινά.'
+    });
+    points.push({
+      key: 'trend', icon: 'chart', tone: 'rose', label: 'Τάση',
+      value: measurements < 3 ? `Χρειάζονται ${3 - measurements} μετρήσεις` : `${measurements} μετρήσεις`,
+      body: measurements < 3
+        ? 'Ζυγίσου 3 φορές σε 3 εβδομάδες, ίδια ώρα, και τότε η εφαρμογή θα δείξει τάση. Μία μέτρηση δεν λέει τίποτα.'
+        : 'Η εικόνα βγαίνει από την κλίση 3–4 εβδομάδων. Καμία μεμονωμένη μέτρηση δεν κρίνεται.'
+    });
+    return points;
+  }
+
+  /* ── Adult, maintenance ── */
+  points.push({
+    key: 'protein', icon: 'drumstick', tone: 'blue', label: 'Πρωτεΐνη',
+    value: proteinMin ? `${proteinMin}+ g` : '—',
+    body: 'Σταθερή πρωτεΐνη σε κάθε γεύμα κρατά κόρο και μυϊκή μάζα, ανεξάρτητα από το βάρος.'
+  });
+  points.push({
+    key: 'salt', icon: 'shield', tone: 'gold', label: 'Αλάτι',
+    value: 'Προσοχή',
+    body: 'Οι ελιές, η φέτα και τα αλλαντικά καλύπτουν το αλάτι της ημέρας. Δεν χρειάζεται επιπλέον στο πιάτο.'
+  });
+  points.push({
+    key: 'fluid', icon: 'droplet', tone: 'accent', label: 'Υγρά',
+    value: hydration ? `${hydrationMl} / ${hydration} ml` : `${hydrationMl} ml`,
+    body: 'Καταγραφή νερού με ένα πάτημα στα ποτήρια — δεν χρειάζεται ζύγισμα.'
+  });
+  return points;
+}
+
+/* ── Household shopping share ──────────────────────────────────────────────
+ * A household pot is shared across the whole plate, so a member's share of the
+ * shopping is the average of their four portion groups — not a per-macro split.
+ * This replaces the old "× number of people" shortcut, which counted a 0,75×
+ * carber (the mother) and a 1,35× fuelled athlete (the son) as the same eater.
+ */
+export function memberShare(profile) {
+  const pp = portionProfile(profile, 'normal');
+  return (pp.vegetables + pp.protein + pp.carbs + pp.fats) / 4;
+}
+
+export function householdServings(profiles) {
+  const members = Array.isArray(profiles) ? profiles : [];
+  if (!members.length) return 1;
+  return members.reduce((sum, p) => sum + memberShare(p), 0) || 1;
+}

@@ -1,13 +1,14 @@
 {
   "name": "zenith-pro-family-nutrition-os",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "description": "Privacy-first, offline-first family nutrition PWA. No runtime dependencies.",
   "scripts": {
-    "test": "node tests/nutrition-engine.test.mjs && node tests/data-integrity.test.mjs",
+    "test": "node tests/nutrition-engine.test.mjs && node tests/data-integrity.test.mjs && node tests/persona.test.mjs",
     "test:engine": "node tests/nutrition-engine.test.mjs",
     "test:data": "node tests/data-integrity.test.mjs",
+    "test:persona": "node tests/persona.test.mjs",
     "smoke": "node scripts/smoke_dom.mjs && node scripts/smoke_dom.mjs --idb",
     "smoke:local": "node scripts/smoke_dom.mjs",
     "smoke:idb": "node scripts/smoke_dom.mjs --idb",

@@ -3,8 +3,8 @@
    --------------------------------------------------------------------------
    Sections: 1 tokens · 2 reset · 3 ambience · 4 shell · 5 typography
              6 controls · 7 cards · 8 data viz · 9 meals & plan · 10 library
-             11 shopping · 12 forms · 13 overlays · 14 states · 15 print
-             16 responsive · 17 motion
+             11 shopping · 12 forms · 13 overlays · 14 states
+             15 persona, fuelling & Cook Mode · 16 print · 17 responsive · 18 motion
    Colour is driven by tokens so every surface works in light and dark.
    ========================================================================== */
 
@@ -53,6 +53,16 @@
   --sp: clamp(16px, 2.4vw, 30px);
   --shell: 1320px;
   --ease: cubic-bezier(.22, .61, .36, 1);
+
+  /* Recipe illustration palette — warm, food-like, theme-aware. */
+  --art-bg: #eef5f1;
+  --art-bg-2: #ffffff;
+  --art-a: #e8a33d;
+  --art-b: #d9613f;
+  --art-c: #4f9d5d;
+  --art-d: #f6ead0;
+  --art-e: #b5794a;
+  --art-ink: #2a1a0e;
 }
 
 [data-theme="dark"] {
@@ -90,6 +100,15 @@
   --shadow-3: 0 46px 100px -38px rgba(0, 0, 0, .9);
   --ring-hi: inset 0 1px 0 rgba(255, 255, 255, .06);
   --logo-ink: #04140f;
+
+  --art-bg: #14261f;
+  --art-bg-2: #1e352c;
+  --art-a: #f0b95c;
+  --art-b: #e5825f;
+  --art-c: #6cc07a;
+  --art-d: #e6d6b4;
+  --art-e: #cf9560;
+  --art-ink: #0a1410;
 }
 
 /* ── 2. Reset & base ───────────────────────────────────────────────────── */
@@ -575,7 +594,7 @@ b, strong { font-weight: 700; }
   transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
 }
 .recipe-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: var(--line-strong); }
-.recipe-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.recipe-headmeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .recipe-slot { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .recipe-slot.breakfast { color: var(--gold); }
 .recipe-slot.lunch { color: var(--accent); }
@@ -610,12 +629,24 @@ b, strong { font-weight: 700; }
 /* ── 11. Shopping ──────────────────────────────────────────────────────── */
 
 .shop-aisle { display: grid; gap: 2px; }
+.shop-aisle-sec { margin-top: 4px; }
 .shop-aisle-head {
   display: flex; align-items: center; gap: 9px;
   font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
   color: var(--ink-3); margin: 18px 0 7px;
 }
 .shop-aisle-head .ic { color: var(--accent); }
+.shop-aisle-ic {
+  width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent); flex: none;
+}
+.shop-aisle-count {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-weight: 800; letter-spacing: .04em;
+  padding: 3px 9px; border-radius: 999px; background: var(--surface-2);
+  border: 1px solid var(--line); color: var(--ink-3); text-transform: none;
+}
+.shop-aisle-count.is-complete { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 .shop-item {
   display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 11px; align-items: center;
   padding: 10px 13px; border-radius: var(--r-sm); border: 1px solid transparent;
@@ -632,15 +663,71 @@ b, strong { font-weight: 700; }
 }
 .shop-check:hover { border-color: var(--accent); }
 .shop-item.is-checked .shop-check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.shop-meta { min-width: 0; }
 .shop-name { font-weight: 600; }
 .shop-src { font-size: .74rem; color: var(--ink-3); }
 .shop-qty { font-weight: 750; color: var(--ink-2); white-space: nowrap; }
 
+.shop-head { display: grid; gap: 14px; }
 .shop-progress {
   display: flex; align-items: center; gap: 12px; padding: 14px 16px;
   border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line);
 }
-.shop-progress .mb-track { flex: 1; }
+.shop-progress-body { flex: 1; min-width: 0; }
+.shop-progress-body .mb-track { width: 100%; }
+
+/* Filter chips — the mother's in-shop view: what is still missing. */
+.shop-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.shop-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  transition: all .16s var(--ease);
+}
+.shop-chip:hover { border-color: var(--accent); color: var(--accent); }
+.shop-chip.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.shop-chip-n {
+  font-size: .72rem; font-weight: 800; padding: 1px 7px; border-radius: 999px;
+  background: var(--surface-2); color: var(--ink-3);
+}
+.shop-chip.is-on .shop-chip-n { background: rgba(255, 255, 255, .28); color: var(--accent-ink); }
+
+.shop-done {
+  display: flex; align-items: center; gap: 13px; margin-top: 16px;
+  padding: 16px 18px; border-radius: var(--r-md);
+  background: var(--accent-soft); color: var(--ink);
+  border: 1px solid transparent;
+}
+.shop-done .ic { color: var(--accent); flex: none; }
+.shop-done b { display: block; margin-bottom: 2px; }
+
+/* "Why these numbers" — transparency instead of false precision. */
+.why { margin-top: 20px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.why > summary {
+  display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none;
+  padding: 14px 17px; font-size: .86rem; font-weight: 750; color: var(--ink-2);
+}
+.why > summary::-webkit-details-marker { display: none; }
+.why > summary .ic { color: var(--accent); flex: none; }
+.why > summary::after {
+  content: ''; margin-left: auto; width: 8px; height: 8px;
+  border-right: 2px solid var(--ink-3); border-bottom: 2px solid var(--ink-3);
+  transform: rotate(45deg) translateY(-2px); transition: transform .18s var(--ease);
+}
+.why[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+.why-body {
+  padding: 0 17px 17px; font-size: .86rem; color: var(--ink-2); line-height: 1.62;
+  border-top: 1px solid var(--line); padding-top: 14px;
+}
+.why-body p { margin: 0 0 10px; }
+.why-body p:last-child { margin-bottom: 0; }
+.why-body ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 7px; }
+.why-body li { padding-left: 2px; }
+.why-body .ic { vertical-align: -2px; color: var(--accent); }
+.why-note {
+  padding: 11px 13px; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink-2); font-size: .82rem;
+}
 
 /* ── 12. Forms ─────────────────────────────────────────────────────────── */
 
@@ -833,7 +920,140 @@ kbd {
 }
 .update-banner .ic { color: var(--blue); }
 
-/* ── 15. Print ─────────────────────────────────────────────────────────── */
+/* ── 15. Persona, fuelling & Cook Mode ─────────────────────────────────── */
+
+/* Illustrations — the SVG carries its own badge, so this just boxes it. */
+.art { display: block; flex: none; }
+
+/* Persona brief — "what matters for you today" */
+.persona { position: relative; overflow: hidden; padding-left: calc(var(--sp) + 4px); }
+.persona::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 4px;
+  background: linear-gradient(180deg, var(--pa, var(--accent)), transparent 85%);
+}
+.persona-head { display: flex; align-items: center; gap: 13px; }
+.persona-title {
+  font-family: var(--font-display); font-size: 1.32rem; letter-spacing: -.01em;
+  margin: 3px 0 0; line-height: 1.25;
+}
+.persona-lead { color: var(--ink-2); font-size: .9rem; line-height: 1.65; margin: 13px 0 0; max-width: 68ch; }
+.persona-points { display: grid; grid-template-columns: repeat(auto-fit, minmax(228px, 1fr)); gap: 12px; margin-top: 17px; }
+.ppoint {
+  display: flex; gap: 11px; padding: 13px 14px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.ppoint > div { min-width: 0; }
+.ppoint-ic {
+  width: 30px; height: 30px; border-radius: 9px; flex: none;
+  display: grid; place-items: center;
+  background: var(--tint-accent); color: var(--accent);
+}
+.ppoint.tone-blue .ppoint-ic { background: var(--tint-blue); color: var(--blue); }
+.ppoint.tone-rose .ppoint-ic { background: var(--tint-rose); color: var(--rose); }
+.ppoint.tone-gold .ppoint-ic { background: var(--tint-gold); color: var(--gold); }
+.ppoint-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ppoint-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; color: var(--ink-3); }
+.ppoint-value { font-size: .86rem; font-weight: 750; white-space: nowrap; }
+.ppoint-note { margin: 5px 0 0; font-size: .8rem; line-height: 1.55; color: var(--ink-2); }
+
+/* Athlete fuelling */
+.fuel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.fuel-title { font-family: var(--font-display); font-size: 1.2rem; margin: 5px 0 0; display: flex; align-items: center; gap: 8px; }
+.fuel-title .ic { color: var(--gold); }
+.fuel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(236px, 1fr)); gap: 12px; margin-top: 16px; }
+.fuel-block { display: flex; gap: 11px; padding: 13px 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.fuel-block > div { min-width: 0; }
+.fuel-ic { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; background: var(--tint-gold); color: var(--gold); }
+.fuel-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: .82rem; }
+.fuel-top span { color: var(--ink-3); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; }
+.fuel-top b { white-space: nowrap; }
+
+/* Next-meal card */
+.next-head { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+.next-text { flex: 1 1 220px; min-width: 0; }
+.next-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+
+/* Recipe cards + detail */
+.recipe-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rd-head { display: flex; align-items: center; gap: 15px; }
+
+/* Cook Mode */
+.sheet-xl { width: min(1080px, calc(100vw - 32px)); }
+.cook-head { display: flex; align-items: center; gap: 15px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.cook-name { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 3px; }
+.cook-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; margin-top: 18px; align-items: start; }
+.cook-stepper { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cook-counter { font-size: .84rem; color: var(--ink-2); }
+.cook-counter b { color: var(--ink); font-size: 1.08rem; }
+.cook-bar { height: 6px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; margin: 11px 0 20px; }
+.cook-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s var(--ease); }
+.cook-step { font-family: var(--font-display); font-size: clamp(1.18rem, 2.4vw, 1.5rem); line-height: 1.55; margin: 0 0 18px; }
+
+.cook-timerbox { margin-bottom: 16px; }
+.cook-timer {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 14px 16px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.cook-timer-text {
+  font-variant-numeric: tabular-nums; font-size: 2rem; font-weight: 700;
+  letter-spacing: -.02em; min-width: 4.6ch;
+}
+.cook-timer-text.is-running { color: var(--accent); }
+.cook-timer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cook-timer-presets { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+
+.cook-oven {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  padding: 9px 14px; border-radius: var(--r-full);
+  background: var(--tint-gold); color: var(--gold); font-size: .85rem; font-weight: 650;
+}
+
+.cook-steplist { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.cook-steplink {
+  display: flex; gap: 11px; align-items: flex-start; width: 100%; text-align: left;
+  padding: 9px 11px; border: 1px solid transparent; border-radius: var(--r-sm);
+  background: none; font: inherit; font-size: .86rem; line-height: 1.5; color: var(--ink-2);
+  cursor: pointer; transition: background .18s var(--ease), color .18s var(--ease);
+}
+.cook-steplink:hover { background: var(--surface-2); color: var(--ink); }
+.cook-steplink b { flex: none; font-size: .78rem; color: var(--ink-3); }
+.cook-steplist .is-current .cook-steplink { background: var(--accent-soft); border-color: var(--accent-line); color: var(--ink); font-weight: 600; }
+.cook-steplist .is-done .cook-steplink { opacity: .5; }
+.cook-steplist .is-done .cook-steplink span { text-decoration: line-through; }
+.cook-nav { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+.cook-side { display: grid; gap: 16px; }
+.cook-block { padding: 15px 16px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.cook-block h4 {
+  margin: 0 0 12px; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-3); display: flex; align-items: center; gap: 7px;
+}
+.cook-ings, .cook-portions { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.cook-ing {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 7px 8px; border: none; border-radius: var(--r-xs);
+  background: none; font: inherit; font-size: .86rem; color: var(--ink-2); cursor: pointer;
+}
+.cook-ing:hover { background: var(--surface-3); }
+.cook-check {
+  width: 17px; height: 17px; border-radius: 5px; flex: none;
+  border: 1.5px solid var(--line-strong); display: grid; place-items: center;
+}
+.cook-ing.is-done .cook-check { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.cook-ing.is-done .cook-ing-name { text-decoration: line-through; opacity: .55; }
+.cook-ing-name { flex: 1; min-width: 0; }
+.cook-ing-qty { font-variant-numeric: tabular-nums; font-weight: 650; color: var(--ink); white-space: nowrap; }
+.cook-portions li { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: .88rem; }
+.cp-name { flex: 1; min-width: 0; }
+.cp-kcal { font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .cook-cols { grid-template-columns: 1fr; gap: 18px; }
+  .persona { padding-left: var(--sp); }
+}
+
+/* ── 16. Print ─────────────────────────────────────────────────────────── */
 
 @media print {
   .aurora, .sidebar, .topbar, .tabbar, #toast, #sheet, #palette, .no-print { display: none !important; }
@@ -848,7 +1068,7 @@ kbd {
   .hero h1 { font-size: 20pt; }
 }
 
-/* ── 16. Responsive ────────────────────────────────────────────────────── */
+/* ── 17. Responsive ────────────────────────────────────────────────────── */
 
 @media (max-width: 1180px) {
   .recipe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -901,7 +1121,7 @@ kbd {
   .bc-row { grid-template-columns: 66px minmax(0, 1fr) auto; }
 }
 
-/* ── 17. Motion ────────────────────────────────────────────────────────── */
+/* ── 18. Motion ────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

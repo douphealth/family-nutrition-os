@@ -9,12 +9,19 @@
 
 import {
   esc, icon, ring, macroBar, stat, pill, sectionHead, emptyState,
-  lineChart, heatmap, barChart, avatar, logo,
+  lineChart, heatmap, barChart, avatar, logo, illustration,
   num, num1, pct, mlToText, longDate, shortDate, dayName, greeting, timeNow,
+  parseStepTimers, clockText,
   GREEK_DAYS_SHORT, cycleWeek
 } from './ui.js';
-import { SLOTS, SLOT_LABEL, SLOT_TIME, AISLES, SOURCES, METHOD, SAFETY, GLOSSARY, APP } from './data.js';
-import { mealMacros, planCoverage, canUseAdultBmi, bmi, adultBmiLabel, isMinor } from './nutrition-engine.js';
+import {
+  SLOTS, SLOT_LABEL, SLOT_TIME, AISLES, SOURCES, METHOD, SAFETY, GLOSSARY, APP,
+  PERSONA_FOCUS, RECIPE_ART, FUELING
+} from './data.js';
+import {
+  mealMacros, planCoverage, canUseAdultBmi, bmi, adultBmiLabel, isMinor,
+  personaPoints, trainingFueling
+} from './nutrition-engine.js';
 
 /* ── Small shared pieces ───────────────────────────────────────────────── */
 
@@ -50,6 +57,169 @@ function portionButtons(slot, entry, recipeId) {
   </div>`;
 }
 
+/* ── Persona brief ─────────────────────────────────────────────────────────
+ * "What actually matters for you today." The framing comes from PERSONA_FOCUS
+ * and the numbers from the engine, so the copy and the maths stay separate.
+ */
+function personaCard(ctx) {
+  const { profile, persona, personaFocus } = ctx;
+  if (!personaFocus || !persona?.length) return '';
+  return `
+  <section class="card card-lg persona" style="--pa:${esc(profile.accent || 'var(--accent)')}">
+    <div class="persona-head">
+      ${avatar(profile, 46)}
+      <div>
+        <div class="eyebrow">${esc(personaFocus.eyebrow)} · Τι μετράει για σένα</div>
+        <h2 class="persona-title">${esc(personaFocus.title)}</h2>
+      </div>
+    </div>
+    <p class="persona-lead">${esc(personaFocus.lead)}</p>
+    <div class="persona-points">
+      ${persona.map(p => `<article class="ppoint tone-${esc(p.tone)}">
+        <span class="ppoint-ic">${icon(p.icon, 16)}</span>
+        <div>
+          <div class="ppoint-top">
+            <span class="ppoint-label">${esc(p.label)}</span>
+            <span class="ppoint-value">${esc(p.value)}</span>
+          </div>
+          <p class="ppoint-note">${esc(p.body)}</p>
+        </div>
+      </article>`).join('')}
+    </div>
+  </section>`;
+}
+
+/* ── Athlete fuelling ──────────────────────────────────────────────────────
+ * Only ever rendered for an athlete profile. Numbers are per kg, from the
+ * engine; the sentences come from FUELING in data.js.
+ */
+function fuelCard(ctx) {
+  const { profile, fueling } = ctx;
+  if (!profile?.athlete || !fueling) return '';
+  const blocks = [
+    { ...FUELING.pre, value: `${num(fueling.preCarbs.min)}–${num(fueling.preCarbs.max)} g` },
+    { ...FUELING.post, value: `${num(fueling.postProtein)} g πρωτεΐνη + ${num(fueling.postCarbs)} g υδατ.` },
+    { ...FUELING.fluid, value: ctx.targets?.hydration?.ml ? `${mlToText(ctx.targets.hydration.ml)} την ημέρα` : '—' }
+  ];
+  return `
+  <section class="card card-lg fuel">
+    <div class="fuel-head">
+      <div>
+        <div class="eyebrow">Πρωτόκολλο ημέρας · ${esc(ctx.loadLabel)}</div>
+        <h2 class="fuel-title">${icon('zap', 19)} Καύσιμο γύρω από την προπόνηση</h2>
+      </div>
+      ${fueling.heavy
+        ? `<span class="pill tone-gold">${icon('flame', 13)} Μέρα υψηλών απαιτήσεων</span>`
+        : `<span class="pill tone-accent">${icon('check', 13)} Κανονικό φορτίο</span>`}
+    </div>
+    <div class="fuel-grid">
+      ${blocks.map(b => `<article class="fuel-block">
+        <span class="fuel-ic">${icon(b.icon, 16)}</span>
+        <div>
+          <div class="fuel-top"><span>${esc(b.title)}</span><b>${esc(b.value)}</b></div>
+          <p class="tiny muted">${esc(b.body)}</p>
+        </div>
+      </article>`).join('')}
+    </div>
+    <p class="tiny muted" style="margin-top:12px">${icon('info', 13)} Γενικές οδηγίες αθλητικής διατροφής, υπολογισμένες ανά κιλό σωματικού βάρους. Δεν αντικαθιστούν αθλητικό γιατρό ή διαιτολόγο.</p>
+  </section>`;
+}
+
+/* ── Cook Mode ─────────────────────────────────────────────────────────────
+ * One step at a time, large enough to read from across a kitchen, with a real
+ * timer pulled out of the step text and a plated-portion summary per member.
+ */
+export function cookBody(ctx, recipe) {
+  const cook = ctx.cook || { step: 0, done: {} };
+  const total = recipe.steps.length;
+  const step = Math.max(0, Math.min(Number(cook.step) || 0, total - 1));
+  const { timers, ovenC } = parseStepTimers(recipe.steps[step]);
+  const load = ctx.load;
+  const done = cook.done || {};
+
+  return `
+  <div class="cook">
+    <header class="cook-head">
+      ${illustration(RECIPE_ART[recipe.id], 60)}
+      <div>
+        <h3 class="cook-name">${esc(recipe.name)}</h3>
+        <p class="tiny muted">${recipe.time}′ σύνολο · ${esc(SLOT_LABEL[recipe.slot])}${ovenC ? ` · φούρνος ${ovenC}°C` : ''}</p>
+      </div>
+    </header>
+
+    <div class="cook-cols">
+      <div class="cook-main">
+        <div class="cook-stepper">
+          <button type="button" class="icon-btn" data-act="cookStep" data-to="${step - 1}"
+            ${step === 0 ? 'disabled' : ''} aria-label="Προηγούμενο βήμα">${icon('chevronLeft', 18)}</button>
+          <span class="cook-counter">Βήμα <b>${step + 1}</b> από ${total}</span>
+          <button type="button" class="icon-btn" data-act="cookStep" data-to="${step + 1}"
+            ${step === total - 1 ? 'disabled' : ''} aria-label="Επόμενο βήμα">${icon('chevronRight', 18)}</button>
+        </div>
+
+        <div class="cook-bar"><i style="width:${(((step + 1) / total) * 100).toFixed(1)}%"></i></div>
+
+        <p class="cook-step">${esc(recipe.steps[step])}</p>
+
+        ${timers.length ? `<div class="cook-timerbox">
+          <div class="cook-timer">
+            <span class="cook-timer-text" id="cookTimerText">${clockText(timers[0].seconds)}</span>
+            <div class="cook-timer-actions">
+              <button type="button" class="btn btn-sm btn-primary" data-act="timerStart" data-sec="${timers[0].seconds}">${icon('clock', 14)} Έναρξη</button>
+              <button type="button" class="btn btn-sm" data-act="timerPause">Παύση</button>
+              <button type="button" class="btn btn-sm btn-ghost" data-act="timerReset">Μηδέν</button>
+            </div>
+          </div>
+          ${timers.length > 1 ? `<div class="cook-timer-presets">${timers.map(t => `<button type="button" class="chip" data-act="timerStart" data-sec="${t.seconds}">${t.minutes}′</button>`).join('')}</div>` : ''}
+        </div>` : ''}
+
+        ${ovenC ? `<div class="cook-oven">${icon('flame', 15)} Προθέρμανση στους ${ovenC}°C</div>` : ''}
+
+        <ol class="cook-steplist">
+          ${recipe.steps.map((s, i) => `<li class="${i === step ? 'is-current' : ''}${i < step ? ' is-done' : ''}">
+            <button type="button" class="cook-steplink" data-act="cookStep" data-to="${i}">
+              <b>${i + 1}</b><span>${esc(s)}</span>
+            </button>
+          </li>`).join('')}
+        </ol>
+
+        <div class="cook-nav">
+          <button type="button" class="btn ${step === total - 1 ? 'btn-primary' : ''}" data-act="cookStep" data-to="${step + 1}" ${step === total - 1 ? 'disabled' : ''}>
+            ${step === total - 1 ? 'Τελευταίο βήμα' : 'Επόμενο βήμα'} ${icon('arrowRight', 15)}
+          </button>
+          <button type="button" class="btn btn-ghost" data-act="closeSheet">${icon('x', 15)} Κλείσιμο</button>
+        </div>
+      </div>
+
+      <aside class="cook-side">
+        <div class="cook-block">
+          <h4>${icon('package', 15)} Υλικά — τσέκαρε ό,τι ετοίμασες</h4>
+          <ul class="cook-ings">
+            ${recipe.ingredients.map((ing, i) => `<li>
+              <button type="button" class="cook-ing${done[i] ? ' is-done' : ''}" data-act="cookIng" data-i="${i}" aria-pressed="${!!done[i]}">
+                <span class="cook-check">${done[i] ? icon('check', 11) : ''}</span>
+                <span class="cook-ing-name">${esc(ing.n)}</span>
+                <span class="cook-ing-qty">${num(ing.q)} ${esc(ing.u)}</span>
+              </button>
+            </li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="cook-block">
+          <h4>${icon('users', 15)} Μερίδες στο τραπέζι</h4>
+          <ul class="cook-portions">
+            ${ctx.profiles.map(p => {
+              const m = mealMacros(recipe, p, p.athlete ? load : 'normal', 1);
+              return `<li>${avatar(p, 26)}<span class="cp-name">${esc(p.name)}</span><span class="cp-kcal">${num(m.kcal)} kcal</span></li>`;
+            }).join('')}
+          </ul>
+          <p class="tiny muted">Οι ποσότητες κλιμακώνονται ανά μέλος — μοίρασε ανάλογα.</p>
+        </div>
+      </aside>
+    </div>
+  </div>`;
+}
+
 /* ── Today ─────────────────────────────────────────────────────────────── */
 
 export function todayView(ctx) {
@@ -73,6 +243,10 @@ export function todayView(ctx) {
     <h1>${esc(greeting())}, <em>${esc(profile.name)}</em>.</h1>
     <p>${esc(longDate(dateKey))} · ${esc(timeNow())} · Όλα τα νούμερα είναι εκτιμήσεις προγραμματισμού, όχι μετρήσεις.</p>
   </section>
+
+  ${personaCard(ctx)}
+
+  ${fuelCard(ctx)}
 
   ${coverage.status === 'under' && coverage.extras.length ? coverageCard(ctx, coverage) : ''}
 
@@ -103,17 +277,23 @@ export function todayView(ctx) {
     </div>
   </section>
 
-  <section class="card card-lg" style="margin-top:16px">
-    <div class="card-head">
-      <div>
-        <div class="eyebrow">Επόμενο</div>
+  <section class="card card-lg next-card" style="margin-top:16px">
+    <div class="next-head">
+      ${illustration(RECIPE_ART[nextRecipe.id], 64)}
+      <div class="next-text">
+        <div class="eyebrow">Επόμενο γεύμα</div>
         <div class="card-title" style="font-size:1.15rem">${esc(nextRecipe.name)}</div>
         <p class="muted tiny">${esc(SLOT_LABEL[nextSlot])} · ${esc(SLOT_TIME[nextSlot])} · ${nextRecipe.time}′ προετοιμασία
           ${profile.athlete ? ` · ${esc(ctx.loadLabel)}` : ''}</p>
       </div>
-      <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">
-        ${icon('check', 17)} Το έφαγα
-      </button>
+      <div class="next-actions">
+        <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">
+          ${icon('check', 17)} Το έφαγα
+        </button>
+        <button type="button" class="btn" data-act="cook" data-id="${esc(nextRecipe.id)}">
+          ${icon('utensils', 17)} Μαγείρεψε
+        </button>
+      </div>
     </div>
     <div class="grid g2">
       <div>
@@ -385,9 +565,12 @@ export function mealsView(ctx) {
     ${list.map(r => {
       const m = mealMacros(r, ctx.profile, ctx.load, 1);
       return `<button type="button" class="recipe-card" data-act="recipe" data-id="${esc(r.id)}">
-        <span class="recipe-top">
-          ${slotTag(r.slot)}
-          <span class="pill pill-neutral">${icon('clock', 12)} ${r.time}′</span>
+        <span class="recipe-head">
+          ${illustration(RECIPE_ART[r.id], 58)}
+          <span class="recipe-headmeta">
+            ${slotTag(r.slot)}
+            <span class="pill pill-neutral">${icon('clock', 12)} ${r.time}′</span>
+          </span>
         </span>
         <h3>${esc(r.name)}</h3>
         ${macroChips({ ...m, slot: r.slot })}
@@ -407,10 +590,13 @@ export function mealsView(ctx) {
 export function recipeDetail(ctx, recipe) {
   const members = ctx.profiles;
   return `<div class="recipe-detail">
-    <div>
-      ${slotTag(recipe.slot)}
-      <h2 style="font-family:var(--font-display);font-size:1.5rem;margin:8px 0 6px">${esc(recipe.name)}</h2>
-      <p class="muted tiny">${recipe.time}′ προετοιμασία · ${recipe.ingredients.length} υλικά · Μερίδα αναφοράς: ${num(mealMacros(recipe, { age: 30, sex: 'm', weight: 75, height: 178, activityFactor: 1.4 }, 'normal', 1).kcal)} kcal</p>
+    <div class="rd-head">
+      ${illustration(RECIPE_ART[recipe.id], 78)}
+      <div>
+        ${slotTag(recipe.slot)}
+        <h2 style="font-family:var(--font-display);font-size:1.5rem;margin:8px 0 6px">${esc(recipe.name)}</h2>
+        <p class="muted tiny">${recipe.time}′ προετοιμασία · ${recipe.ingredients.length} υλικά · Μερίδα αναφοράς: ${num(mealMacros(recipe, { age: 30, sex: 'm', weight: 75, height: 178, activityFactor: 1.4 }, 'normal', 1).kcal)} kcal</p>
+      </div>
     </div>
 
     <div class="rd-section">
@@ -446,7 +632,8 @@ export function recipeDetail(ctx, recipe) {
     ${recipe.tip ? `<div class="notice notice-info">${icon('sparkles', 17)}<span>${esc(recipe.tip)}</span></div>` : ''}
 
     <div class="meal-actions">
-      <button type="button" class="btn btn-primary" data-act="meal" data-slot="${esc(recipe.slot)}" data-portion="1" data-recipe="${esc(recipe.id)}">${icon('check', 16)} Το έφαγα τώρα</button>
+      <button type="button" class="btn btn-primary" data-act="cook" data-id="${esc(recipe.id)}">${icon('utensils', 16)} Μαγείρεψε βήμα-βήμα</button>
+      <button type="button" class="btn" data-act="meal" data-slot="${esc(recipe.slot)}" data-portion="1" data-recipe="${esc(recipe.id)}">${icon('check', 16)} Το έφαγα τώρα</button>
       <button type="button" class="btn btn-ghost" data-act="addExtra" data-recipe="${esc(recipe.id)}">${icon('plus', 16)} Πρόσθεσέ το σήμερα</button>
     </div>
   </div>`;
@@ -455,22 +642,64 @@ export function recipeDetail(ctx, recipe) {
 /* ── Shopping ──────────────────────────────────────────────────────────── */
 
 export function shoppingView(ctx) {
-  const { shopList, shopChecked, shopStats, weekOffset } = ctx;
+  const { shopList, shopChecked, shopStats, weekOffset, shopFilter = 'all', shopMembers = 0, shopServings = 1 } = ctx;
   const thisWeek = cycleWeek();
   const shownWeek = ((thisWeek - 1 + weekOffset) % 4 + 4) % 4 + 1;
+
+  const isChecked = i => !!shopChecked[i.key];
+  const visible = shopFilter === 'todo' ? shopList.filter(i => !isChecked(i))
+    : shopFilter === 'done' ? shopList.filter(isChecked)
+    : shopList;
+
+  const chips = [
+    ['all', 'Όλα', shopStats.total, 'package'],
+    ['todo', 'Απομένουν', shopStats.remaining, 'cart'],
+    ['done', 'Στο καλάθι', shopStats.checked, 'check']
+  ].map(([value, label, count, ic]) =>
+    `<button type="button" class="shop-chip${shopFilter === value ? ' is-on' : ''}"
+       data-act="shopFilter" data-value="${value}" aria-pressed="${shopFilter === value}">
+      ${icon(ic, 14)}${esc(label)}<span class="shop-chip-n">${num(count)}</span>
+    </button>`).join('');
+
+  const done = shopStats.total > 0 && shopStats.remaining === 0;
+
+  const aisleSections = AISLES.map(aisle => {
+    const items = visible.filter(i => i.aisle === aisle.id);
+    if (!items.length) return '';
+    const aisleAll = shopList.filter(i => i.aisle === aisle.id);
+    const aisleDone = aisleAll.filter(isChecked).length;
+    const complete = aisleDone === aisleAll.length;
+    return `<section class="shop-aisle-sec">
+      <div class="shop-aisle-head">
+        <span class="shop-aisle-ic">${icon(aisle.icon, 15)}</span>
+        ${esc(aisle.label)}
+        <span class="shop-aisle-count ${complete ? 'is-complete' : ''}">${icon(complete ? 'check' : 'cart', 12)}${aisleDone}/${aisleAll.length}</span>
+      </div>
+      <div class="shop-aisle">
+        ${items.map(i => `<div class="shop-item ${isChecked(i) ? 'is-checked' : ''}">
+          <button type="button" class="shop-check" data-act="shop" data-key="${esc(i.key)}" aria-label="${esc(i.name)}" aria-pressed="${isChecked(i)}">${icon('check', 13)}</button>
+          <span class="shop-meta"><span class="shop-name">${esc(i.name)}</span>
+            <span class="shop-src"> · σε ${i.count} γεύμα${i.count === 1 ? '' : 'τα'}</span></span>
+          <span class="shop-qty">${num(i.qty)} ${esc(i.unit)}</span>
+        </div>`).join('')}
+      </div>
+    </section>`;
+  }).join('');
+
+  const shareText = num1(shopServings);
 
   return `
   <section class="hero">
     <div class="eyebrow">Λίστα αγορών</div>
-    <h1>Εβδομάδα ${shownWeek}: <em>${shopStats.total}</em> είδη</h1>
+    <h1>Εβδομάδα ${shownWeek}: <em>${num(done ? shopStats.total : shopStats.remaining)}</em> ${done ? 'είδη — έτοιμη' : (shopStats.remaining === 1 ? 'είδος ακόμη' : 'είδη ακόμη')}</h1>
     <p>Φτιαγμένη από το πραγματικό εβδομαδιαίο μενού, ομαδοποιημένη όπως είναι τα ράφια του μαγαζιού.</p>
   </section>
 
-  <div class="card">
+  <div class="card shop-head">
     <div class="shop-progress">
-      ${icon('cart', 20)}
-      <div style="flex:1">
-        <div class="card-title">${shopStats.checked} από ${shopStats.total} στο καλάθι</div>
+      ${icon(done ? 'check' : 'cart', 20)}
+      <div class="shop-progress-body">
+        <div class="card-title">${done ? 'Τα πήρες όλα' : `${num(shopStats.checked)} από ${num(shopStats.total)} στο καλάθι`}</div>
         <div class="mb-track" style="margin-top:7px"><div class="mb-fill tone-accent" style="width:${(shopStats.pct * 100).toFixed(1)}%"></div></div>
       </div>
       <div class="sec-action">
@@ -479,26 +708,32 @@ export function shoppingView(ctx) {
         <button type="button" class="btn btn-sm" data-act="print">${icon('printer', 15)} Εκτύπωση</button>
       </div>
     </div>
+    <div class="shop-chips" role="group" aria-label="Φίλτρο λίστας">${chips}</div>
   </div>
 
-  ${AISLES.map(aisle => {
-    const items = shopList.filter(i => i.aisle === aisle.id);
-    if (!items.length) return '';
-    return `<section>
-      <div class="shop-aisle-head">${icon(aisle.icon, 15)}${esc(aisle.label)} <span class="muted">· ${items.length}</span></div>
-      <div class="shop-aisle">
-        ${items.map(i => `<div class="shop-item ${shopChecked[i.key] ? 'is-checked' : ''}">
-          <button type="button" class="shop-check" data-act="shop" data-key="${esc(i.key)}" aria-label="${esc(i.name)}" aria-pressed="${!!shopChecked[i.key]}">${icon('check', 13)}</button>
-          <span><span class="shop-name">${esc(i.name)}</span>
-            <span class="shop-src"> · σε ${i.count} γεύμα${i.count === 1 ? '' : 'τα'}</span></span>
-          <span class="shop-qty">${num(i.qty)} ${esc(i.unit)}</span>
-        </div>`).join('')}
-      </div>
-    </section>`;
-  }).join('')}
+  ${done ? `<div class="shop-done">${icon('sparkles', 22)}
+    <div><b>Έτοιμη.</b> Και τα ${num(shopStats.total)} είδη είναι στο καλάθι. Πάτησε «Καθαρισμός» για να ξαναρχίσεις την επόμενη εβδομάδα.</div></div>` : ''}
 
-  <div class="notice" style="margin-top:20px">${icon('info', 17)}
-    <span>Οι ποσότητες υπολογίζονται για <b>όλη την οικογένεια</b> με βάση τις μερίδες του καθενός. Έλεγξε το ντουλάπι σου πριν ψωνίσεις — η λίστα δεν ξέρει τι έχεις ήδη.</span></div>`;
+  ${visible.length ? aisleSections : emptyState({
+    iconName: shopFilter === 'done' ? 'cart' : 'check',
+    title: shopFilter === 'done' ? 'Δεν έχεις τσεκάρει ακόμη κάτι' : 'Τίποτα δεν απομένει',
+    body: shopFilter === 'done'
+      ? 'Μόλις τσεκάρεις ένα είδος στον διάδρομο, θα εμφανιστεί εδώ μαζί με τα υπόλοιπα.'
+      : 'Όλα τα είδη της εβδομάδας είναι στο καλάθι. Άλλαξε φίλτρο για να δεις ολόκληρη τη λίστα.'
+  })}
+
+  <details class="why">
+    <summary>${icon('info', 15)} Γιατί αυτές οι ποσότητες;</summary>
+    <div class="why-body">
+      <p>Οι ποσότητες βγαίνουν από τις <b>πραγματικές συνταγές</b> του εβδομαδιαίου πλάνου, όχι από γενικές εκτιμήσεις:</p>
+      <ul>
+        <li>Κάθε συστατικό μετριέται με τη <b>μερίδα αναφοράς</b> του (π.χ. ${icon('leaf', 13)} γιαούρτι 200 g) και πολλαπλασιάζεται επί τις μερίδες του σπιτιού.</li>
+        <li>Οι μερίδες δεν είναι ίδιες για όλους. Κάθε μέλος έχει το δικό του προφίλ μερίδας — το άθροισμα για τα <b>${num(shopMembers)} μέλη</b> είναι <b>${shareText} μερίδες</b> αναφοράς, όχι ${num(shopMembers)}.</li>
+        <li>Οι τελικές ποσότητες <b>στρογγυλοποιούνται προς τα πάνω</b> σε λογικές μονάδες αγοράς, ώστε να μη σου λείψει υλικό.</li>
+      </ul>
+      <p class="why-note">${icon('shield', 13)} Δεν προστίθεται ποτέ έλλειμμα: η λίστα καλύπτει <b>μόνο προσθήκες</b> στις ανάγκες κάθε μέλους, ποτέ μείωση ή περιορισμό για ανήλικο.</p>
+    </div>
+  </details>`;
 }
 
 /* ── Progress ──────────────────────────────────────────────────────────── */

@@ -336,6 +336,47 @@ if (shopBtn) {
   ok(bags.some(bag => bag && bag[key]), `checked shopping item "${key}" is persisted in settings`);
 }
 
+// Filter chips: Όλα / Απομένουν / Στο καλάθι
+// Each click re-renders the view, so chips must be re-queried every time.
+const chip = value => [...window.document.querySelectorAll('[data-act="shopFilter"]')]
+  .find(c => c.dataset.value === value);
+
+ok(window.document.querySelectorAll('[data-act="shopFilter"]').length === 3,
+  'shopping view exposes three filter chips');
+
+const shopItemCount = () => window.document.querySelectorAll('[data-act="shop"][data-key]').length;
+const allCount = shopItemCount();
+
+if (chip('todo') && chip('all') && chip('done')) {
+  await click(chip('todo'), 90);
+  const todoCount = shopItemCount();
+  ok(todoCount < allCount, `"Απομένουν" hides the checked items (${todoCount} < ${allCount})`);
+  ok(chip('todo')?.classList.contains('is-on'), 'active chip is marked');
+
+  await click(chip('done'), 90);
+  const doneCount = shopItemCount();
+  ok(doneCount >= 1 && doneCount < allCount, `"Στο καλάθι" shows only checked items (${doneCount})`);
+
+  await click(chip('all'), 90);
+  ok(shopItemCount() === allCount, '"Όλα" restores the full list');
+}
+
+// Per-aisle counters
+const aisleCounts = [...window.document.querySelectorAll('.shop-aisle-count')];
+ok(aisleCounts.length > 0, 'each aisle shows a done/total counter');
+
+// Transparency block: the "why these quantities" disclosure must exist and must
+// state the household share, so the shopping maths is auditable by the user.
+const why = window.document.querySelector('.why');
+ok(!!why, 'shopping view explains how quantities are derived');
+ok(/μερίδες/.test(text(why)), 'the explanation mentions the household serving share');
+ok(!/BMI/.test(text(why)), 'the shopping explanation never surfaces adult BMI');
+
+// The copy is truthful: the shopping maths uses per-member portion shares, so the
+// explanation must name the reference-serving model and the real member count.
+ok(/μερίδες αναφοράς/.test(text(why)), 'the explanation names the reference-serving model');
+ok(/4 μέλη/.test(text(why)), 'the explanation states the real member count');
+
 /* ── 11. Command palette ───────────────────────────────────────────────── */
 
 section('Command palette');
@@ -380,7 +421,92 @@ if (editBtn) {
   }
 }
 
-/* ── 13. Minor safety guardrail survives the UI ────────────────────────── */
+/* ── 13. Persona brief for every member ────────────────────────────────── */
+
+section('Persona brief');
+
+await clickSel('#sideNav [data-act="nav"][data-view="today"]', window.document, 90);
+
+const memberIds = [...window.document.querySelectorAll('#memberStrip [data-act="member"]')].map(b => b.dataset.id);
+let personaSeen = 0;
+for (const id of memberIds) {
+  await click(window.document.querySelector(`#memberStrip [data-act="member"][data-id="${id}"]`), 110);
+  const card = window.document.querySelector('.persona');
+  if (card && text(card).length > 80) personaSeen++;
+}
+ok(memberIds.length === 4, `four members are switchable (found ${memberIds.length})`);
+ok(personaSeen === memberIds.length, `persona brief renders for all ${memberIds.length} members (got ${personaSeen})`);
+
+/* The fuelling protocol is athlete-only — that is the whole point of it. */
+await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'), 130);
+ok(!!window.document.querySelector('.fuel'), 'the athlete profile shows a fuelling protocol');
+ok(/πρωτεΐνη/i.test(text(window.document.querySelector('.fuel'))), 'fuelling protocol states a protein target');
+
+await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="mother"]'), 130);
+ok(!window.document.querySelector('.fuel'), 'a non-athlete profile shows no fuelling protocol');
+ok(!!window.document.querySelector('.persona'), 'the mother still gets a persona brief');
+
+/* The growth profile must state the minor protection on screen, not just in code. */
+await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="daughter"]'), 130);
+const daughterCard = window.document.querySelector('.persona');
+ok(/σίδηρ/i.test(text(daughterCard)), 'the growth profile surfaces iron');
+ok(/έλλειμμα/i.test(text(daughterCard)), 'the growth profile states that no deficit is applied');
+
+/* ── 14. Cook Mode ─────────────────────────────────────────────────────── */
+
+section('Cook Mode');
+
+await clickSel('#sideNav [data-act="nav"][data-view="today"]', window.document, 90);
+const cookBtn = window.document.querySelector('[data-act="cook"]');
+ok(!!cookBtn, 'today view offers a cook button');
+
+if (cookBtn) {
+  await click(cookBtn, 180);
+  const sheet = window.document.getElementById('sheet');
+  const isOpen = () => sheet && !sheet.classList.contains('hidden');
+
+  ok(isOpen(), 'cook mode opens in the sheet');
+  ok(!!sheet.querySelector('.cook'), 'cook mode renders its own layout');
+  ok(!!sheet.querySelector('.cook-step'), 'cook mode shows the current step');
+
+  const counterBefore = text(sheet.querySelector('.cook-counter'));
+  ok(/Βήμα\s*1/.test(counterBefore), `cook mode starts on step 1 (got "${counterBefore}")`);
+
+  await click(sheet.querySelector('[data-act="cookStep"][data-to="1"]'), 150);
+  ok(text(sheet.querySelector('.cook-counter')) !== counterBefore, 'advancing moves to the next step');
+
+  await click(sheet.querySelector('[data-act="cookStep"][data-to="0"]'), 150);
+  ok(text(sheet.querySelector('.cook-counter')) === counterBefore, 'going back returns to step 1');
+
+  const ing = sheet.querySelector('[data-act="cookIng"]');
+  ok(!!ing, 'cook mode lists ingredients to check off');
+  if (ing) {
+    const wasDone = ing.classList.contains('is-done');
+    await click(ing, 140);
+    const after = window.document.querySelector('[data-act="cookIng"]');
+    ok(after.classList.contains('is-done') !== wasDone, 'tapping an ingredient toggles it');
+  }
+
+  const timerStart = sheet.querySelector('[data-act="timerStart"]');
+  if (timerStart) {
+    await click(timerStart, 80);
+    const timerText = window.document.getElementById('cookTimerText');
+    ok(!!timerText && /^\d{2}:\d{2}$/.test(text(timerText)), `timer renders as mm:ss (got "${text(timerText)}")`);
+    await click(window.document.querySelector('[data-act="timerPause"]'), 60);
+    ok(!!window.document.getElementById('cookTimerText'), 'pausing keeps the timer visible');
+    await click(window.document.querySelector('[data-act="timerReset"]'), 60);
+  } else {
+    ok(true, 'this recipe has no timed step (nothing to assert)');
+  }
+
+  ok(!!sheet.querySelector('.cook-portions'), 'cook mode lists per-member portions');
+  ok(sheet.querySelectorAll('.cook-portions li').length === 4, 'all four members are plated in cook mode');
+
+  await click(sheet.querySelector('[data-act="closeSheet"]'), 150);
+  ok(!isOpen(), 'cook mode closes');
+}
+
+/* ── 15. Minor safety guardrail survives the UI ────────────────────────── */
 
 section('Minor safety');
 
@@ -395,7 +521,7 @@ if (profiles.length) {
   ok(false, 'profiles are readable from the active backend');
 }
 
-/* ── 14. Backup export ─────────────────────────────────────────────────── */
+/* ── 16. Backup export ─────────────────────────────────────────────────── */
 
 section('Backup export');
 
@@ -416,7 +542,7 @@ try {
   ok(false, `exported backup re-imports cleanly (${err.message})`);
 }
 
-/* ── 15. No console errors anywhere ────────────────────────────────────── */
+/* ── 17. No console errors anywhere ────────────────────────────────────── */
 
 section('Console');
 

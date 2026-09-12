@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
-      - name: Unit + data-integrity suites
+      - name: Unit, data-integrity and persona suites
         run: npm test
 
       - name: Syntax check application modules
@@ -45,9 +45,10 @@ jobs:
 
       - name: Verify service-worker strategy
         run: |
-          # v3 must be network-first for navigation (v2 was cache-first, which is
+          # v3+ must be network-first for navigation (v2 was cache-first, which is
           # why deploys could appear stale) and stale-while-revalidate for assets.
-          grep -q "CACHE = 'zenith-v3" sw.js
+          # Version-agnostic on the cache name so a routine bump does not fail CI.
+          grep -q "CACHE = 'zenith-v" sw.js
           grep -q "req.mode === 'navigate'" sw.js
           grep -q "caches.open(CACHE)" sw.js
 

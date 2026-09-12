@@ -2,6 +2,82 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [4.0.0] — 2026-09-12
+
+Built for the three people who actually use this app: **the mother** (51, gradual fat
+loss, does the cooking), **the son** (15, basketball, fuelled for performance) and
+**the daughter** (17, growing). v3 was correct; v4 is personal.
+
+### Added
+
+**Easy to use for the mother**
+- **Cook Mode.** A full-screen, step-by-step cooking view (`data-act="cook"`) with one
+  instruction on screen at a time, a progress bar, a clickable step list, an ingredient
+  checklist, and the plated portions for all four members. Built for someone standing at
+  the stove with wet hands: large type, big targets, no scrolling to find the next step.
+- **Automatic step timers.** `parseStepTimers()` reads `25′`, `12'` and `200°C` out of the
+  recipe text and offers **Έναρξη / Παύση / Μηδέν** for the detected duration, with a
+  toast, a system notification and haptic feedback when it finishes. No manual timer setup.
+- **Shopping list that behaves like a shop.** Filter chips — **Όλα / Απομένουν / Στο
+  καλάθι** — so she can hide what is already in the trolley, a per-aisle `3/17` counter
+  that turns green when an aisle is complete, and an all-done state. **Αντιγραφή** now
+  copies whatever the active filter shows, so "remaining" copies only the remaining.
+- **"Γιατί αυτές οι ποσότητες;"** — an expandable explanation of exactly how the
+  quantities are derived, including the real household serving share.
+
+**Easy to use for the son (athlete)**
+- **Fuelling protocol card.** Athlete-only. Turns the day's training load into concrete
+  numbers: pre-session carbohydrate at **1–3 g/kg** (67–201 g for him), post-session
+  **0,3 g/kg protein + 1 g/kg carbohydrate** (20 g + 67 g), and fluid replacement at
+  **125–150 %** of losses, with a daily litre target.
+- **Training-load-aware portions.** `portionProfile()` already scaled carbohydrate for
+  athletes; the fuelling card now makes the *reason* visible next to the numbers.
+- **Carbs lead the brief.** His focus points are carbohydrate, protein and fluid — not
+  calories.
+
+**Easy to use for the daughter (growth)**
+- **Growth brief instead of a diet brief.** Her focus points are **iron today** (drawn
+  from `IRON_RICH` recipes: lentils, gigantes, revithia, fasolada, meatballs, spinach
+  rice, banana toast), **weekly variety**, and an explicit protection tile stating that
+  no deficit and no adult BMI category is ever applied at her age.
+- **No-deficit framing surfaced, not buried.** The "only additions" rule is now stated
+  in her persona card, in the shopping transparency block, and in the coverage card.
+
+**Credibility**
+- **Persona focus points** (`personaPoints()`) — exactly three, per member, chosen by
+  goal (`gradual_fat_loss` / `maintain` / `growth` / `performance`) with a live value for
+  each. The mother gets rate-of-loss, protein floor and "3 measurements needed" instead
+  of a single day's number.
+- **Honest shopping maths.** The shopping list previously multiplied every ingredient by
+  the number of members, silently counting a 0,75× carber and a 1,35× fuelled athlete as
+  the same eater — while the UI claimed the quantities were "based on each person's
+  portions". `memberShare()` / `householdServings()` now scale per member's portion
+  profile, so the copy is true. The household share is **4,1 reference servings**, not 4.
+- **Recipe illustrations.** 13 inline-SVG motifs (`RECIPE_ART`), assigned to all 24
+  recipes, shown on meal cards, in the recipe sheet and in Cook Mode. Offline-safe and
+  theme-aware.
+
+**Craft**
+- New design-system section for persona tiles, fuelling blocks, next-meal cards, recipe
+  headers, Cook Mode and the shopping chips/transparency block; a `900px` breakpoint
+  collapses the Cook Mode two-column layout.
+
+### Changed
+- `APP.version` → `4.0.0`. Service-worker cache → `zenith-v4-2026-09-12-1`.
+- Cook Mode state (`cook`, `cookTimer`) is deliberately kept **outside** `state`, so
+  transient cooking UI is never persisted or restored.
+- `npm test` now runs **three** suites (engine, data-integrity, persona & kitchen);
+  `npm run smoke` is now **112 checks** on both storage backends, including a new
+  "Persona brief" and "Cook Mode" section and shopping-filter coverage.
+- `capture_shots.py` additionally captures Cook Mode (light + dark), the three persona
+  briefs and the shopping transparency block.
+
+### Fixed
+- **The shopping list's stated method did not match its code** (see *Honest shopping
+  maths* above). The claim was corrected by fixing the maths, not by softening the copy.
+- `docs/screenshot-recipe-dark.png` replaced by `screenshot-cook-dark.png`, which shows
+  the view that actually exists in v4.
+
 ## [3.0.0] — 2026-09-12
 
 A full rebuild. v3 is a new application, not a patch.

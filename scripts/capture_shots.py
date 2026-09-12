@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-ZENITH PRO v3 · screenshot capture
+ZENITH PRO v4 · screenshot capture
 ---------------------------------------------------------------------------
 Renders the real app in headless Chromium and writes the docs/ screenshots.
+Covers the seven views, the three persona briefs, the recipe sheet, Cook Mode
+(light + dark), the shopping transparency block, and the dark theme.
 
 Usage:
     python scripts/capture_shots.py [base_url] [out_dir]
@@ -96,6 +98,41 @@ with sync_playwright() as p:
         page.screenshot(path=os.path.join(OUT, filename))
         print(f"captured: {view}")
 
+    # ── 2a. Shopping transparency block ──────────────────────────────────
+    # The "why these quantities" disclosure sits at the bottom of the list, so
+    # it needs its own scrolled capture to be reviewable.
+    page.evaluate(
+        """() => document.querySelector('#sideNav [data-act="nav"][data-view="shopping"]')?.click()"""
+    )
+    settle(page, 600)
+    page.evaluate("""() => { const d = document.querySelector('details.why'); if (d) d.open = true; }""")
+    settle(page, 300)
+    page.evaluate("""() => document.querySelector('details.why')?.scrollIntoView({block: 'center'})""")
+    settle(page, 400)
+    page.screenshot(path=os.path.join(OUT, "screenshot-shopping-why.png"))
+    print("captured: shopping transparency")
+
+    # ── 2b. Persona views for the three named users ──────────────────────
+    page.evaluate(
+        """() => document.querySelector('#sideNav [data-act="nav"][data-view="today"]')?.click()"""
+    )
+    settle(page, 700)
+    for member_id, filename in [
+        ("mother", "screenshot-persona-mother.png"),
+        ("son", "screenshot-persona-son.png"),
+        ("daughter", "screenshot-persona-daughter.png"),
+    ]:
+        page.evaluate(
+            """(m) => document.querySelector(`#memberStrip [data-act="member"][data-id="${m}"]`)?.click()""",
+            member_id,
+        )
+        settle(page, 800)
+        dismiss_overlays(page)
+        page.evaluate("window.scrollTo(0, 0)")
+        settle(page, 300)
+        page.screenshot(path=os.path.join(OUT, filename))
+        print(f"captured: persona {member_id}")
+
     # ── 3. Recipe sheet (light) ──────────────────────────────────────────
     page.evaluate(
         """() => document.querySelector('#sideNav [data-act="nav"][data-view="meals"]')?.click()"""
@@ -106,11 +143,17 @@ with sync_playwright() as p:
     page.screenshot(path=os.path.join(OUT, "screenshot-recipe.png"))
     print("captured: recipe sheet")
 
+    # ── 3b. Cook Mode ────────────────────────────────────────────────────
+    page.evaluate("""() => document.querySelector('[data-act="cook"]')?.click()""")
+    settle(page, 900)
+    page.screenshot(path=os.path.join(OUT, "screenshot-cook.png"))
+    print("captured: cook mode")
+
     # ── 4. Recipe sheet (dark) — shows per-member portion scaling ────────
     page.evaluate("""() => document.getElementById('themeBtn')?.click()""")
     settle(page, 600)
-    page.screenshot(path=os.path.join(OUT, "screenshot-recipe-dark.png"))
-    print("captured: recipe sheet (dark)")
+    page.screenshot(path=os.path.join(OUT, "screenshot-cook-dark.png"))
+    print("captured: cook mode (dark)")
 
     # ── 5. Dark theme, main view ─────────────────────────────────────────
     page.keyboard.press("Escape")  # the sheet closes on Escape

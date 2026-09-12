@@ -14,7 +14,7 @@
 export const APP = {
   name: 'ZENITH PRO',
   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
-  version: '3.0.0',
+  version: '4.0.0',
   updated: '2026-09-12',
   schema: 2
 };
@@ -455,3 +455,81 @@ export const QUICK_ACTIONS = [
   { id:'shopping',     icon:'cart',    label:'Λίστα αγορών' },
   { id:'print',        icon:'printer', label:'Εκτύπωση ημέρας' }
 ];
+
+/* ── Iron-rich recipes ─────────────────────────────────────────────────────
+ * Meaningful dietary iron sources in this rotation (legumes, red meat, sesame,
+ * dark greens). Used for the growth profile, where iron and variety matter more
+ * than any number. Vitamin C alongside non-haem iron aids absorption, which is
+ * why most of these already contain tomato or lemon.
+ */
+export const IRON_RICH = ['lentils', 'gigantes', 'revithia', 'fasolada', 'meatballs', 'spinachRice', 'bananaToast'];
+
+/* ── Illustration motifs ───────────────────────────────────────────────────
+ * Every recipe maps to one inline-SVG motif drawn by ui.js. Kept offline and
+ * vector so the app stays dependency-free and sharp on any screen.
+ */
+export const RECIPE_ART = {
+  oats: 'bowl',          eggs: 'egg',        lentils: 'legume',   chickenTray: 'tray',
+  fishRice: 'fish',      gigantes: 'legume', omelet: 'egg',       dakos: 'bread',
+  yogSnack: 'bowl',      bananaToast: 'bread', milkRecovery: 'glass', pastaVeg: 'pasta',
+  greekSalad: 'salad',   chickenSouvlaki: 'skewer', revithia: 'legume', fasolada: 'legume',
+  bakedFish: 'fish',     gemista: 'tray',   spinachRice: 'leaf',  yogHoney: 'bowl',
+  fruitSalad: 'fruit',   trahana: 'bowl',   meatballs: 'meat',    smoothie: 'glass'
+};
+
+/* ── Persona focus ─────────────────────────────────────────────────────────
+ * What each member should actually pay attention to. Keyed by goal, which maps
+ * one-to-one onto the household: mother gradual_fat_loss, father maintain,
+ * daughter growth, son performance. The engine supplies the live numbers; this
+ * is the framing. Deliberately no deficit language on the growth profile.
+ */
+export const PERSONA_FOCUS = {
+  gradual_fat_loss: {
+    eyebrow: 'Ο ΡΥΘΜΟΣ ΜΕΤΡΑΕΙ',
+    title: 'Σταθερά, χωρίς να χάνεις μυς',
+    lead: 'Στόχος είναι ο ρυθμός, όχι η ταχύτητα. Η εφαρμογή δεν προτείνει ποτέ μικρότερη μερίδα — μόνο προσθήκες εκεί που λείπει κάτι.'
+  },
+  maintain: {
+    eyebrow: 'ΣΥΝΤΗΡΗΣΗ',
+    title: 'Σταθερότητα και καρδιομεταβολική υγεία',
+    lead: 'Το πλάνο κρατά σταθερή ενέργεια και πρωτεΐνη. Η προσοχή πάει στην ποιότητα των λιπαρών και στο αλάτι, όχι στην ποσότητα.'
+  },
+  growth: {
+    eyebrow: 'ΑΝΑΠΤΥΞΗ',
+    title: 'Ενέργεια και ποικιλία — χωρίς μετρητές',
+    lead: 'Σε αυτό το προφίλ δεν εφαρμόζεται ποτέ έλλειμμα θερμίδων και δεν εμφανίζεται κατηγορία BMI ενηλίκων. Δεν υπάρχει «καλό» και «κακό» φαγητό εδώ.'
+  },
+  performance: {
+    eyebrow: 'ΑΠΟΔΟΣΗ',
+    title: 'Καύσιμο γύρω από την προπόνηση',
+    lead: 'Οι υδατάνθρακες ρυθμίζονται ανάλογα με το σημερινό φορτίο. Η ενέργεια και η πρωτεΐνη παραμένουν σταθερές — δεν μπαίνει ποτέ έλλειμμα σε αυτή την ηλικία.'
+  }
+};
+
+/* ── Training fueling ──────────────────────────────────────────────────────
+ * General sports-nutrition guidance (ISSN / IOC consensus), expressed per kg so
+ * it scales to the athlete. Ranges, never a single prescription.
+ */
+export const FUELING = {
+  pre: {
+    icon: 'clock',
+    title: 'Πριν την προπόνηση',
+    body: 'Γεύμα με υδατάνθρακες 2–3 ώρες πριν. Αν μένει λιγότερο από 1 ώρα, μικρό εύπεπτο σνακ — μπανάνα, ψωμί με μέλι.',
+    perKg: [1, 3],
+    unit: 'g υδατανθράκων'
+  },
+  post: {
+    icon: 'refresh',
+    title: 'Μετά την προπόνηση',
+    body: 'Συνδύασε πρωτεΐνη με υδατάνθρακες μέσα σε ~2 ώρες. Το επόμενο κανονικό γεύμα της ημέρας καλύπτει συνήθως τον στόχο.',
+    proteinPerKg: 0.3,
+    carbPerKg: 1.0,
+    unit: 'g'
+  },
+  fluid: {
+    icon: 'droplet',
+    title: 'Υγρά',
+    body: 'Αναπλήρωσε περίπου 125–150% των υγρών που έχασες — περίπου 1,25 L για κάθε κιλό που πέφτει η ζυγαριά μετά την προπόνηση.',
+    unit: 'ml'
+  }
+};
