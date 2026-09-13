@@ -2,6 +2,47 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [5.1.0] — 2026-09-13
+
+A visual polish pass that keeps every interaction, DOM node and handler exactly as
+they were: one ADDITIVE stylesheet (`styles/polish.css`) loaded after `app.css`,
+plus a token retune. Revert = delete that one file (and its two wire-ups).
+
+### Added
+- **Polish layer (`styles/polish.css`).** Depth, motion and tactile feedback layered
+  on the existing design system with zero changes to any existing selector:
+  - Token retune: cleaner light background, deeper emerald accent, airier shadows in
+    both themes — plus `--accent-soft`, `--accent-line` and `--tint-accent` are now
+    derived from `--accent` via `color-mix`, so they follow the SELECTED MEMBER's
+    colour (previously they stayed emerald when e.g. the father's blue was active).
+  - Card surfaces get a faint top-lit gradient wash; ingredient rows answer the pointer.
+  - Controls: focus rings, press feedback (`scale(.96)`), primary-button sheen sweep,
+    chip active-glow, spring-switch knob, glowing member chips.
+  - Motion: staggered view entrances (≤200ms), glint sweep along progress bars,
+    energy-ring breathing halo, meal-logged celebration pulse, "today" day-card glow,
+    breathing timeline now-dot, Cook Mode step slide-in + attention glow on the final
+    step's button, spring sheet/toast/palette entrances.
+  - Mobile: tab bar clears `env(safe-area-inset-bottom)`, topbar clears
+    `safe-area-inset-top`, 40px water glasses + 44px inputs on coarse pointers,
+    member strip scroll-snap, skip-link now actually appears on focus.
+  - Guards: `prefers-contrast: more` drops sheens/glints and restores solid brand
+    text; `prefers-reduced-motion` was already covered by app.css §18; `print`
+    neutralises backgrounds and animation.
+- **`scripts/verify_polish.py`** — computed-style verification of the layer (tokens,
+  gradients, animations, member-adaptive tints, mobile sizes, all three media guards).
+
+### Changed
+- Version `5.0.0 → 5.1.0`; SW cache `zenith-v5-2026-09-13-1`; `polish.css` added to
+  the SW CORE precache list.
+- README screenshots regenerated from the polished build (desktop + phone, both themes).
+
+### Verified
+- 3 unit suites PASS; syntax check PASS; JSON valid; smoke 130/130 on BOTH storage
+  paths (localStorage + IndexedDB).
+- Mobile layout audit PASS on the polished build (no horizontal overflow, all tap
+  targets ≥ 36px, pinned Cook-Mode nav, readable shopping header) — the same gate CI runs.
+- 28 computed-style checks PASS across desktop / phone / reduced-motion / high-contrast.
+
 ## [5.0.0] — 2026-09-12
 
 The Today view now reads as a dashboard instead of a page of stacked cards: a header row,

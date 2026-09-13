@@ -14,8 +14,8 @@
 export const APP = {
   name: 'ZENITH PRO',
   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
-  version: '5.0.0',
-  updated: '2026-09-12',
+  version: '5.1.0',
+  updated: '2026-09-13',
   schema: 2
 };
 

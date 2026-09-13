@@ -1,4 +1,4 @@
-# ZENITH PRO v4.2 · Family Nutrition OS
+# ZENITH PRO v5.1 · Family Nutrition OS
 
 Privacy-first, offline-first family nutrition PWA built around one shared family meal
 system with member-specific portion logic. Greek-language UI, zero runtime dependencies,
@@ -44,6 +44,33 @@ no build step, hosted as static files on GitHub Pages.
 
 Regenerate with `python scripts/capture_shots.py` (desktop) and
 `python scripts/capture_mobile.py` (phone + layout audit) while a local server is running.
+
+## What's new in v5.1 — the polish pass
+
+The whole surface got a visual upgrade **without touching a single line of app logic**:
+one additive stylesheet (`styles/polish.css`) layered on top of the existing design
+system. If it ever misbehaves, deleting that one file reverts everything.
+
+- **Member-adaptive colour.** Soft tints, lines and glows now derive from the selected
+  member's accent via `color-mix`, instead of staying emerald for everyone.
+- **Depth & light.** Cards carry a faint top-lit wash, the aurora background gained a
+  second drifting light, and the energy ring breathes a soft halo.
+- **Tactile controls.** Focus rings, press feedback, a sheen that sweeps the primary
+  button on hover, spring-physics sheets/toasts, and chips that pop when they land.
+- **Motion with meaning.** Staggered view entrances (≤200ms, capped), a glint sweeping
+  along progress bars, a celebration pulse when a meal is logged, an attention glow on
+  Cook Mode's final-step button.
+- **Phone-first details.** The tab bar clears the home-indicator area (`safe-area`),
+  water glasses grow to 40px and inputs to 44px on touch screens, the member strip
+  scroll-snaps, and the keyboard skip-link now appears when focused.
+- **Accessibility guards.** `prefers-reduced-motion` (existing §18) kills all new
+  animation; `prefers-contrast: more` drops every sheen/glint and restores solid
+  text; print strips the decoration.
+- **Regenerated screenshots** across desktop and phone, light and dark.
+
+Verified before shipping: all 3 unit suites, 130/130 DOM smoke on both storage
+backends, the CI mobile layout audit (overflow / tap-target / pinned-nav checks), and
+28 computed-style assertions via `python scripts/verify_polish.py`.
 
 ## What's new in v4.2
 

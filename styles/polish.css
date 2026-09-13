@@ -1,0 +1,495 @@
+/* ==========================================================================
+   ZENITH PRO · polish layer (v5.1)
+   --------------------------------------------------------------------------
+   An ADDITIVE layer loaded after styles/app.css. It retunes the design tokens
+   and layers motion, depth and tactile feedback on top of the existing system
+   WITHOUT touching a single selector, DOM node or event handler in app.css.
+
+   Rules of this layer:
+     · No new class names are required in any view — everything hooks the
+       classes that already exist, plus ::before/::after decoration.
+     · Nothing shrinks a tap target (the mobile audit measures heights).
+     · Nothing moves horizontally outside an overflow-hidden ancestor
+       (the mobile audit fails the build on sideways scroll).
+     · Every loop/entrance animation is disabled by the existing
+       prefers-reduced-motion guard in app.css §18, and the glints/sheens
+       additionally drop out under prefers-contrast/print below.
+
+   Revert: delete this file, the <link> in index.html and the sw.js CORE entry.
+   ========================================================================== */
+
+/* ── P1. Token retune ─────────────────────────────────────────────────────
+   Same palette family, a notch more contrast and depth: a cleaner light
+   background, a deeper emerald accent, and shadows with more air under them.
+   Only the tokens that change are restated — cascade order does the rest. */
+
+:root {
+  color-scheme: light;
+
+  --bg: #f6faf8;
+  --bg-2: #ecf4f0;
+  --surface-2: #f8fbf9;
+  --surface-3: #eef5f1;
+
+  --accent: #0fa871;
+  --accent-2: #3fd69c;
+  /* Member-adaptive: the app sets --accent inline per selected member, so the
+     soft tint and line always follow that member's colour instead of a fixed emerald. */
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 32%, transparent);
+  --tint-accent: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --line: rgba(10, 48, 38, .10);
+  --line-strong: rgba(10, 48, 38, .18);
+
+  --shadow-1: 0 1px 2px rgba(10, 48, 38, .05), 0 8px 22px -12px rgba(10, 48, 38, .18);
+  --shadow-2: 0 2px 6px rgba(10, 48, 38, .06), 0 28px 60px -26px rgba(10, 48, 38, .30);
+  --shadow-3: 0 48px 110px -40px rgba(10, 48, 38, .38);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --tint-accent: color-mix(in srgb, var(--accent) 13%, transparent);
+
+  --bg: #04110e;
+  --bg-2: #06201a;
+  --surface: #0a1f1a;
+  --surface-2: #102821;
+  --surface-3: #173229;
+
+  --line: rgba(255, 255, 255, .09);
+  --line-strong: rgba(255, 255, 255, .17);
+  --ink-2: #a9c3ba;
+  --ink-3: #86a096;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .42), 0 10px 26px -14px rgba(0, 0, 0, .62);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, .5), 0 30px 64px -28px rgba(0, 0, 0, .82);
+  --shadow-3: 0 50px 110px -40px rgba(0, 0, 0, .92);
+}
+
+/* ── P2. Base micro-polish ─────────────────────────────────────────────── */
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+  scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent;
+}
+
+h1, h2, h3, h4 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
+::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+input, select, textarea { caret-color: var(--accent); }
+
+/* Numbers that line up in columns, everywhere a figure is shown. */
+.kpi-val, .stat-val, .scale-kcal, .cp-kcal, .ing-qty, .shop-qty,
+.mb-val, .bc-val, .ring-main, .cook-counter b, .date-chip {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The skip link was permanently invisible — now it appears when focused. */
+.sr-only:focus {
+  position: fixed; top: 12px; left: 12px; z-index: 300;
+  width: auto; height: auto; clip: auto; margin: 0; padding: 10px 16px;
+  border-radius: var(--r-full); background: var(--surface);
+  border: 1px solid var(--accent-line); box-shadow: var(--shadow-2);
+  color: var(--ink); font-weight: 700; text-decoration: none;
+}
+
+/* ── P3. Ambience — a second drifting light in the aurora ──────────────── */
+
+.aurora::before {
+  content: "";
+  position: absolute; inset: -18% -8%;
+  background:
+    radial-gradient(640px 480px at 16% 92%, color-mix(in srgb, var(--accent-2) 9%, transparent), transparent 68%),
+    radial-gradient(520px 420px at 96% 88%, color-mix(in srgb, var(--blue) 7%, transparent), transparent 64%);
+  animation: zpDrift2 46s var(--ease) infinite alternate;
+}
+@keyframes zpDrift2 {
+  from { transform: translate3d(2%, 2%, 0) scale(1); }
+  to   { transform: translate3d(-3%, -2%, 0) scale(1.1); }
+}
+
+/* ── P4. Cards & surfaces ─────────────────────────────────────────────────
+   A whisper of accent at the top of every card — a "lit from above" wash
+   that stays neutral enough to read as white in light and near-black in dark. */
+
+.card {
+  background-color: var(--surface);
+  background-image: radial-gradient(130% 64% at 50% 0%,
+    color-mix(in srgb, var(--accent) 3.5%, transparent), transparent 70%);
+}
+
+.card-lg {
+  background-image: radial-gradient(120% 60% at 50% 0%,
+    color-mix(in srgb, var(--accent) 5%, transparent), transparent 72%);
+}
+
+.meal:hover, .recipe-card:hover, .day-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+}
+
+/* Ingredients & measurement rows acknowledge the pointer. */
+.ing-row { transition: background .16s var(--ease); }
+.ing-row:hover { background: var(--surface-3); }
+
+/* ── P5. Controls — tactile, alive, thumb-sized ─────────────────────────── */
+
+.btn:focus-visible,
+.icon-btn:focus-visible,
+.chip:focus-visible,
+.nav-btn:focus-visible,
+.tab-btn:focus-visible,
+.member-chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 85%, #fff 12%);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--accent-soft);
+}
+
+/* Primary button: inner highlight, real underglow, and a one-shot sheen
+   sweeping across it on hover. Overflow clips the sweep to the pill. */
+.btn-primary {
+  position: relative; overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    0 10px 26px -12px color-mix(in srgb, var(--accent) 72%, transparent);
+}
+.btn-primary:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    0 16px 36px -14px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+.btn-primary::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, .34) 50%, transparent 68%);
+  transform: translateX(-140%);
+}
+.btn-primary:hover::after { animation: zpSheen .7s var(--ease); }
+
+.chip { padding: 8px 13px; }
+.chip:active, .shop-chip:active, .member-chip:active, .tab-btn:active { transform: scale(.96); }
+
+.icon-btn { width: 40px; height: 40px; }
+.icon-btn:hover { border-color: var(--accent-line); color: var(--accent); }
+
+/* Filter chips that are ON get a soft glow so the active state reads at a glance. */
+.chip.active, .segmented button.active {
+  box-shadow: 0 0 0 1px var(--accent-line), 0 6px 18px -10px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--ink-3) 45%, var(--line-strong)); }
+
+/* Switch: the knob slides with a spring and the track gets an inner shadow. */
+.switch-track { box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12); }
+.switch-track::after { transition: transform .24s cubic-bezier(.34, 1.4, .64, 1); }
+
+/* Avatars become beads: inner light + contact shadow. */
+.avatar {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), 0 2px 6px rgba(0, 0, 0, .18);
+}
+
+/* Member chips: the active member glows and carries an avatar ring. */
+.member-chip.active {
+  background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--accent) 6%, var(--surface)));
+}
+.member-chip.active .avatar { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 1px; }
+
+/* Logo mark gets a soft colored shadow. */
+.logo-mark { filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--accent) 38%, transparent)); }
+
+/* Brand wordmark: a quiet two-tone. */
+.brand-name {
+  background: linear-gradient(120deg, var(--ink) 55%, color-mix(in srgb, var(--accent) 62%, var(--ink)));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: var(--ink);
+}
+
+/* ── P6. Navigation ─────────────────────────────────────────────────────── */
+
+.nav-btn { position: relative; }
+.nav-btn:hover { transform: translateX(2px); }
+.nav-btn.active {
+  background: linear-gradient(90deg, var(--accent-soft), color-mix(in srgb, var(--surface-2) 70%, transparent));
+  box-shadow: var(--ring-hi), inset 0 0 0 1px var(--accent-line);
+}
+/* The active item grows a small accent bar on its left edge. */
+.nav-btn::before {
+  content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 3px;
+  border-radius: var(--r-full); background: var(--accent);
+  transform: scaleY(0); transform-origin: center; opacity: 0;
+  transition: transform .22s var(--ease), opacity .22s var(--ease);
+}
+.nav-btn.active::before { transform: scaleY(1); opacity: 1; }
+
+/* Mobile tab bar: clear of the home indicator, active tab glows and leans in. */
+.tabbar { bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+.tab-btn { position: relative; transition: color .16s var(--ease), background .16s var(--ease), transform .16s var(--ease); }
+.tab-btn:active { transform: scale(.94); }
+.tab-btn.active {
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Member strip: chips settle onto the grid instead of stopping mid-gap. */
+.member-strip { scroll-snap-type: x proximity; }
+.member-strip .member-chip { scroll-snap-align: start; }
+
+/* Topbar respects notches in standalone mode. */
+.topbar { padding-top: max(12px, env(safe-area-inset-top, 0px)); }
+
+/* ── P7. Dashboard ───────────────────────────────────────────────────────── */
+
+/* The hero KPI gets a spotlight from the top-right corner. */
+.kpi.is-hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(90% 130% at 100% -12%, rgba(255, 255, 255, .16), transparent 58%);
+}
+
+/* Every progress fill carries a light glint sweeping along it. All tracks
+   are overflow:hidden already, so the sweep can never escape the bar. */
+.mb-fill, .bc-fill, .kpi-bar > i, .cook-bar i { position: relative; overflow: hidden; }
+.mb-fill::after, .bc-fill::after, .kpi-bar > i::after, .cook-bar i::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .30) 50%, transparent 70%);
+  transform: translateX(-150%);
+  animation: zpGlint 2.8s var(--ease) infinite;
+}
+.kpi-bar > i::after { animation-delay: .7s; }
+.kpi.is-hero .kpi-bar > i::after { background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .5) 50%, transparent 70%); animation-delay: 1.4s; }
+
+/* The energy ring breathes a soft halo behind itself. */
+.hero-ring { position: relative; }
+.hero-ring::before {
+  content: ""; position: absolute; inset: -6%; pointer-events: none; z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 65%);
+  animation: zpBreatheGlow 5.5s var(--ease) infinite;
+}
+
+/* View entrance: the view fades in while its sections rise in a quick,
+   capped stagger — 30ms steps, done in well under half a second. */
+.view-enter { animation: zpViewFade .24s var(--ease) both; }
+.view-enter > * { animation: zpRise .44s var(--ease) both; }
+.view-enter > *:nth-child(2) { animation-delay: 30ms; }
+.view-enter > *:nth-child(3) { animation-delay: 60ms; }
+.view-enter > *:nth-child(4) { animation-delay: 90ms; }
+.view-enter > *:nth-child(5) { animation-delay: 120ms; }
+.view-enter > *:nth-child(6) { animation-delay: 150ms; }
+.view-enter > *:nth-child(7) { animation-delay: 175ms; }
+.view-enter > *:nth-child(n + 8) { animation-delay: 195ms; }
+
+/* ── P8. Meals, plan & lists ────────────────────────────────────────────── */
+
+/* Logging a meal is the app's core action — the card celebrates it. */
+.meal.is-done { animation: zpCelebrate .6s var(--ease); }
+
+/* Today in the week strip gets a gentle glow pulse. */
+.day-card.is-today { animation: zpTodayGlow 3s var(--ease) infinite; }
+
+/* The "now" dot on the timeline breathes. */
+.tl-item.current .tl-dot { animation: zpPulse 2.2s var(--ease) infinite; }
+
+/* Recipe artwork leans in when the card is hovered. */
+.recipe-card .art, .next-head .art { transition: transform .3s var(--ease); }
+.recipe-card:hover .art { transform: scale(1.08) rotate(-2deg); }
+
+/* Water glasses get a highlight line, a bigger coarse-pointer target,
+   and a wobble when they fill. */
+.glass::before {
+  content: ""; position: absolute; inset: 0 0 55% 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .3), transparent);
+  border-radius: 4px 4px 0 0;
+}
+.glass.filled::after { animation: zpWobble .5s var(--ease); }
+
+/* Checkboxes pop when they land. */
+.shop-item.is-checked .shop-check,
+.cook-ing.is-done .cook-check { animation: zpPop .35s cubic-bezier(.34, 1.56, .64, 1); }
+
+.shop-item { transition: background .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease); }
+.shop-item:hover { background: var(--surface); border-color: var(--line-strong); }
+
+/* The shop progress bar stretches to done. */
+.shop-done { animation: zpRise .5s var(--ease) both; }
+
+/* The transparency block slides open. */
+.why[open] .why-body { animation: zpRise .3s var(--ease); }
+
+/* "Συνταγή →" links: the arrow scoots on hover. */
+.meal-link .ic { transition: transform .18s var(--ease); }
+.meal-link:hover .ic { transform: translateX(2px); }
+
+/* Empty states float gently. */
+.empty-ic { animation: zpFloat 3.6s ease-in-out infinite; }
+
+/* ── P9. Cook Mode ──────────────────────────────────────────────────────── */
+
+/* Each step slides in from the right as the sheet re-renders. */
+.cook-main { animation: zpStepIn .32s var(--ease) both; }
+
+/* A running timer breathes. */
+.cook-timer-text.is-running { animation: zpTimer 1.1s var(--ease) infinite; }
+
+/* On the last step the finish button glows — attention where it matters. */
+.cook-nav .btn-primary { animation: zpAttn 1.7s var(--ease) infinite; }
+
+/* ── P10. Overlays — spring physics ─────────────────────────────────────── */
+
+.sheet-backdrop {
+  background-image: radial-gradient(120% 90% at 50% 18%, transparent, rgba(4, 18, 14, .3));
+}
+.sheet-panel { animation: zpSheetIn .36s cubic-bezier(.32, 1.18, .46, 1); }
+
+.toast-card {
+  animation: zpToastIn .4s cubic-bezier(.34, 1.46, .64, 1);
+  border-inline-start: 3px solid var(--accent);
+}
+
+.palette-panel { animation: zpPaletteIn .3s cubic-bezier(.34, 1.4, .64, 1); }
+
+.update-banner {
+  border-inline-start: 3px solid var(--blue);
+  animation: zpRise .4s var(--ease) both;
+}
+
+/* ── P11. Charts & data ──────────────────────────────────────────────────── */
+
+.hm-cell:active { transform: scale(.88); }
+.hm-cell.is-today { animation: zpTodayPulse 2.4s var(--ease) infinite; }
+
+.lc-line { filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--accent) 30%, transparent)); }
+
+.scale-row.is-current { animation: zpSoftGlow 3s var(--ease) infinite; }
+
+/* ── P12. Input-mode & small screens ─────────────────────────────────────── */
+
+@media (pointer: coarse) {
+  .glass { width: 40px; height: 48px; }
+  .water-tracker { gap: 9px; }
+  input, select, textarea { min-height: 44px; }
+  .sheet-body { -webkit-overflow-scrolling: touch; }
+}
+
+/* Phones: a little more breathing room under the floating tab bar. */
+@media (max-width: 1000px) {
+  .content { padding-bottom: 124px; }
+}
+
+/* ── P13. Guards ────────────────────────────────────────────────────────── */
+
+/* High-contrast users get solid fills — no glints, sheens or sweeps. */
+@media (prefers-contrast: more) {
+  .btn-primary::after,
+  .mb-fill::after, .bc-fill::after, .kpi-bar > i::after, .cook-bar i::after { display: none; }
+  .brand-name { -webkit-text-fill-color: currentColor; background: none; }
+}
+
+/* Printing stops the motion and strips the decoration. */
+@media print {
+  .aurora::before,
+  .btn-primary::after,
+  .mb-fill::after, .bc-fill::after, .kpi-bar > i::after, .cook-bar i::after,
+  .card, .card-lg { background-image: none !important; }
+  * { animation: none !important; }
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes zpViewFade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes zpRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes zpSheen { to { transform: translateX(150%); } }
+
+@keyframes zpGlint {
+  0%   { transform: translateX(-150%); }
+  55%  { transform: translateX(160%); }
+  100% { transform: translateX(160%); }
+}
+
+@keyframes zpBreatheGlow {
+  0%, 100% { opacity: .55; transform: scale(.94); }
+  50%      { opacity: 1;   transform: scale(1.04); }
+}
+
+@keyframes zpCelebrate {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  60%  { box-shadow: 0 0 0 9px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes zpTodayGlow {
+  0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-2); }
+  50%      { box-shadow: 0 0 0 6px var(--accent-soft), var(--shadow-2); }
+}
+
+@keyframes zpPulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-soft); }
+  50%      { box-shadow: 0 0 0 8px var(--accent-soft); }
+}
+
+@keyframes zpWobble {
+  0%   { transform: scaleY(.7); }
+  55%  { transform: scaleY(1.14); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes zpPop {
+  0%   { transform: scale(.4); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+@keyframes zpFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes zpStepIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes zpTimer {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .72; }
+}
+
+@keyframes zpAttn {
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  50%      { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 0 0 9px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+@keyframes zpSheetIn {
+  0%   { opacity: 0; transform: translate(-50%, -47.5%) scale(.96); }
+  62%  { opacity: 1; transform: translate(-50%, -50.3%) scale(1.012); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes zpToastIn {
+  0%   { opacity: 0; transform: translateY(18px) scale(.96); }
+  70%  { opacity: 1; transform: translateY(-3px) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes zpPaletteIn {
+  0%   { opacity: 0; transform: translateY(-14px) scale(.97); }
+  70%  { opacity: 1; transform: translateY(2px) scale(1.008); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes zpTodayPulse {
+  0%, 100% { outline-color: var(--ink); outline-offset: 1px; }
+  50%      { outline-color: var(--accent); outline-offset: 2px; }
+}
+
+@keyframes zpSoftGlow {
+  0%, 100% { box-shadow: inset 0 0 0 1px var(--accent-line); }
+  50%      { box-shadow: inset 0 0 0 2px var(--accent-line), 0 0 14px -4px color-mix(in srgb, var(--accent) 35%, transparent); }
+}
