@@ -1,0 +1,121 @@
+/* ===========================================================================
+   ZENITH PRO · ultra premium layer (v7)
+   Art direction: calm clinical precision + editorial warmth + high-signal data.
+   Existing markup only; no dependencies and no behavior changes.
+   ========================================================================== */
+
+:root {
+  --ultra-ink: #09261d;
+  --ultra-mint: #baf4d8;
+  --ultra-paper: rgba(255,255,255,.58);
+  --ultra-grid: rgba(10, 67, 48, .055);
+  --ultra-line: rgba(11, 57, 42, .14);
+  --ultra-glow: 0 0 0 1px rgba(255,255,255,.7) inset, 0 24px 70px -40px rgba(0,65,42,.5);
+}
+[data-theme="dark"] {
+  --ultra-ink: #effff7;
+  --ultra-mint: #83efbc;
+  --ultra-paper: rgba(12, 39, 31, .56);
+  --ultra-grid: rgba(161,255,214,.035);
+  --ultra-line: rgba(255,255,255,.14);
+  --ultra-glow: 0 0 0 1px rgba(255,255,255,.07) inset, 0 26px 80px -40px rgba(0,0,0,.9);
+}
+
+body { background-image: linear-gradient(var(--ultra-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ultra-grid) 1px, transparent 1px); background-size: 56px 56px; }
+.aurora { opacity: .82; }
+
+/* The shell now reads as a quiet operating system, not a stack of pages. */
+.sidebar { background: color-mix(in srgb, var(--ultra-paper) 82%, transparent); }
+.brand { position: relative; }
+.brand::after { content: "LIVE · LOCAL"; position: absolute; right: 10px; top: 12px; font: 800 .49rem/1 var(--font-sans); letter-spacing: .15em; color: var(--accent); opacity: .74; }
+.brand-name { letter-spacing: -.065em; }
+.side-ver { font-variant-numeric: tabular-nums; }
+.topbar { background: color-mix(in srgb, var(--ultra-paper) 88%, transparent); }
+
+/* A more intentional command-center header. */
+.dash-head { padding: 7px 0 10px; }
+.dash-head .eyebrow { display: inline-flex; align-items: center; gap: 7px; }
+.dash-head .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
+.dash-head h1 { font-weight: 660; }
+.dash-head h1 em { background: linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 35%, var(--ink))); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.dash-meta { align-self: flex-end; }
+
+/* KPI cards gain a visual grammar: label → number → evidence → signal. */
+.kpi { isolation: isolate; }
+.kpi-top { position: relative; z-index: 1; }
+.kpi-val { position: relative; z-index: 1; }
+.kpi-label { position: relative; z-index: 1; max-width: 18ch; }
+.kpi-foot { position: relative; z-index: 1; }
+.kpi::after { transition: transform .35s var(--ease), opacity .35s var(--ease); }
+.kpi:hover::after { transform: scale(1.22); opacity: .95; }
+.kpi:not(.is-hero)::before { height: 3px; background: linear-gradient(90deg, var(--tone, var(--accent)), transparent 72%); }
+.kpi.is-hero { border-radius: 26px; }
+.kpi.is-hero .kpi-val { font-size: clamp(2.25rem, 3vw, 3rem); letter-spacing: -.07em; }
+
+/* Sections use stronger rhythm and a premium inner highlight. */
+.card, .meal, .day-card, .recipe-card, .kpi { backdrop-filter: blur(12px) saturate(1.04); }
+.card::before, .kpi::before { opacity: .95; }
+.card-head { margin-bottom: 17px; }
+.card-title { letter-spacing: -.025em; }
+.sec-head { margin-top: 38px; }
+.sec-head h2 { font-size: clamp(1.35rem, 2.3vw, 1.7rem); letter-spacing: -.045em; }
+.sec-sub { max-width: 58ch; }
+
+/* Persona panel becomes the narrative anchor of the dashboard. */
+.persona { border-color: color-mix(in srgb, var(--pa, var(--accent)) 22%, var(--ultra-line)); box-shadow: var(--ultra-glow); }
+.persona::before { width: 5px; box-shadow: 0 0 24px color-mix(in srgb, var(--pa, var(--accent)) 50%, transparent); }
+.persona-title { max-width: 22ch; font-weight: 650; }
+.persona-lead { font-size: .96rem; max-width: 62ch; }
+.ppoint { position: relative; overflow: hidden; }
+.ppoint::after { content: ""; position: absolute; width: 90px; height: 90px; right: -52px; bottom: -54px; border: 1px solid color-mix(in srgb, var(--tone, var(--accent)) 22%, transparent); border-radius: 50%; }
+
+/* Data visualisations read as finished product surfaces. */
+.hero-panel { background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 97%, transparent), color-mix(in srgb, var(--accent) 4%, var(--surface))); box-shadow: var(--ultra-glow); }
+.hero-ring { filter: drop-shadow(0 16px 24px color-mix(in srgb, var(--accent) 18%, transparent)); }
+.legend-item { font-size: .73rem; }
+.mb-track, .bc-track, .kpi-bar, .cook-bar { box-shadow: inset 0 1px 2px rgba(0,0,0,.09); }
+.lc { filter: drop-shadow(0 12px 16px color-mix(in srgb, var(--accent) 8%, transparent)); }
+.hm-cell { border-color: color-mix(in srgb, var(--accent) 13%, var(--line)); }
+
+/* Buttons feel engineered rather than ornamental. */
+.btn, .icon-btn, .chip, .shop-chip { will-change: transform; }
+.btn-primary { box-shadow: inset 0 1px rgba(255,255,255,.3), 0 14px 30px -18px color-mix(in srgb, var(--accent) 90%, transparent); }
+.btn-primary:active { box-shadow: inset 0 2px 4px rgba(0,0,0,.16); }
+.btn:not(:disabled):focus-visible { box-shadow: 0 0 0 4px var(--accent-soft), var(--ultra-glow); }
+
+/* Better hover choreography for desktop, no transform surprises on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .meal, .day-card, .recipe-card, .ppoint { transition: transform .28s var(--ease), box-shadow .28s var(--ease), border-color .28s var(--ease), background .28s var(--ease); }
+  .meal:hover { transform: translateY(-5px) rotate(.1deg); }
+  .day-card:hover, .recipe-card:hover { transform: translateY(-5px); }
+  .ppoint:hover { transform: translateY(-2px); }
+  .nav-btn:hover { transform: translateX(4px); }
+}
+
+/* Mobile: premium density without cramping the thumb path. */
+@media (max-width: 760px) {
+  body { background-size: 38px 38px; }
+  .brand::after { display: none; }
+  .dash-head { padding-top: 2px; }
+  .dash-head h1 { letter-spacing: -.065em; }
+  .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi { min-height: 190px; }
+  .kpi.is-hero .kpi-val { font-size: 2.05rem; }
+  .kpi::after { width: 30px; height: 30px; right: 9px; bottom: 9px; }
+  .sec-head { margin-top: 30px; }
+  .hero-panel { gap: 17px; }
+  .hero-ring { transform: scale(.95); }
+}
+@media (max-width: 390px) {
+  .kpi { min-height: 182px; }
+  .kpi-label { font-size: .74rem; }
+  .kpi-note { font-size: .66rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi::after { transition: none; }
+}
+@media print {
+  body { background-image: none; }
+  .card, .meal, .day-card, .recipe-card, .kpi { backdrop-filter: none; }
+}
