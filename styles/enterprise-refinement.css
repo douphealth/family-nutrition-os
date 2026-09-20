@@ -1,0 +1,259 @@
+/* ===========================================================================
+   ZENITH PRO · enterprise refinement (v6)
+   ---------------------------------------------------------------------------
+   A compositional skin for the existing privacy-first PWA. This layer only
+   consumes existing classes/tokens: no new runtime dependency, markup, or
+   interaction contract. It is deliberately additive and supports light, dark,
+   touch, high-contrast, print and reduced-motion modes.
+   ========================================================================== */
+
+:root {
+  --canvas: #f3f8f5;
+  --canvas-deep: #e8f2ed;
+  --nav-ink: #102b22;
+  --chrome: rgba(255,255,255,.72);
+  --hairline: rgba(12, 55, 42, .11);
+  --elevation-1: 0 1px 1px rgba(11, 42, 33, .04), 0 16px 40px -28px rgba(12, 55, 42, .34);
+  --elevation-2: 0 2px 4px rgba(11, 42, 33, .05), 0 30px 70px -34px rgba(12, 55, 42, .32);
+  --elevation-3: 0 28px 90px -38px rgba(5, 35, 26, .44);
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --shell: 1440px;
+  --r-xs: 10px; --r-sm: 14px; --r-md: 18px; --r-lg: 24px; --r-xl: 32px;
+}
+
+[data-theme="dark"] {
+  --canvas: #061511;
+  --canvas-deep: #09231b;
+  --nav-ink: #e9f8f1;
+  --chrome: rgba(10, 31, 25, .72);
+  --hairline: rgba(255,255,255,.10);
+  --elevation-1: 0 1px 1px rgba(0,0,0,.25), 0 18px 44px -26px rgba(0,0,0,.70);
+  --elevation-2: 0 3px 9px rgba(0,0,0,.28), 0 34px 78px -32px rgba(0,0,0,.80);
+  --elevation-3: 0 34px 100px -32px rgba(0,0,0,.92);
+}
+
+body {
+  letter-spacing: -.008em;
+  background: var(--canvas);
+}
+
+/* A disciplined grid grounds the atmospheric canvas without adding visual noise. */
+.aurora {
+  background:
+    radial-gradient(900px 520px at 88% -12%, color-mix(in srgb, var(--accent) 19%, transparent), transparent 68%),
+    radial-gradient(680px 460px at -8% 82%, color-mix(in srgb, var(--blue) 8%, transparent), transparent 70%),
+    linear-gradient(135deg, var(--canvas), var(--canvas-deep));
+}
+.aurora::before { opacity: .7; }
+.aurora::after { opacity: .75; }
+
+/* ── Application frame ─────────────────────────────────────────────────── */
+.app { grid-template-columns: 280px minmax(0, 1fr); }
+.sidebar {
+  padding: 22px 15px 16px;
+  border-right: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--chrome) 88%, transparent);
+  box-shadow: inset -1px 0 rgba(255,255,255,.42);
+}
+.brand { gap: 12px; padding: 8px 10px 11px; }
+.brand-name { font-size: 1.42rem; letter-spacing: -.045em; }
+.brand-sub { margin-top: 5px; font-size: .59rem; letter-spacing: .18em; }
+.nav { gap: 5px; margin-top: 25px; }
+.nav-label { padding: 0 13px; margin: 0 0 8px; font-size: .61rem; letter-spacing: .18em; }
+.nav-btn {
+  min-height: 45px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  color: color-mix(in srgb, var(--ink-2) 88%, var(--nav-ink));
+}
+.nav-btn:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.nav-btn.active {
+  background: linear-gradient(110deg, var(--accent-soft), color-mix(in srgb, var(--surface) 83%, transparent));
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--hairline));
+  box-shadow: inset 0 1px rgba(255,255,255,.6), 0 10px 22px -18px color-mix(in srgb, var(--accent) 72%, transparent);
+}
+.nav-btn::before { left: 1px; width: 3px; }
+.side-foot { padding: 16px 13px 0; border-top-color: var(--hairline); }
+.side-note { line-height: 1.62; }
+
+.topbar {
+  min-height: 76px;
+  padding-inline: clamp(18px, 3vw, 42px);
+  border-bottom-color: var(--hairline);
+  background: color-mix(in srgb, var(--chrome) 84%, transparent);
+  box-shadow: 0 10px 28px -28px rgba(4, 35, 25, .36);
+}
+.member-strip { gap: 8px; padding: 4px 2px; }
+.member-chip {
+  min-height: 42px;
+  padding: 5px 14px 5px 5px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-color: var(--hairline);
+  box-shadow: 0 6px 18px -16px rgba(8, 45, 33, .5);
+}
+.member-chip.active {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--hairline));
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 14px 28px -21px color-mix(in srgb, var(--accent) 72%, transparent);
+}
+.icon-btn { border-color: var(--hairline); background: color-mix(in srgb, var(--surface) 84%, transparent); }
+
+.content { max-width: var(--shell); padding: clamp(28px, 4vw, 52px) clamp(20px, 3vw, 42px) 130px; }
+
+/* ── Heading system ────────────────────────────────────────────────────── */
+.eyebrow { letter-spacing: .18em; font-size: .62rem; }
+.dash-head { position: relative; align-items: center; gap: 28px; margin: 0 0 26px; }
+.dash-head::after {
+  content: ""; position: absolute; right: 0; bottom: -14px; left: 0; height: 1px;
+  background: linear-gradient(90deg, var(--accent-line), transparent 62%);
+}
+.dash-head h1 {
+  max-width: 14ch;
+  font-size: clamp(2rem, 3.7vw, 3.25rem);
+  line-height: .98;
+  letter-spacing: -.06em;
+  text-wrap: balance;
+}
+.dash-head h1 em { font-weight: 600; }
+.dash-greet > .muted { font-size: .82rem; max-width: 56ch; line-height: 1.55; }
+.dash-meta { justify-content: flex-end; }
+.date-chip {
+  min-height: 42px;
+  padding: 9px 14px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border-color: var(--hairline);
+  font-size: .76rem;
+  box-shadow: var(--elevation-1);
+}
+.date-chip + .date-chip { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+
+/* ── KPI treatment: clear primary signal, recognizable supporting signals ─ */
+.kpi-row { gap: 16px; margin-bottom: 22px; }
+.kpi {
+  min-height: 182px;
+  padding: 19px;
+  border-color: var(--hairline);
+  border-radius: 22px;
+  background:
+    radial-gradient(125% 85% at 100% 0%, color-mix(in srgb, var(--tone, var(--accent)) 7%, transparent), transparent 64%),
+    var(--surface);
+  box-shadow: var(--elevation-1);
+}
+.kpi:hover { transform: translateY(-4px); box-shadow: var(--elevation-2); border-color: color-mix(in srgb, var(--tone, var(--accent)) 26%, var(--hairline)); }
+.kpi::after {
+  content: ""; position: absolute; right: 14px; bottom: 14px; width: 36px; height: 36px;
+  border: 1px solid color-mix(in srgb, var(--tone, var(--accent)) 15%, transparent);
+  border-radius: 50%; opacity: .7; pointer-events: none;
+}
+.kpi.tone-blue { --tone: var(--blue); }
+.kpi.tone-rose { --tone: var(--rose); }
+.kpi.tone-gold { --tone: var(--gold); }
+.kpi.tone-danger { --tone: var(--danger); }
+.kpi-top { margin-bottom: 13px; }
+.kpi-ic { width: 38px; height: 38px; border-radius: 13px; }
+.kpi-val { font-size: clamp(2rem, 2.5vw, 2.4rem); letter-spacing: -.055em; }
+.kpi-label { font-size: .78rem; letter-spacing: .01em; }
+.kpi-foot { padding-top: 13px; gap: 8px; }
+.kpi-bar { height: 6px; background: color-mix(in srgb, var(--surface-3) 82%, transparent); }
+.kpi-note { font-size: .72rem; }
+.kpi.is-hero {
+  background:
+    radial-gradient(100% 120% at 100% -10%, rgba(255,255,255,.17), transparent 55%),
+    linear-gradient(142deg, color-mix(in srgb, var(--accent) 92%, #0a3b2b), color-mix(in srgb, var(--accent) 68%, #06241a));
+  box-shadow: 0 4px 8px rgba(9,42,33,.09), 0 26px 48px -22px color-mix(in srgb, var(--accent) 78%, transparent);
+}
+.kpi.is-hero::after { border-color: rgba(255,255,255,.20); width: 86px; height: 86px; right: -24px; bottom: -30px; }
+.kpi.is-hero .kpi-ic { box-shadow: inset 0 1px rgba(255,255,255,.22); }
+
+/* ── Content surfaces ──────────────────────────────────────────────────── */
+.card, .meal, .day-card, .recipe-card {
+  border-color: var(--hairline);
+  box-shadow: var(--elevation-1);
+}
+.card {
+  border-radius: 24px;
+  padding: 22px;
+  background-color: color-mix(in srgb, var(--surface) 94%, transparent);
+  background-image:
+    linear-gradient(125deg, color-mix(in srgb, var(--surface) 92%, transparent), color-mix(in srgb, var(--accent) 2%, var(--surface))),
+    radial-gradient(100% 80% at 100% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 72%);
+}
+.card-lg { padding: clamp(22px, 2.5vw, 30px); border-radius: 28px; }
+.card::before { opacity: .9; }
+.card:hover { box-shadow: var(--elevation-2); }
+.persona { overflow: hidden; }
+.persona::after {
+  content: ""; position: absolute; width: 290px; height: 290px; right: -160px; top: -175px;
+  border-radius: 50%; border: 1px solid color-mix(in srgb, var(--pa, var(--accent)) 16%, transparent);
+  box-shadow: 0 0 0 22px color-mix(in srgb, var(--pa, var(--accent)) 4%, transparent), 0 0 0 52px color-mix(in srgb, var(--pa, var(--accent)) 2%, transparent);
+  pointer-events: none;
+}
+.persona-head, .persona-lead, .persona-points { position: relative; z-index: 1; }
+.persona-title { font-size: clamp(1.38rem, 2vw, 1.72rem); letter-spacing: -.035em; }
+.persona-tag { background: color-mix(in srgb, var(--pa, var(--accent)) 9%, var(--surface)); border-color: color-mix(in srgb, var(--pa, var(--accent)) 20%, var(--hairline)); }
+.ppoint { padding: 15px; border-radius: 16px; background: color-mix(in srgb, var(--surface-2) 84%, transparent); border-color: var(--hairline); }
+.ppoint:hover { background: var(--surface); box-shadow: 0 13px 24px -22px rgba(5,35,26,.44); }
+
+.hero-panel { gap: clamp(24px, 4vw, 44px); }
+.hero-ring::before { inset: -10%; }
+.meal, .day-card, .recipe-card { border-radius: 19px; }
+.meal:hover, .day-card:hover, .recipe-card:hover { box-shadow: var(--elevation-2); }
+
+/* ── Controls and overlays ─────────────────────────────────────────────── */
+.btn { min-height: 42px; border-radius: 12px; border-color: var(--hairline); box-shadow: var(--elevation-1); }
+.btn-primary { background: linear-gradient(135deg, var(--accent-2), var(--accent) 58%, color-mix(in srgb, var(--accent) 78%, #073725)); }
+.btn-ghost { background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.chip, .pill, .segmented { border-color: var(--hairline); }
+.input, input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea { border-color: var(--hairline); background: color-mix(in srgb, var(--surface) 90%, transparent); }
+.sheet-panel, .palette-panel { border-color: var(--hairline); box-shadow: var(--elevation-3); }
+.toast-card { border-inline-start-width: 4px; box-shadow: var(--elevation-3); }
+
+@media (max-width: 1279px) {
+  .kpi { min-height: 164px; }
+}
+
+@media (max-width: 1000px) {
+  .topbar { min-height: 68px; }
+  .content { padding-top: 26px; }
+  .tabbar { border-color: var(--hairline); box-shadow: var(--elevation-3); }
+}
+
+@media (max-width: 760px) {
+  .topbar { padding-inline: 14px; }
+  .content { padding-inline: 14px; padding-bottom: 124px; }
+  .dash-head { gap: 15px; margin-bottom: 22px; }
+  .dash-head::after { bottom: -11px; }
+  .dash-head h1 { font-size: clamp(1.9rem, 9vw, 2.45rem); max-width: 12ch; }
+  .dash-greet > .muted { font-size: .79rem; }
+  .dash-meta { justify-content: flex-start; width: 100%; }
+  .date-chip { min-height: 40px; font-size: .73rem; padding: 8px 12px; }
+  .kpi-row { gap: 12px; }
+  .kpi { min-height: 202px; padding: 15px; border-radius: 20px; }
+  .kpi-ic { width: 34px; height: 34px; border-radius: 11px; }
+  .kpi-val { font-size: 1.9rem; }
+  .kpi-label { line-height: 1.3; }
+  .kpi-note { min-height: 2.8em; align-items: flex-start; }
+  .card { border-radius: 21px; }
+  .card-lg { border-radius: 24px; }
+  .persona::after { width: 220px; height: 220px; right: -142px; top: -150px; }
+  .ppoint { padding: 13px; }
+  .tabbar { left: 9px; right: 9px; }
+}
+
+@media (max-width: 390px) {
+  .date-chip + .date-chip { display: none; }
+  .kpi { min-height: 194px; padding: 14px; }
+  .kpi-val { font-size: 1.76rem; }
+  .kpi-note { font-size: .68rem; }
+}
+
+@media (prefers-contrast: more) {
+  .sidebar, .topbar, .member-chip, .date-chip, .card, .kpi { backdrop-filter: none; background-image: none; }
+  .kpi.is-hero { background: var(--accent); }
+  .persona::after, .kpi::after { display: none; }
+}
+
+@media print {
+  .aurora { background: #fff; }
+  .card, .kpi, .meal, .day-card, .recipe-card { box-shadow: none !important; background-image: none !important; }
+}

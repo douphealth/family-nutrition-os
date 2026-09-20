@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Computed-style verification for the v5.1 polish layer (not part of CI)."""
+"""Computed-style verification for the v6 visual layers (not part of CI)."""
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -27,7 +27,7 @@ with sync_playwright() as p:
     # by app.js renderShell(), which is CORRECT — so assert a token nothing
     # overrides: the retuned page background.)
     bg = pg.evaluate("() => getComputedStyle(document.body).backgroundColor")
-    check(bg == "rgb(246, 250, 248)", f"desktop: retuned bg token is live ({bg})")
+    check(bg == "rgb(243, 248, 245)", f"desktop: enterprise canvas token is live ({bg})")
     n_rules = pg.evaluate("() => [...document.styleSheets].reduce((n, s) => { try { return n + (s.href?.includes('polish') ? s.cssRules.length : 0) } catch { return n } }, 0)")
     check(n_rules > 60, f"desktop: polish.css loaded with {n_rules} rules")
 
