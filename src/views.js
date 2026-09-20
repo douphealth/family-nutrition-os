@@ -251,6 +251,22 @@ export function todayView(ctx) {
     </div>
   </section>
 
+  <section class="today-hero" aria-label="Σημερινή προτεραιότητα">
+    <div class="today-hero-copy">
+      <span class="today-hero-kicker"><i></i> Η επόμενη καλύτερη κίνηση</span>
+      <h2>Κάνε το επόμενο γεύμα <em>εύκολο.</em></h2>
+      <p>${esc(nextRecipe.name)} · ${esc(SLOT_LABEL[nextSlot])} · ${nextRecipe.time}′. Ένα tap για καταγραφή, ή μπες σε Cook Mode και ακολούθησε τα βήματα χωρίς σκέψη.</p>
+      <div class="today-hero-actions">
+        <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">${icon('check', 16)} Το έφαγα</button>
+        <button type="button" class="btn btn-hero-quiet" data-act="cook" data-id="${esc(nextRecipe.id)}">${icon('utensils', 16)} Άνοιξε Cook Mode</button>
+      </div>
+    </div>
+    <div class="today-hero-meal">
+      ${illustration(RECIPE_ART[nextRecipe.id], 88)}
+      <div><span class="today-hero-slot">${esc(SLOT_LABEL[nextSlot])}</span><strong>${esc(nextRecipe.name)}</strong><span>${num(mealMacros(nextRecipe, profile, load, 1).kcal)} kcal · ${esc(targets.portions.label)}</span></div>
+    </div>
+  </section>
+
   <section class="kpi-row">
     ${kpi({
       label: 'Καταγεγραμμένη ενέργεια', value: num(ringValue), unit: 'kcal', iconName: 'flame',

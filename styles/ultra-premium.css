@@ -119,3 +119,44 @@ body { background-image: linear-gradient(var(--ultra-grid) 1px, transparent 1px)
   body { background-image: none; }
   .card, .meal, .day-card, .recipe-card, .kpi { backdrop-filter: none; }
 }
+
+/* v8 command-center hero: move the useful decision above the analytics. */
+.today-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+  gap: 28px;
+  align-items: center;
+  min-height: 245px;
+  overflow: hidden;
+  margin: 4px 0 25px;
+  padding: 30px 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 30px;
+  background: linear-gradient(112deg, color-mix(in srgb, var(--accent) 14%, var(--surface)) 0%, color-mix(in srgb, var(--surface) 92%, #fff) 55%, color-mix(in srgb, var(--accent-2) 15%, var(--surface)) 100%);
+  box-shadow: 0 24px 65px -35px color-mix(in srgb, var(--accent) 42%, transparent), var(--ultra-glow);
+}
+.today-hero::before { content: ""; position: absolute; width: 390px; height: 390px; right: -138px; top: -180px; border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent); border-radius: 50%; box-shadow: 0 0 0 22px color-mix(in srgb, var(--accent) 4%, transparent), 0 0 0 44px color-mix(in srgb, var(--accent) 3%, transparent); pointer-events:none; }
+.today-hero::after { content: ""; position:absolute; width: 9px; height: 9px; right: 24%; top: 32px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 7px var(--accent-soft), 0 0 35px var(--accent); }
+.today-hero-copy, .today-hero-meal { position: relative; z-index: 1; }
+.today-hero-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font: 800 .66rem/1 var(--font-sans); letter-spacing: .12em; text-transform: uppercase; }
+.today-hero-kicker i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); }
+.today-hero h2 { max-width: 14ch; margin: 13px 0 10px; color: var(--ink); font: 650 clamp(1.9rem, 4vw, 3.3rem)/.98 var(--font-display); letter-spacing: -.075em; }
+.today-hero h2 em { color: var(--accent); font-style: normal; }
+.today-hero-copy p { max-width: 54ch; margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.62; }
+.today-hero-actions { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.btn-hero-quiet { background: color-mix(in srgb, var(--surface) 70%, transparent); border-color: color-mix(in srgb, var(--accent) 20%, var(--line)); }
+.today-hero-meal { display:flex; align-items:center; gap: 17px; justify-self:end; min-width: 245px; padding: 18px; border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line)); border-radius: 22px; background: color-mix(in srgb, var(--surface) 62%, transparent); box-shadow: 0 16px 30px -24px rgba(0,0,0,.4); }
+.today-hero-meal .recipe-art { flex: 0 0 auto; }
+.today-hero-meal div { display:grid; gap: 6px; }
+.today-hero-meal strong { color: var(--ink); font: 650 1.03rem/1.12 var(--font-display); letter-spacing: -.035em; }
+.today-hero-meal span:last-child { color: var(--muted); font-size: .7rem; }
+.today-hero-slot { color: var(--accent); font: 800 .58rem/1 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; }
+
+@media (max-width: 760px) {
+  .today-hero { grid-template-columns: 1fr; gap: 18px; min-height: auto; margin-top: 0; padding: 24px 20px; border-radius: 24px; }
+  .today-hero h2 { font-size: 2.25rem; }
+  .today-hero-meal { justify-self: stretch; min-width: 0; padding: 12px; }
+  .today-hero-meal .recipe-art { width: 64px !important; height: 64px !important; }
+  .today-hero::after { right: 13%; top: 23px; }
+}

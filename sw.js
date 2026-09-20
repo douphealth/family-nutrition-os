@@ -10,7 +10,7 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v7-2026-09-20-1';
+const CACHE = 'zenith-v8-2026-09-20-1';
 
 const CORE = [
   './',
