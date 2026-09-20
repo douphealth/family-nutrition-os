@@ -162,7 +162,7 @@ const PATHS = {
 
 export function icon(name, size = 18, extraClass = '') {
   const d = PATHS[name] || PATHS.info;
-  return `<svg class="ic ${extraClass}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
+  return `<svg class="ic icon-${name} ${extraClass}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" vector-effect="non-scaling-stroke">${d}</svg>`;
 }
 
 export function logo(size = 34) {

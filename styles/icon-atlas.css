@@ -1,0 +1,64 @@
+/* ZENITH PRO v9 · icon atlas
+   A coherent icon language: every icon has a semantic color, optical weight,
+   and container treatment. All vectors stay inline for offline-first delivery. */
+
+.ic { flex: 0 0 auto; display: inline-block; overflow: visible; transition: transform .24s var(--ease), filter .24s var(--ease), color .24s var(--ease); }
+.icon-flame { color: #f07945; }
+.icon-droplet { color: #3b8af4; }
+.icon-check, .icon-checkCircle { color: #16a873; }
+.icon-target, .icon-chart, .icon-arrowUp, .icon-arrowUpRight { color: #7a68df; }
+.icon-utensils, .icon-chef, .icon-sun { color: #e3a72d; }
+.icon-moon, .icon-bed { color: #8188e8; }
+.icon-leaf, .icon-sparkles { color: #0e9f6e; }
+.icon-alert { color: #e05f6f; }
+.icon-shield, .icon-lock, .icon-wifiOff { color: #4c7f8b; }
+.icon-users, .icon-heart { color: #dd6e9d; }
+.icon-cart, .icon-package { color: #aa7a4b; }
+
+/* Optical ink makes standalone icons feel like designed marks instead of glyphs. */
+.icon-badge, .ppoint-ic, .fuel-ic, .recipe-art, .kpi-top .ic,
+.nav-btn > .ic, .date-chip > .ic, .meal-macro > .ic, .slot-tag > .ic {
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, currentColor 18%, transparent));
+}
+.kpi-top .ic { width: 21px; height: 21px; padding: 8px; box-sizing: content-box; border-radius: 14px; color: var(--tone, var(--accent)); background: color-mix(in srgb, currentColor 11%, var(--surface)); box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent) inset, 0 5px 12px -8px currentColor; }
+.kpi:hover .kpi-top .ic { transform: rotate(-7deg) scale(1.08); filter: drop-shadow(0 7px 7px color-mix(in srgb, currentColor 27%, transparent)); }
+
+.ppoint-ic, .fuel-ic { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 13px; background: color-mix(in srgb, var(--tone, var(--accent)) 12%, var(--surface)); color: var(--tone, var(--accent)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone, var(--accent)) 16%, transparent) inset, 0 8px 13px -11px currentColor; }
+.ppoint-ic .ic, .fuel-ic .ic { width: 18px; height: 18px; }
+.ppoint:hover .ppoint-ic, .fuel-block:hover .fuel-ic { transform: translateY(-2px) rotate(5deg); }
+
+.nav-btn > .ic { width: 18px; height: 18px; opacity: .82; }
+.nav-btn.active > .ic { opacity: 1; filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--accent) 35%, transparent)); }
+.nav-btn.active > .icon-home, .nav-btn.active > .icon-calendar, .nav-btn.active > .icon-utensils, .nav-btn.active > .icon-cart, .nav-btn.active > .icon-chart, .nav-btn.active > .icon-users { color: var(--accent); }
+
+.date-chip > .ic { color: var(--accent); }
+.meal-macro > .ic { width: 14px; height: 14px; }
+.meal-macro.kcal > .icon-flame { color: #f07945; }
+.recipe-slot > .ic { color: currentColor; filter: none; }
+
+/* The icon/illustration tiles are now tiny visual anchors throughout the product. */
+.recipe-art { border-radius: 22px !important; box-shadow: 0 0 0 1px rgba(255,255,255,.28) inset, 0 12px 22px -17px rgba(0,0,0,.55); transition: transform .3s var(--ease), box-shadow .3s var(--ease); }
+.meal:hover .recipe-art, .recipe-card:hover .recipe-art, .next-card:hover .recipe-art { transform: translateY(-3px) rotate(-3deg) scale(1.04); box-shadow: 0 0 0 1px rgba(255,255,255,.38) inset, 0 18px 25px -17px rgba(0,0,0,.55); }
+.today-hero-meal .recipe-art { border-radius: 25px !important; box-shadow: 0 0 0 1px rgba(255,255,255,.4) inset, 0 16px 28px -18px color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* Buttons use an icon-led rhythm and a subtle icon lift on intent. */
+.btn > .ic, .chip > .ic, .icon-btn > .ic { vertical-align: middle; }
+.btn:hover > .ic, .chip:hover > .ic, .icon-btn:hover > .ic { transform: translateY(-1px) scale(1.08); }
+.btn-primary > .icon-check, .btn-primary > .icon-utensils { color: #fff; filter: drop-shadow(0 2px 3px rgba(0,0,0,.28)); }
+.btn-hero-quiet > .icon-utensils { color: var(--accent); }
+
+/* Make the large ring visually authored, not purely numerical. */
+.hero-ring .ic { color: var(--accent); }
+.legend-item i { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 11%, transparent); }
+
+@media (max-width: 760px) {
+  .kpi-top .ic { width: 18px; height: 18px; padding: 7px; }
+  .ppoint-ic, .fuel-ic { width: 34px; height: 34px; border-radius: 11px; }
+  .today-hero-meal .recipe-art { border-radius: 18px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ic, .recipe-art { transition: none; }
+}
+@media print {
+  .ic, .recipe-art { filter: none !important; box-shadow: none !important; }
+}
