@@ -54,7 +54,7 @@ const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F
 let state = {
   view: 'today',
   member: 'mother',
-  theme: 'light',
+  theme: 'dark',
   trainingLoad: 'normal',
   weekOffset: 0,
   onboarded: false,
@@ -255,7 +255,7 @@ function renderShell() {
   document.documentElement.style.setProperty('--accent-2', profile?.accent || '#0E9F6E');
 
   byId('brandMark').innerHTML = logo(38);
-  byId('paletteBtn').innerHTML = icon('search', 18);
+  byId('paletteBtn').innerHTML = `${icon('search', 16)}<span class="palette-label">Εντολές</span><kbd>Ctrl K</kbd>`;
   byId('sideVer').innerHTML = `${icon('shield', 13)}<span>v${esc(APP.version)} · τοπικά δεδομένα</span>`;
 
   byId('sideNav').innerHTML = NAV.map(([id, label, ic]) =>
@@ -427,6 +427,9 @@ async function boot() {
     const settings = await get('settings', 'app');
     if (settings) {
       state = { ...state, ...settings, filters: { ...state.filters, ...(settings.filters || {}) }, shopChecked: settings.shopChecked || {} };
+      // v12 is a deliberate dark-first redesign. Existing v11 installs migrate
+      // once to Midnight; the normal theme toggle remains available afterwards.
+      if (settings.version === '11.0.0') state.theme = 'dark';
     }
     const profiles = await all('profiles');
     if (profiles.length) cache.profiles = profiles;
