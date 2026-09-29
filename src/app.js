@@ -264,8 +264,9 @@ function renderShell() {
 
   const strip = byId('memberStrip');
   strip.innerHTML = cache.profiles.map(p =>
-    `<button type="button" class="member-chip ${p.id === state.member ? 'active' : ''}" data-act="member" data-id="${esc(p.id)}" aria-pressed="${p.id === state.member}">
-      ${avatar(p, 30)}<span>${esc(p.name)}</span></button>`).join('');
+    `<button type="button" class="member-chip ${p.id === state.member ? 'active' : ''}" data-act="member" data-id="${esc(p.id)}"
+      aria-pressed="${p.id === state.member}" aria-label="${esc(p.name)} — ${esc(p.relation || '')}">
+      ${avatar(p, 30)}<span class="member-name">${esc(p.name)}</span></button>`).join('');
   // On a phone the strip scrolls horizontally, so a member selected from the
   // command palette — or restored on load — can sit off-screen and the switcher
   // then looks like it belongs to someone else. Centre it, but only when the
@@ -279,7 +280,7 @@ function renderShell() {
     const entry = NAV.find(n => n[0] === id);
     return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}">
       ${icon(entry[2], 20)}<span>${esc(entry[1])}</span></button>`;
-  }).join('') + `<button type="button" class="tab-btn" data-act="more">${icon('more', 20)}<span>Περισσότερα</span></button>`;
+  }).join('') + `<button type="button" class="tab-btn" data-act="more">${icon('more', 20)}<span>Άλλα</span></button>`;
 
   byId('themeBtn').innerHTML = icon(state.theme === 'light' ? 'moon' : 'sun', 18);
   byId('themeBtn').setAttribute('aria-label', state.theme === 'light' ? 'Σκούρο θέμα' : 'Φωτεινό θέμα');
@@ -576,6 +577,7 @@ document.addEventListener('click', async e => {
         title: 'Περισσότερα',
         size: 'sm',
         body: `<div class="stack">
+          <button type="button" class="palette-item" data-act="nav" data-view="progress">${icon('chart', 18)}<span>Πρόοδος & τάσεις</span></button>
           <button type="button" class="palette-item" data-act="nav" data-view="family">${icon('users', 18)}<span>Οικογένεια & προφίλ</span></button>
           <button type="button" class="palette-item" data-act="nav" data-view="guide">${icon('book', 18)}<span>Μεθοδολογία & πηγές</span></button>
           <button type="button" class="palette-item" data-act="theme">${icon('moon', 18)}<span>Αλλαγή θέματος</span></button>

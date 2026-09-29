@@ -268,7 +268,16 @@ export function todayView(ctx) {
     </div>
     <div class="today-hero-meal">
       ${illustration(RECIPE_ART[nextRecipe.id], 88)}
-      <div><span class="today-hero-slot">${esc(SLOT_LABEL[nextSlot])}</span><strong>${esc(nextRecipe.name)}</strong><span>${num(mealMacros(nextRecipe, profile, load, 1).kcal)} kcal · ${esc(targets.portions.label)}</span></div>
+      <div class="today-hero-meal-copy">
+        <span class="today-hero-slot">${esc(SLOT_LABEL[nextSlot])}</span>
+        <strong>${esc(nextRecipe.name)}</strong>
+        <div class="today-hero-facts">
+          <span>${icon('clock', 13)} ${esc(SLOT_TIME[nextSlot])}</span>
+          <span>${icon('zap', 13)} ${nextRecipe.time}′</span>
+          <span>${icon('flame', 13)} ${num(mealMacros(nextRecipe, profile, load, 1).kcal)} kcal</span>
+        </div>
+        <span class="today-hero-portion">${esc(targets.portions.label)}</span>
+      </div>
     </div>
   </section>` : `
   <section class="today-hero today-hero-complete" aria-label="Ημέρα ολοκληρωμένη">
@@ -281,6 +290,25 @@ export function todayView(ctx) {
       </div>
     </div>
   </section>`}
+
+  <nav class="today-commandbar" aria-label="Γρήγορες ενέργειες ημέρας">
+    <button type="button" class="today-command" data-act="water" data-delta="250">
+      <span class="today-command-ic">${icon('droplet', 17)}</span>
+      <span><b>+250 ml</b><small>Νερό</small></span>
+    </button>
+    <button type="button" class="today-command" data-act="nav" data-view="shopping">
+      <span class="today-command-ic">${icon('cart', 17)}</span>
+      <span><b>Αγορές</b><small>Λίστα εβδομάδας</small></span>
+    </button>
+    <button type="button" class="today-command" data-act="nav" data-view="plan">
+      <span class="today-command-ic">${icon('calendar', 17)}</span>
+      <span><b>Πλάνο</b><small>7 ημέρες</small></span>
+    </button>
+    <button type="button" class="today-command" data-act="nav" data-view="progress">
+      <span class="today-command-ic">${icon('chart', 17)}</span>
+      <span><b>Πρόοδος</b><small>Τάση & συνέπεια</small></span>
+    </button>
+  </nav>
 
   <section class="kpi-row">
     ${kpi({
@@ -312,24 +340,7 @@ export function todayView(ctx) {
     })}
   </section>
 
-  <nav class="today-commandbar" aria-label="Γρήγορες ενέργειες ημέρας">
-    <button type="button" class="today-command" data-act="water" data-delta="250">
-      <span class="today-command-ic">${icon('droplet', 17)}</span>
-      <span><b>+250 ml</b><small>Νερό</small></span>
-    </button>
-    <button type="button" class="today-command" data-act="nav" data-view="shopping">
-      <span class="today-command-ic">${icon('cart', 17)}</span>
-      <span><b>Αγορές</b><small>Λίστα εβδομάδας</small></span>
-    </button>
-    <button type="button" class="today-command" data-act="nav" data-view="plan">
-      <span class="today-command-ic">${icon('calendar', 17)}</span>
-      <span><b>Πλάνο</b><small>7 ημέρες</small></span>
-    </button>
-    <button type="button" class="today-command" data-act="nav" data-view="progress">
-      <span class="today-command-ic">${icon('chart', 17)}</span>
-      <span><b>Πρόοδος</b><small>Τάση & συνέπεια</small></span>
-    </button>
-  </nav>
+
 
   ${personaCard(ctx)}
 
@@ -891,7 +902,7 @@ export function familyView(ctx) {
   <div class="grid g2">
     ${ctx.profiles.map(p => {
       const t = ctx.targetsByMember[p.id];
-      return `<section class="card ${p.id === ctx.profile.id ? '' : ''}" style="${p.id === ctx.profile.id ? 'border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-1)' : ''}">
+      return `<section class="card family-card ${p.id === ctx.profile.id ? 'is-current' : ''}" style="${p.id === ctx.profile.id ? 'border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-1)' : ''}">
         <div class="card-head">
           <div style="display:flex;gap:12px;align-items:center">
             ${avatar(p, 44)}
