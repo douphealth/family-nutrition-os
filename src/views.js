@@ -291,6 +291,25 @@ export function todayView(ctx) {
     </div>
   </section>`}
 
+  <nav class="today-commandbar" aria-label="Γρήγορες ενέργειες ημέρας">
+    <button type="button" class="today-command" data-act="water" data-delta="250">
+      <span class="today-command-ic">${icon('droplet', 17)}</span>
+      <span><b>+250 ml</b><small>Νερό</small></span>
+    </button>
+    <button type="button" class="today-command" data-act="nav" data-view="shopping">
+      <span class="today-command-ic">${icon('cart', 17)}</span>
+      <span><b>Αγορές</b><small>Λίστα εβδομάδας</small></span>
+    </button>
+    <button type="button" class="today-command" data-act="nav" data-view="plan">
+      <span class="today-command-ic">${icon('calendar', 17)}</span>
+      <span><b>Πλάνο</b><small>7 ημέρες</small></span>
+    </button>
+    <button type="button" class="today-command" data-act="nav" data-view="progress">
+      <span class="today-command-ic">${icon('chart', 17)}</span>
+      <span><b>Πρόοδος</b><small>Τάση & συνέπεια</small></span>
+    </button>
+  </nav>
+
   <section class="kpi-row">
     ${kpi({
       label: 'Καταγεγραμμένη ενέργεια', value: num(ringValue), unit: 'kcal', iconName: 'flame',
@@ -321,24 +340,7 @@ export function todayView(ctx) {
     })}
   </section>
 
-  <nav class="today-commandbar" aria-label="Γρήγορες ενέργειες ημέρας">
-    <button type="button" class="today-command" data-act="water" data-delta="250">
-      <span class="today-command-ic">${icon('droplet', 17)}</span>
-      <span><b>+250 ml</b><small>Νερό</small></span>
-    </button>
-    <button type="button" class="today-command" data-act="nav" data-view="shopping">
-      <span class="today-command-ic">${icon('cart', 17)}</span>
-      <span><b>Αγορές</b><small>Λίστα εβδομάδας</small></span>
-    </button>
-    <button type="button" class="today-command" data-act="nav" data-view="plan">
-      <span class="today-command-ic">${icon('calendar', 17)}</span>
-      <span><b>Πλάνο</b><small>7 ημέρες</small></span>
-    </button>
-    <button type="button" class="today-command" data-act="nav" data-view="progress">
-      <span class="today-command-ic">${icon('chart', 17)}</span>
-      <span><b>Πρόοδος</b><small>Τάση & συνέπεια</small></span>
-    </button>
-  </nav>
+
 
   ${personaCard(ctx)}
 
