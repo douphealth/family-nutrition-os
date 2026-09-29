@@ -113,6 +113,10 @@ function fuelCard(ctx) {
         ? `<span class="pill tone-gold">${icon('flame', 13)} Μέρα υψηλών απαιτήσεων</span>`
         : `<span class="pill tone-accent">${icon('check', 13)} Κανονικό φορτίο</span>`}
     </div>
+    <div class="filters fuel-loads" style="margin-top:14px" aria-label="Φορτίο προπόνησης">
+      ${ctx.trainingLoads.map(([id, label]) => `<button type="button" class="chip ${id === ctx.load ? 'active' : ''}"
+        data-act="load" data-load="${id}" aria-pressed="${id === ctx.load}">${esc(label)}</button>`).join('')}
+    </div>
     <div class="fuel-grid">
       ${blocks.map(b => `<article class="fuel-block">
         <span class="fuel-ic">${icon(b.icon, 16)}</span>
@@ -226,8 +230,8 @@ export function cookBody(ctx, recipe) {
 export function todayView(ctx) {
   const { profile, load, planDay, log, targets, totals, coverage, dateKey, streak, updateReady, onboarded } = ctx;
   const completeness = ctx.completeness;
-  const nextSlot = SLOTS.find(s => log?.meals?.[s]?.status !== 'done' && log?.meals?.[s]?.status !== 'skipped') || 'dinner';
-  const nextRecipe = ctx.recipeById(planDay[nextSlot]);
+  const nextSlot = ctx.nudge?.slot || SLOTS.find(s => log?.meals?.[s]?.status !== 'done' && log?.meals?.[s]?.status !== 'skipped') || null;
+  const nextRecipe = nextSlot ? ctx.recipeById(planDay[nextSlot]) : null;
   const guidance = ctx.guidance;
   const ringValue = totals.confirmed.kcal;
   const ringMax = coverage.center;
@@ -251,21 +255,32 @@ export function todayView(ctx) {
     </div>
   </section>
 
+  ${nextRecipe ? `
   <section class="today-hero" aria-label="Σημερινή προτεραιότητα">
     <div class="today-hero-copy">
-      <span class="today-hero-kicker"><i></i> Η επόμενη καλύτερη κίνηση</span>
-      <h2>Κάνε το επόμενο γεύμα <em>εύκολο.</em></h2>
-      <p>${esc(nextRecipe.name)} · ${esc(SLOT_LABEL[nextSlot])} · ${nextRecipe.time}′. Ένα tap για καταγραφή, ή μπες σε Cook Mode και ακολούθησε τα βήματα χωρίς σκέψη.</p>
+      <span class="today-hero-kicker"><i></i> ${ctx.nudge?.state === 'overdue' ? 'Εκκρεμεί από νωρίτερα' : ctx.nudge?.state === 'due' ? 'Ώρα για το επόμενο γεύμα' : 'Η επόμενη καλύτερη κίνηση'}</span>
+      <h2>${ctx.nudge?.state === 'overdue' ? 'Κλείσε την εκκρεμότητα.' : 'Κάνε το επόμενο γεύμα'} <em>εύκολο.</em></h2>
+      <p>${esc(nextRecipe.name)} · ${esc(SLOT_LABEL[nextSlot])} · ${esc(SLOT_TIME[nextSlot])} · ${nextRecipe.time}′ προετοιμασία.</p>
       <div class="today-hero-actions">
         <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">${icon('check', 16)} Το έφαγα</button>
-        <button type="button" class="btn btn-hero-quiet" data-act="cook" data-id="${esc(nextRecipe.id)}">${icon('utensils', 16)} Άνοιξε Cook Mode</button>
+        <button type="button" class="btn btn-hero-quiet" data-act="cook" data-id="${esc(nextRecipe.id)}">${icon('utensils', 16)} Cook Mode</button>
       </div>
     </div>
     <div class="today-hero-meal">
       ${illustration(RECIPE_ART[nextRecipe.id], 88)}
       <div><span class="today-hero-slot">${esc(SLOT_LABEL[nextSlot])}</span><strong>${esc(nextRecipe.name)}</strong><span>${num(mealMacros(nextRecipe, profile, load, 1).kcal)} kcal · ${esc(targets.portions.label)}</span></div>
     </div>
-  </section>
+  </section>` : `
+  <section class="today-hero today-hero-complete" aria-label="Ημέρα ολοκληρωμένη">
+    <div class="today-hero-copy">
+      <span class="today-hero-kicker"><i></i> Ημέρα ολοκληρωμένη</span>
+      <h2>Τα σημερινά γεύματα <em>καταγράφηκαν.</em></h2>
+      <p>Δεν υπάρχει άλλο προγραμματισμένο γεύμα για σήμερα. Δες το αυριανό πλάνο ή κράτησε μόνο την ενυδάτωση ενημερωμένη.</p>
+      <div class="today-hero-actions">
+        <button type="button" class="btn btn-primary" data-act="nav" data-view="plan">${icon('calendar', 16)} Δες το πλάνο</button>
+      </div>
+    </div>
+  </section>`}
 
   <section class="kpi-row">
     ${kpi({
@@ -278,9 +293,11 @@ export function todayView(ctx) {
       label: 'Γεύματα', value: `${completeness.mealsDone}<small>/${completeness.mealsTotal}</small>`,
       iconName: 'checkCircle', tone: 'blue',
       progress: completeness.mealsTotal ? completeness.mealsDone / completeness.mealsTotal : 0,
-      note: completeness.mealsTotal > completeness.mealsDone
-        ? `${completeness.mealsTotal - completeness.mealsDone} ακόμη σήμερα`
-        : 'Ολοκληρώθηκαν όλα'
+      note: completeness.mealsTotal <= completeness.mealsDone
+        ? 'Ολοκληρώθηκαν όλα'
+        : (ctx.nudge?.state === 'overdue' && ctx.nudge?.label
+          ? `Εκκρεμεί: ${ctx.nudge.label}`
+          : `${completeness.mealsTotal - completeness.mealsDone} ακόμη σήμερα`)
     })}
     ${kpi({
       label: 'Ενυδάτωση', value: num(log?.waterMl || 0), unit: 'ml', iconName: 'droplet', tone: 'accent',
@@ -334,38 +351,6 @@ export function todayView(ctx) {
     </div>
   </section>
 
-  <section class="card card-lg next-card" style="margin-top:16px">
-    <div class="next-head">
-      ${illustration(RECIPE_ART[nextRecipe.id], 64)}
-      <div class="next-text">
-        <div class="eyebrow">Επόμενο γεύμα</div>
-        <div class="card-title" style="font-size:1.15rem">${esc(nextRecipe.name)}</div>
-        <p class="muted tiny">${esc(SLOT_LABEL[nextSlot])} · ${esc(SLOT_TIME[nextSlot])} · ${nextRecipe.time}′ προετοιμασία
-          ${profile.athlete ? ` · ${esc(ctx.loadLabel)}` : ''}</p>
-      </div>
-      <div class="next-actions">
-        <button type="button" class="btn btn-primary" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">
-          ${icon('check', 17)} Το έφαγα
-        </button>
-        <button type="button" class="btn" data-act="cook" data-id="${esc(nextRecipe.id)}">
-          ${icon('utensils', 17)} Μαγείρεψε
-        </button>
-      </div>
-    </div>
-    <div class="grid g2">
-      <div>
-        ${macroChips({ ...mealMacros(nextRecipe, profile, load, 1), slot: nextSlot })}
-        <div class="portion-note">${icon('target', 14)} Μερίδα για ${esc(profile.name)}: ${esc(targets.portions.label)}</div>
-      </div>
-      <div class="meal-actions" style="align-content:start">
-        <button type="button" class="chip" data-act="meal" data-slot="${nextSlot}" data-portion="0.75" data-recipe="${esc(nextRecipe.id)}">Μικρότερη μερίδα</button>
-        <button type="button" class="chip" data-act="meal" data-slot="${nextSlot}" data-portion="1.25" data-recipe="${esc(nextRecipe.id)}">Μεγαλύτερη μερίδα</button>
-        <button type="button" class="chip" data-act="skip" data-slot="${nextSlot}" data-recipe="${esc(nextRecipe.id)}">Παράλειψη σήμερα</button>
-        <button type="button" class="chip" data-act="recipe" data-id="${esc(nextRecipe.id)}">${icon('book', 14)} Δες τη συνταγή</button>
-      </div>
-    </div>
-  </section>
-
   <section class="card" style="margin-top:16px">
     <div class="card-head"><span class="card-title">Νερό</span>
       <span class="muted tiny">${mlToText(log?.waterMl || 0)} από ${mlToText(targets.hydration.ml)}</span></div>
@@ -383,16 +368,17 @@ export function todayView(ctx) {
     </div>
   </section>
 
-  ${profile.athlete ? athleteCard(ctx) : ''}
 
   <section style="margin-top:22px">
     ${sectionHead({ eyebrow: 'Το πλάνο της ημέρας', title: 'Τα τέσσερα γεύματα', sub: 'Οι μερίδες είναι προσαρμοσμένες στο προφίλ. Πάτησε για να καταγράψεις τι έγινε πραγματικά.' })}
     <div class="meal-grid">
       ${SLOTS.map(slot => {
-        const r = ctx.recipeById(planDay[slot]);
+        const plannedRecipe = ctx.recipeById(planDay[slot]);
         const entry = log?.meals?.[slot];
         const done = entry?.status === 'done';
         const skipped = entry?.status === 'skipped';
+        const r = done && entry?.recipeId ? (ctx.recipeById(entry.recipeId) || plannedRecipe) : plannedRecipe;
+        const swapped = !!(done && entry?.recipeId && r?.id !== plannedRecipe?.id);
         const m = mealMacros(r, profile, load, entry?.portion ?? 1);
         return `<article class="meal ${done ? 'is-done' : ''} ${skipped ? 'is-skipped' : ''}">
           <div class="meal-slot">${slotTag(slot)}
@@ -400,7 +386,7 @@ export function todayView(ctx) {
           <h3>${esc(r.name)}</h3>
           ${macroChips({ ...m, slot })}
           <div class="portion-note">
-            ${done ? `${icon('checkCircle', 14)} Καταγράφηκε ${entry.portion}×` : skipped ? `${icon('x', 14)} Παραλείφθηκε` : `${icon('info', 14)} ${r.time}′ · δεν έχει καταγραφεί`}
+            ${done ? `${icon('checkCircle', 14)} ${swapped ? 'Άλλο πιάτο · ' : ''}Καταγράφηκε ${entry.portion}×` : skipped ? `${icon('x', 14)} Παραλείφθηκε` : `${icon('info', 14)} ${r.time}′ · δεν έχει καταγραφεί`}
             <button type="button" class="meal-link" data-act="recipe" data-id="${esc(r.id)}">Συνταγή ${icon('chevronRight', 13)}</button>
           </div>
           ${portionButtons(slot, entry, r.id)}
