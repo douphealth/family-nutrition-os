@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isMinor, canUseAdultBmi, adultBmiLabel, energyRange, portionProfile, hydrationTarget } from '../src/nutrition-engine.js';
+import { isMinor, canUseAdultBmi, adultBmiLabel, energyRange, portionProfile, hydrationTarget, nextMealNudge } from '../src/nutrition-engine.js';
 
 const son={sex:'m',age:15,height:179,weight:67,athlete:true,goal:'performance',activityFactor:1.8};
 const daughter={sex:'f',age:17,height:165,weight:52,athlete:false,goal:'growth',activityFactor:1.55};
@@ -19,4 +19,22 @@ assert.equal(canUseAdultBmi(mother),true);
 assert.ok(adultBmiLabel(mother));
 assert.ok(energyRange(mother).upper<energyRange({...mother,goal:'maintain'}).upper,'Adult gradual fat-loss estimate should be below maintenance');
 assert.ok(hydrationTarget(son,'game').ml>hydrationTarget(son,'rest').ml,'Athlete hydration starting estimate should respond to load');
+
+const slotTimes={breakfast:'07:30',lunch:'13:30',snack:'17:30',dinner:'20:30'};
+const at=(h,m=0)=>new Date(2026,8,29,h,m,0,0);
+assert.deepEqual(
+  nextMealNudge({log:{meals:{}},slotTimes,now:at(6)}),
+  {slot:'breakfast',label:'Πρωινό',time:'07:30',minutesUntil:90,state:'upcoming'},
+  'before breakfast, the next-meal nudge must point to breakfast'
+);
+assert.equal(
+  nextMealNudge({log:{meals:{breakfast:{status:'done'}}},slotTimes,now:at(14,30)}).state,
+  'overdue',
+  'an unlogged lunch well past its time must be marked overdue'
+);
+assert.deepEqual(
+  nextMealNudge({log:{meals:{breakfast:{status:'done'},lunch:{status:'done'},snack:{status:'done'},dinner:{status:'done'}}},slotTimes,now:at(22)}),
+  {slot:null,state:'complete'},
+  'a completed day must not fall back to dinner'
+);
 console.log('nutrition-engine tests: PASS');
