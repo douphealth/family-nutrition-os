@@ -268,7 +268,16 @@ export function todayView(ctx) {
     </div>
     <div class="today-hero-meal">
       ${illustration(RECIPE_ART[nextRecipe.id], 88)}
-      <div><span class="today-hero-slot">${esc(SLOT_LABEL[nextSlot])}</span><strong>${esc(nextRecipe.name)}</strong><span>${num(mealMacros(nextRecipe, profile, load, 1).kcal)} kcal · ${esc(targets.portions.label)}</span></div>
+      <div class="today-hero-meal-copy">
+        <span class="today-hero-slot">${esc(SLOT_LABEL[nextSlot])}</span>
+        <strong>${esc(nextRecipe.name)}</strong>
+        <div class="today-hero-facts">
+          <span>${icon('clock', 13)} ${esc(SLOT_TIME[nextSlot])}</span>
+          <span>${icon('zap', 13)} ${nextRecipe.time}′</span>
+          <span>${icon('flame', 13)} ${num(mealMacros(nextRecipe, profile, load, 1).kcal)} kcal</span>
+        </div>
+        <span class="today-hero-portion">${esc(targets.portions.label)}</span>
+      </div>
     </div>
   </section>` : `
   <section class="today-hero today-hero-complete" aria-label="Ημέρα ολοκληρωμένη">
