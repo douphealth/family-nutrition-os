@@ -280,7 +280,7 @@ function renderShell() {
     const entry = NAV.find(n => n[0] === id);
     return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}">
       ${icon(entry[2], 20)}<span>${esc(entry[1])}</span></button>`;
-  }).join('') + `<button type="button" class="tab-btn" data-act="more">${icon('more', 20)}<span>Περισσότερα</span></button>`;
+  }).join('') + `<button type="button" class="tab-btn" data-act="more">${icon('more', 20)}<span>Άλλα</span></button>`;
 
   byId('themeBtn').innerHTML = icon(state.theme === 'light' ? 'moon' : 'sun', 18);
   byId('themeBtn').setAttribute('aria-label', state.theme === 'light' ? 'Σκούρο θέμα' : 'Φωτεινό θέμα');
