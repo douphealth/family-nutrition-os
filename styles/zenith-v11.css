@@ -598,3 +598,132 @@ h1, h2, h3, h4, .hero h1, .dash-head h1, .persona-title, .card-title,
 @media (prefers-reduced-motion: reduce) {
   .nav-btn, .today-command, .meal, .recipe-card, .day-card { transition: none !important; }
 }
+
+
+/* --- v11.1 cross-view density polish ---------------------------------- */
+.hero {
+  margin-bottom: 18px !important;
+}
+.hero h1 {
+  max-width: 18ch;
+  font-size: clamp(1.8rem, 3.4vw, 2.65rem) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -.055em !important;
+  font-weight: 800 !important;
+}
+.hero h1 em {
+  color: var(--brand) !important;
+  font-style: normal !important;
+}
+.hero p {
+  max-width: 62ch !important;
+  color: var(--ink-2) !important;
+  font-size: .86rem !important;
+  line-height: 1.58 !important;
+}
+
+.family-card {
+  overflow: hidden;
+}
+.family-card.is-current {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--line)) !important;
+  box-shadow: 0 0 0 2px var(--brand-3), var(--shadow-xs) !important;
+}
+.family-card .card-head { margin-bottom: 12px !important; }
+.family-card .grid.g3 {
+  gap: 8px !important;
+}
+.family-card .stat {
+  padding: 10px;
+  border-radius: 13px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.family-card .stat-val {
+  font-size: 1.35rem !important;
+  font-weight: 780 !important;
+  line-height: 1.06;
+}
+.family-card .stat-label { font-size: .68rem !important; }
+.family-card .stat-note { display: none !important; }
+.family-card .meal-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+}
+.family-card .meal-actions .btn {
+  justify-content: center;
+}
+
+.shop-head {
+  border-radius: 20px !important;
+}
+.shop-progress {
+  gap: 12px !important;
+}
+.shop-progress .sec-action .btn {
+  min-height: 40px !important;
+}
+.shop-chip {
+  min-height: 38px !important;
+  padding: 7px 10px !important;
+  border-radius: 12px !important;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    margin-bottom: 14px !important;
+  }
+  .hero h1 {
+    font-size: 1.95rem !important;
+    max-width: 13ch !important;
+  }
+  .hero p {
+    font-size: .77rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .family-card .grid.g3 {
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  }
+  .family-card .stat {
+    padding: 9px 7px !important;
+  }
+  .family-card .stat-ic {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .family-card .stat-label {
+    font-size: .58rem !important;
+  }
+  .family-card .stat-val {
+    font-size: clamp(.98rem, 4.5vw, 1.22rem) !important;
+    letter-spacing: -.04em;
+  }
+  .family-card .stat-val small {
+    font-size: .58rem !important;
+  }
+  .family-card .meal-actions {
+    gap: 7px !important;
+  }
+  .family-card .meal-actions .btn {
+    min-width: 0 !important;
+    padding-inline: 7px !important;
+    font-size: .7rem !important;
+  }
+
+  .shop-progress .sec-action {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 7px !important;
+  }
+  .shop-progress .sec-action .btn:last-child {
+    grid-column: 1 / -1;
+  }
+  .shop-chips {
+    gap: 7px !important;
+  }
+  .shop-chip {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
