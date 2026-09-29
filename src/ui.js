@@ -181,10 +181,51 @@ export function logo(size = 34) {
 
 /* ── Avatar ────────────────────────────────────────────────────────────── */
 
+const MAX_INITIALS = 3;
+let memberInitials = new Map();
+
+const foldMemberText = value => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim()
+  .toUpperCase();
+
+function uniquePrefixLen(name, profiles) {
+  for (let n = 2; n <= MAX_INITIALS; n++) {
+    const prefix = foldMemberText(name).slice(0, n);
+    if (profiles.filter(p => foldMemberText(p?.name).slice(0, n) === prefix).length === 1) return n;
+  }
+  return null;
+}
+
+/** Register the active household so avatar labels remain distinct without relying on colour. */
+export function registerMembers(profiles = []) {
+  const list = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+  memberInitials = new Map();
+
+  for (const member of list) {
+    const foldedName = foldMemberText(member.name) || '?';
+    const prefix2 = foldedName.slice(0, 2);
+    const clashes = list.filter(p => foldMemberText(p?.name).slice(0, 2) === prefix2).length > 1;
+
+    let label = prefix2;
+    if (clashes) {
+      const uniqueLen = uniquePrefixLen(member.name, list);
+      if (uniqueLen) label = foldedName.slice(0, uniqueLen);
+      else {
+        const relationInitial = foldMemberText(member.relation).slice(0, 1);
+        label = foldedName.slice(0, 1) + (relationInitial || foldedName.slice(1, 2));
+      }
+    }
+    memberInitials.set(member.id, label);
+  }
+
+  return Object.fromEntries(memberInitials);
+}
+
 export function avatar(profile, size = 40) {
-  // Real first names, so the initials are upper-cased for a consistent badge
-  // (Αλέξης -> ΑΛ) rather than the title-case "Αλ" a plain slice would give.
-  const initials = String(profile?.name || '?').trim().slice(0, 2).toUpperCase();
+  const initials = memberInitials.get(profile?.id)
+    || foldMemberText(profile?.name || '?').slice(0, 2);
   return `<span class="avatar" style="--av:${esc(profile?.accent || 'var(--accent)')};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px" aria-hidden="true">${esc(initials)}</span>`;
 }
 
