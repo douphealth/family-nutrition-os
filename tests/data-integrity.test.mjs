@@ -103,6 +103,18 @@ assert.ok(withExtra.confirmed.kcal > 0, 'extras must add to confirmed intake');
 assert.equal(withExtra.planned.kcal, empty.planned.kcal, 'extras must not change the plan');
 assert.equal(withExtra.extras.length, 1);
 
+// A substituted recipe must count what was actually eaten, while the plan stays unchanged.
+const breakfastAlt = RECIPES.find(r => r.slot === 'breakfast' && r.id !== day.breakfast);
+assert.ok(breakfastAlt, 'needs a second breakfast recipe for swap accounting');
+const swapped = dayMacros(day, son, 'game', {
+  meals: { breakfast: { status: 'done', portion: 1, recipeId: breakfastAlt.id } }
+}, recipeById);
+assert.equal(swapped.confirmed.kcal, mealMacros(breakfastAlt, son, 'game', 1).kcal,
+  'confirmed intake must follow the logged substitute recipe');
+assert.equal(swapped.planned.kcal, empty.planned.kcal,
+  'logging a substitute must not rewrite the planned day');
+assert.equal(swapped.detail.find(d => d.slot === 'breakfast').swapped, true);
+
 // Athlete training load raises carbohydrate portions, not fat.
 const restPortion = mealMacros(byId.get('pastaVeg'), son, 'rest', 1);
 const gamePortion = mealMacros(byId.get('pastaVeg'), son, 'game', 1);

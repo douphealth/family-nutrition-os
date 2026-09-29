@@ -174,12 +174,19 @@ export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, r
 
     const entry = log?.meals?.[slot];
     const done = entry?.status === 'done';
+    // CONFIRMED follows the dish actually logged. PLANNED remains the plan.
+    // This matters when a family member swaps a recipe for another dish.
+    const eaten = done && entry?.recipeId ? (recipeById(entry.recipeId) || r) : r;
     if (done) {
-      const m = mealMacros(r, profile, trainingLoad, entry.portion ?? 1);
+      const m = mealMacros(eaten, profile, trainingLoad, entry.portion ?? 1);
       confirmed.p += m.p; confirmed.c += m.c; confirmed.f += m.f; confirmed.kcal += m.kcal;
       confirmedSlots.push(slot);
     }
-    detail.push({ slot, recipe: r, planned: plannedMacros, logged: done, portion: entry?.portion ?? null, skipped: entry?.status === 'skipped' });
+    detail.push({
+      slot, recipe: r, eaten, planned: plannedMacros, logged: done,
+      swapped: !!(done && entry?.recipeId && eaten?.id !== r?.id),
+      portion: entry?.portion ?? null, skipped: entry?.status === 'skipped'
+    });
   }
 
   const finish = o => ({ p: round(o.p, 1), c: round(o.c, 1), f: round(o.f, 1), kcal: Math.round(o.kcal) });
@@ -509,4 +516,42 @@ export function upgradeMemberNames(profiles, legacyNames, shippedFamily) {
     return { ...p, name: target.name, relation: target.relation };
   });
   return { profiles: next, changed };
+}
+
+
+/* ── Time-aware next meal ─────────────────────────────────────────────────
+ * Pure and deterministic: caller injects both clock and schedule.
+ */
+const MEAL_ORDER = ['breakfast', 'lunch', 'snack', 'dinner'];
+const MEAL_LABELS = { breakfast: 'Πρωινό', lunch: 'Μεσημεριανό', snack: 'Σνακ', dinner: 'Βραδινό' };
+const NUDGE_WINDOW_MIN = 45;
+
+export function nextMealNudge({ log, slotTimes, now } = {}) {
+  const at = now instanceof Date && Number.isFinite(now.getTime()) ? now : null;
+  if (!at) return { slot: null, state: 'complete' };
+
+  const meals = log && typeof log === 'object' && log.meals && typeof log.meals === 'object' ? log.meals : {};
+  const schedule = slotTimes && typeof slotTimes === 'object' ? slotTimes : {};
+
+  for (const slot of MEAL_ORDER) {
+    const status = meals[slot]?.status;
+    if (status === 'done' || status === 'skipped') continue;
+
+    const time = typeof schedule[slot] === 'string' ? schedule[slot] : null;
+    const parsed = time && /^(\d{1,2}):(\d{2})$/.exec(time);
+    if (!parsed) continue;
+    const hh = Number(parsed[1]);
+    const mm = Number(parsed[2]);
+    if (hh > 23 || mm > 59) continue;
+
+    const slotMs = new Date(at.getFullYear(), at.getMonth(), at.getDate(), hh, mm, 0, 0).getTime();
+    const minutesUntil = Math.round((slotMs - at.getTime()) / 60000);
+    const state = minutesUntil > NUDGE_WINDOW_MIN ? 'upcoming'
+      : minutesUntil < -NUDGE_WINDOW_MIN ? 'overdue'
+        : 'due';
+
+    return { slot, label: MEAL_LABELS[slot], time, minutesUntil, state };
+  }
+
+  return { slot: null, state: 'complete' };
 }

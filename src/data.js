@@ -14,8 +14,8 @@
 export const APP = {
   name: 'ZENITH PRO',
   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
-  version: '5.1.0',
-  updated: '2026-09-13',
+  version: '10.0.0',
+  updated: '2026-09-29',
   schema: 2
 };
 
@@ -423,7 +423,7 @@ export const SOURCES = [
   { id:'who',    label:'WHO — Healthy diet (fact sheet)',                    url:'https://www.who.int/news-room/fact-sheets/detail/healthy-diet',              used:'Γενικές αρχές: φρούτα, λαχανικά, όσπρια, αλάτι, ζάχαρη, λιπαρά.' },
   { id:'cdc',    label:'CDC — Child & teen BMI categories',                  url:'https://www.cdc.gov/bmi/child-teen-calculator/bmi-categories.html',          used:'Γιατί το BMI ενηλίκων δεν ισχύει κάτω των 20 ετών.' },
   { id:'reds',   label:'IOC consensus — RED-S (Br J Sports Med 2023)',       url:'https://bjsm.bmj.com/content/57/17/1073',                                    used:'Διαθεσιμότητα ενέργειας σε νεαρούς αθλητές.' },
-  { id:'efsa',   label:'EFSA — Dietary reference values for water',          url:'https://www.efsa.europa.eu/en/efsajournal/pub/1459',                          used:'Βάση υπολογισμού ενυδάτωσης.' },
+  { id:'efsa',   label:'EFSA — Dietary reference values for water',          url:'https://www.efsa.europa.eu/en/efsajournal/pub/1459',                          used:'Τιμές αναφοράς πρόσληψης νερού και πλαίσιο ενυδάτωσης· όχι εξίσωση 30 ml/kg.' },
   { id:'mifflin',label:'Mifflin & St Jeor (1990) — resting energy',          url:'https://pubmed.ncbi.nlm.nih.gov/2305711/',                                    used:'Εξίσωση βασικού μεταβολισμού για ενήλικες.' },
   { id:'fao',    label:'FAO/WHO/UNU — Energy & protein requirements',        url:'https://www.fao.org/4/aa040e/aa040e00.htm',                                   used:'Συντελεστές δραστηριότητας & ανάγκες πρωτεΐνης.' },
   { id:'issn',   label:'ISSN position stand — Protein & exercise',           url:'https://jissn.biomedcentral.com/articles/10.1186/s12970-017-0177-8',          used:'Εύρος πρωτεΐνης για αθλητές (1,4–1,8 g/kg).' },
@@ -440,7 +440,7 @@ export const METHOD = [
   { icon:'target', title:'Πώς κλιμακώνονται οι μερίδες',
     body:'Κάθε συνταγή έχει macros για μία μερίδα αναφοράς. Οι μερίδες του κάθε μέλους κλιμακώνουν χωριστά πρωτεΐνη, υδατάνθρακες και λιπαρά. Οι θερμίδες υπολογίζονται από τα macros με συντελεστές Atwater 4/4/9 — δεν αποθηκεύονται χωριστά, ώστε να μην μπορούν ποτέ να διαφωνήσουν μεταξύ τους.' },
   { icon:'droplet', title:'Ενυδάτωση',
-    body:'30 ml/kg βάρος ως αρχική εκτίμηση, με προσαύξηση ανάλογα με το φορτίο προπόνησης. Θερμότητα, εφίδρωση, ασθένεια και φάρμακα αλλάζουν σημαντικά την ανάγκη.' },
+    body:'Η εφαρμογή χρησιμοποιεί 30 ml/kg μόνο ως εσωτερική πρακτική αφετηρία προγραμματισμού — δεν είναι εξίσωση της EFSA ούτε ιατρική συνταγή. Η πραγματική ανάγκη εξαρτάται από δίψα, συνολικά υγρά από τρόφιμα/ποτά, θερμοκρασία, εφίδρωση, άσκηση, ασθένεια, φάρμακα και κλινικές παθήσεις.' },
   { icon:'alert', title:'Τι δεν κάνει η εφαρμογή',
     body:'Δεν μετράει κατανάλωση χωρίς επιβεβαίωση, δεν βάζει αυθαίρετο «health score», δεν δίνει στόχο απώλειας βάρους σε ανήλικο και δεν αντικαθιστά ιατρική φροντίδα. Όλα τα νούμερα είναι εκτιμήσεις προγραμματισμού, όχι μετρήσεις.' }
 ];

@@ -992,7 +992,14 @@ kbd {
 .fuel-ic { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; background: var(--tint-gold); color: var(--gold); }
 .fuel-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: .82rem; }
 .fuel-top span { color: var(--ink-3); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; }
-.fuel-top b { white-space: nowrap; }
+.fuel-top b {
+  min-width: 0;
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.fuel-loads .chip { min-height: 40px; }
+.today-hero-complete { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface)); }
 
 /* Next-meal card */
 .next-head { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
@@ -1346,4 +1353,16 @@ kbd {
   .kpi { padding: 14px 15px 13px; }
   .kpi-val { font-size: 1.6rem; }
   .kpi-ic { width: 30px; height: 30px; border-radius: 10px; }
+}
+
+
+/* ── v10 family usability safeguards ───────────────────────────────────── */
+@media (max-width: 760px) {
+  .fuel-grid { grid-template-columns: minmax(0, 1fr); }
+  .fuel-block { min-width: 0; }
+  .fuel-top { align-items: flex-start; }
+  .fuel-top b { max-width: 58%; }
+  .today-hero-actions .btn,
+  .fuel-loads .chip,
+  .meal-actions .chip { min-height: 44px; }
 }
