@@ -46,7 +46,7 @@ const NAV = [
   ['family', 'Οικογένεια', 'users'],
   ['guide', 'Γνώση', 'book']
 ];
-const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping'];
+const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'progress'];
 const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
 
 /* ── State ─────────────────────────────────────────────────────────────── */
