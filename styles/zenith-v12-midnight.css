@@ -1028,10 +1028,10 @@ textarea::placeholder {
     padding: 0 !important;
   }
   .member-chip {
-    flex: 0 0 34px !important;
-    width: 34px !important;
-    min-height: 34px !important;
-    padding: 2px !important;
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    min-height: 36px !important;
+    padding: 3px !important;
     justify-content: center !important;
     border-radius: 10px !important;
   }
