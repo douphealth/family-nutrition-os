@@ -900,7 +900,7 @@ export function familyView(ctx) {
   <div class="grid g2">
     ${ctx.profiles.map(p => {
       const t = ctx.targetsByMember[p.id];
-      return `<section class="card ${p.id === ctx.profile.id ? '' : ''}" style="${p.id === ctx.profile.id ? 'border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-1)' : ''}">
+      return `<section class="card family-card ${p.id === ctx.profile.id ? 'is-current' : ''}" style="${p.id === ctx.profile.id ? 'border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-1)' : ''}">
         <div class="card-head">
           <div style="display:flex;gap:12px;align-items:center">
             ${avatar(p, 44)}
