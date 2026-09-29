@@ -25,7 +25,7 @@ import {
   storageInfo, requestPersistence, activeBackend
 } from './storage.js';
 import {
-  esc, icon, logo, byId, $, $, avatar, registerMembers,
+  esc, icon, logo, byId, $, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, cycleWeek, dateFromKey,
   num, num1, pct, mlToText, bytesToText, longDate, shortDate, GREEK_DAYS_SHORT,
   toast, openSheet, closeSheet, isSheetOpen, clockText
