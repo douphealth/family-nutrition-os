@@ -2,6 +2,51 @@
 
 All notable changes to ZENITH PRO are documented here.
 
+## [13.0.0] — 2026-09-30 · "Aegean"
+
+A ground-up redesign and a data-credibility release. Every nutrition figure is now derived from a
+public source, the plan can no longer shift with the clock, and the interface is rebuilt on one
+token-driven design system with a light and a dark theme.
+
+### Added
+- **A new look.** *Daylight* (light) and *Midnight* (dark) themes, following the device by default with a
+  toggle and no flash on load; Inter Variable self-hosted (Greek + Latin); 19 inline-SVG plate
+  illustrations; a per-member accent colour; three responsive shells (sidebar, icon rail, floating tab
+  bar); a command palette (`Ctrl`/`⌘`+`K`); a print stylesheet; Cook Mode with its navigation in a
+  fixed footer.
+- **Traceable food data.** `src/foods.js` (41 foods per 100 g; 39 backed by USDA FoodData Central ids,
+  2 labelled approximations), a committed snapshot `data/usda-fdc.json`, `scripts/fetch_usda.mjs`, and a
+  provenance test that fails on any value, id or energy mismatch. It caught eight mistyped FDC ids.
+- **Recipes derived from grams.** 28 recipes written as `{food, quantity, unit}`; macros and
+  micronutrients are computed, never typed. Rotation rules are enforced by tests.
+- **A plate model.** Per-ingredient role multipliers scaled by a plate size, household plate and
+  cooking quantities, and a shopping list built from the real week, merged by food and rounded *up* to
+  purchase steps.
+- **EFSA / WHO reference values** in the app: fibre, calcium and iron against EFSA, salt against WHO,
+  fluids from EFSA total-water intake; energy on the EU labelling factors (Regulation 1169/2011).
+- **Quality gates.** New suites (`dates`, `timezone-matrix`, `food-provenance`, `menu`, `reference`),
+  `scripts/run_tests.mjs`, `scripts/verify_pwa.mjs`, an axe-core accessibility audit and a
+  pixel-measured contrast audit over every view and overlay (phone and desktop, light and dark, four
+  members, first run and with data), a Node dev server, and a screenshot/social-card generator.
+- Install-dialog screenshots and a maskable icon in the web manifest; a real `og-image.png`.
+
+### Fixed
+- **The plan shifted by a day around daylight-saving changes and in other timezones.** Day counting is
+  now calendar-based, anchored on a Monday epoch, and tested across eight timezones.
+- Duplicated and absurd shopping quantities; keyboard-shortcut hints that did nothing; malformed HTML
+  in the Guide; contradictory persona and safety wording.
+- Activity levels that sat below EFSA’s lowest free-living level; stored profiles are migrated only
+  while they still hold the old shipped value.
+- Contrast: ticked shopping rows dimmed with opacity, the dark-mode toast action, dark tab-bar labels
+  and the warning tint all now clear WCAG AA. Accessibility: duplicate landmarks, heading order in the
+  Plan, the progress calendar’s ARIA role, an unnamed command list, and Cook Mode step targets.
+- Horizontal overflow of the phone hero.
+
+### Changed
+- Seven layered stylesheets became five token-driven ones.
+- Adolescent profiles keep the rule of no deficit goal below age 20, now re-applied on save.
+- CI rewritten for the new structure; *Production Smoke* now verifies the exact deployed build.
+
 ## [5.1.0] — 2026-09-13
 
 A visual polish pass that keeps every interaction, DOM node and handler exactly as

@@ -1,241 +1,136 @@
-# ZENITH PRO v5.1 · Family Nutrition OS
+# ZENITH PRO · Family Nutrition OS
 
-Privacy-first, offline-first family nutrition PWA built around one shared family meal
-system with member-specific portion logic. Greek-language UI, zero runtime dependencies,
-no build step, hosted as static files on GitHub Pages.
+**One menu for the whole family — and a portion, in grams, for each person.**
+Plan, cook, shop and log meals for four people at once. It works offline, needs no account and no server,
+and every figure it shows is traceable to a public source.
 
-**Live:** https://douphealth.github.io/family-nutrition-os/
+**Live:** <https://douphealth.github.io/family-nutrition-os/> · Greek interface · installable as an app · v13.0.0 “Aegean”
 
-## Screenshots
+<p align="center">
+  <img src="docs/desktop-today.webp" alt="Today: the next meal with the plate for this person, water, and progress for the day" width="49%">
+  <img src="docs/desktop-dark-today.webp" alt="The same screen in the dark theme" width="49%">
+</p>
+<p align="center">
+  <img src="docs/phone-today.webp" alt="Today on a phone" width="24%">
+  <img src="docs/phone-meals.webp" alt="Meals on a phone" width="24%">
+  <img src="docs/phone-shopping.webp" alt="The shopping list on a phone" width="24%">
+  <img src="docs/phone-cook.webp" alt="Cook Mode on a phone" width="24%">
+</p>
 
-| Today (mother) | Today (son — fuelling) |
+## What it does
+
+| | |
 |---|---|
-| ![Today](docs/screenshot-persona-mother.png) | ![Son](docs/screenshot-persona-son.png) |
+| **Today** | The next meal, *your* plate for it in grams per ingredient, one tap to log it, water, and how the day is going against your targets. |
+| **Plan** | A 28-day rotation (four different weeks), a week at a time, with each day's energy. Tap a day for the detail. |
+| **Meals** | 28 recipes. Filter by meal or tag; every recipe shows the whole family's ingredients, each person's own plate, and per-serving nutrition. |
+| **Cook Mode** | Big step-by-step text, a timer per step, an ingredient checklist and everyone's plate beside it. The next-step button never leaves the thumb. |
+| **Shopping** | Built from the week you are actually looking at, merged by food, rounded *up* to the size you can buy, grouped by aisle, tick-off, and copy to a message. |
+| **Progress** | Weigh-ins with a least-squares weekly trend (one reading is noise; the slope is the signal), a 28-day logging calendar, weekly adherence. |
+| **Family** | Four profiles with their own energy, protein and fluid targets. Add, edit or remove members; export and restore a JSON backup; print. |
+| **Guide** | The method, every source with the date it was checked, the safety rules and a glossary. |
 
-| Today (daughter — growth) | Cook Mode |
-|---|---|
-| ![Daughter](docs/screenshot-persona-daughter.png) | ![Cook](docs/screenshot-cook.png) |
+Also: light and dark themes (following the device by default), a command palette (`Ctrl`/`⌘` + `K`), deep links
+(`?view=plan`), keyboard access throughout, a print stylesheet, and full offline use once loaded.
 
-| Meals | Shopping |
-|---|---|
-| ![Meals](docs/screenshot-meals.png) | ![Shopping](docs/screenshot-shopping.png) |
+<details>
+<summary>More screens</summary>
 
-| Shopping — how quantities are derived | Recipe (per-member portions) |
-|---|---|
-| ![Why](docs/screenshot-shopping-why.png) | ![Recipe](docs/screenshot-recipe.png) |
+| Plan | Meals | Shopping |
+|---|---|---|
+| <img src="docs/desktop-plan.webp" width="100%"> | <img src="docs/desktop-meals.webp" width="100%"> | <img src="docs/desktop-shopping.webp" width="100%"> |
+| **Progress** | **Family** | **Guide** |
+| <img src="docs/desktop-progress.webp" width="100%"> | <img src="docs/desktop-family.webp" width="100%"> | <img src="docs/desktop-guide.webp" width="100%"> |
+| **Recipe** | **Cook Mode** | **Dark · Meals** |
+| <img src="docs/desktop-recipe.webp" width="100%"> | <img src="docs/desktop-cook.webp" width="100%"> | <img src="docs/desktop-dark-meals.webp" width="100%"> |
 
-| Plan | Progress |
-|---|---|
-| ![Plan](docs/screenshot-plan.png) | ![Progress](docs/screenshot-progress.png) |
+</details>
 
-| Family | Dark theme |
-|---|---|
-| ![Family](docs/screenshot-family.png) | ![Dark](docs/screenshot-dark.png) |
+## Where the numbers come from
 
-### On a phone — where the app actually gets used
+Nothing nutritional is typed into a recipe. The chain is short enough to audit end to end:
 
-| Today (mother) | Cook Mode (pinned step nav) |
-|---|---|
-| ![Mobile today](docs/mobile-today.png) | ![Mobile cook](docs/mobile-cook.png) |
+1. **Foods** — `src/foods.js` holds 41 foods per 100 g. 39 are records from **USDA FoodData Central** (34 exact, 5 documented proxies for
+   regional foods); the other two are labelled approximations. The exact records are committed as a snapshot (`data/usda-fdc.json`,
+   refreshed with `npm run data:usda`).
+2. **Recipes** — `src/recipes.js` writes each recipe as quantified ingredient lines (`{ food, quantity, unit }`). Macronutrients and micronutrients
+   are **derived** from those grams.
+3. **Energy** — always computed from the macros with the EU labelling factors (Regulation (EU) 1169/2011, Annex XIV: protein 4, available
+   carbohydrate 4, fat 9, fibre 2 kcal/g). Energy is never stored, so two screens cannot disagree.
+4. **Targets** — resting energy from Mifflin–St Jeor (adults) and Schofield (10–18), activity on the EFSA physical-activity-level ladder
+   (1.4 · 1.6 · 1.8 · 2.0), protein for goal and sport (ACSM/ISSN), fibre / calcium / iron against EFSA reference values, salt against WHO’s
+   5 g, fluids from EFSA’s total-water intake (drinks are 80 % of it). The expected rate of weight change is shown as an approximation
+   (≈ 7,700 kcal per kg — Hall et al. explain why the real response is slower). The Guide lists all twelve sources with the date each was
+   last verified.
 
-| Shopping (what's left) | Family |
-|---|---|
-| ![Mobile shopping](docs/mobile-shopping.png) | ![Mobile family](docs/mobile-family.png) |
+**This is enforced, not promised.** `tests/food-provenance.test.mjs` fails the build if any food differs from its USDA record by even a
+digit, if an FDC id points at the wrong food (it caught eight mistyped ids while v13 was built), or if USDA’s own energy figure disagrees
+with the one derived from the macros. `tests/menu.test.mjs` fails it if the 28-day rotation breaks its documented rules (every week has
+three different legume lunches and two fish meals, red meat at most once, no dish two days running, never two egg dishes in a day), if a
+reference day leaves the EFSA ranges (fat 20–35 % and carbohydrate 45–60 % of energy, fibre ≥ 25 g, food sodium under 2 g), or if a plate
+is sized to anything but that person’s need — never below the base plate, and never scaled up for the adult on a fat-loss goal.
 
-Regenerate with `python scripts/capture_shots.py` (desktop) and
-`python scripts/capture_mobile.py` (phone + layout audit) while a local server is running.
+### Safety model
 
-## What's new in v5.1 — the polish pass
+An educational wellness tool, not medical care. **No deficit goal and no adult BMI category is offered below age 20.** The rule lives in
+the nutrition engine and is applied again when a profile is saved, so it cannot be bypassed from the form. Adolescent profiles are
+planned for growth or sport performance; the Guide explains RED-S (relative energy deficiency in sport) and why a deficit is never offered.
 
-The whole surface got a visual upgrade **without touching a single line of app logic**:
-one additive stylesheet (`styles/polish.css`) layered on top of the existing design
-system. If it ever misbehaves, deleting that one file reverts everything.
+## Privacy & security
 
-- **Member-adaptive colour.** Soft tints, lines and glows now derive from the selected
-  member's accent via `color-mix`, instead of staying emerald for everyone.
-- **Depth & light.** Cards carry a faint top-lit wash, the aurora background gained a
-  second drifting light, and the energy ring breathes a soft halo.
-- **Tactile controls.** Focus rings, press feedback, a sheen that sweeps the primary
-  button on hover, spring-physics sheets/toasts, and chips that pop when they land.
-- **Motion with meaning.** Staggered view entrances (≤200ms, capped), a glint sweeping
-  along progress bars, a celebration pulse when a meal is logged, an attention glow on
-  Cook Mode's final-step button.
-- **Phone-first details.** The tab bar clears the home-indicator area (`safe-area`),
-  water glasses grow to 40px and inputs to 44px on touch screens, the member strip
-  scroll-snaps, and the keyboard skip-link now appears when focused.
-- **Accessibility guards.** `prefers-reduced-motion` (existing §18) kills all new
-  animation; `prefers-contrast: more` drops every sheen/glint and restores solid
-  text; print strips the decoration.
-- **Regenerated screenshots** across desktop and phone, light and dark.
-
-Verified before shipping: all 3 unit suites, 130/130 DOM smoke on both storage
-backends, the CI mobile layout audit (overflow / tap-target / pinned-nav checks), and
-28 computed-style assertions via `python scripts/verify_polish.py`.
-
-## What's new in v4.2
-
-The app is a PWA, so the phone is the surface that actually gets used. Reviewing it at
-390×844 found three real layout bugs, all fixed and now guarded by CI:
-
-- **The shopping header collapsed into its own buttons** — the title was squeezed to one
-  word per line and the buttons rendered on top of it.
-- **Cook Mode's "Επόμενο βήμα" needed a scroll on every step** — the step nav now sits
-  outside the column grid and is **pinned to the bottom** of the sheet on narrow screens.
-- **The persona header was unreadable at phone width** — the goal tag now drops to its own
-  line instead of squeezing the member's name into a ragged column.
-- **24px shopping checkboxes** raised to 36px, with filter chips held at a 40px minimum.
-
-`npm run shots:mobile` renders the real app in Chromium at phone width and asserts no
-horizontal overflow, thumb-sized tap targets, a pinned step nav, and a readable shopping
-header. It runs in CI as its own job — jsdom has no layout engine, so nothing else could
-have caught these.
-
-## What's new in v4
-
-v3 was correct. **v4 is personal** — it is built around the three people who actually use
-it: the mother (51, gradual fat loss, does the cooking), the son (15, basketball) and the
-daughter (17, growing). The household carries their real names — **Αναστασία**, **Αλέξης**,
-**Αλεξάνδρα** and **Δημήτρης** — with the family relation kept as a separate editable field.
-
-### Easy for the mother
-- **Cook Mode** — one instruction on screen at a time, large type, a progress bar, a
-  clickable step list, an ingredient checklist and the plated portions for all four
-  members. Built for someone standing at the stove.
-- **Automatic step timers** — `parseStepTimers()` reads `25′`, `12'` and `200°C` out of the
-  recipe text and offers start/pause/reset, with a toast, a notification and haptics.
-- **A shopping list that behaves like a shop** — filter chips **Όλα / Απομένουν / Στο
-  καλάθι**, a per-aisle `3/17` counter that turns green when complete, and a copy action
-  that copies exactly what the active filter shows.
-
-### Easy for the son (athlete)
-- **Fuelling protocol card** — athlete-only. Pre-session carbohydrate **1–3 g/kg**
-  (67–201 g), post-session **0,3 g/kg protein + 1 g/kg carbohydrate** (20 g + 67 g), and
-  fluid at **125–150 %** of losses, with a daily litre target.
-
-### Easy for the daughter (growth)
-- **Growth brief, not a diet brief** — iron today (from `IRON_RICH` recipes), weekly
-  variety, and an explicit protection tile: no deficit, no adult BMI category.
-
-### Credibility
-- **Persona focus points** — exactly three per member, chosen by goal, each with a live
-  value. The mother sees rate-of-loss, protein floor and "3 measurements needed" instead
-  of one day's number.
-- **Honest shopping maths** — quantities were previously multiplied by head-count while
-  the UI claimed they reflected each person's portions. `memberShare()` /
-  `householdServings()` now scale per member, so a 0,75× carber and a 1,35× fuelled
-  athlete are no longer counted as the same eater. The household share is **4,1 reference
-  servings**, not 4 — and the app says so in an expandable explanation.
-- **Recipe illustrations** — 13 inline-SVG motifs mapped to all 24 recipes, offline-safe
-  and theme-aware.
-
-## What's new in v3
-
-### Credibility
-- **Energy is derived, never stored.** Every calorie figure is computed from protein /
-  carbohydrate / fat using Atwater factors (4 / 4 / 9 kcal per gram). Recipes, meals and
-  daily totals can no longer disagree with each other.
-- **Citation registry.** Nine canonical sources (CDC, BJSM, EFSA, WHO, ACSM…) are
-  registered in `src/data.js` with a `used` field tying each one to the specific claim it
-  backs. Nothing is cited that isn't actually relied on.
-- **Honest coverage reporting.** The app reports exactly how much of each target the plan
-  delivers, and — when there is a genuine gap — proposes *additions only*. It never
-  suggests eating less.
-
-### Reliability
-- **IndexedDB with a localStorage fallback.** If IndexedDB is unavailable the app
-  degrades silently to localStorage and tells you which backend is active.
-- **In-place schema upgrade.** The database name is intentionally unchanged
-  (`zenith-pro-v2`) with `DB_VERSION` bumped 1 → 2, so existing installs migrate with
-  **no data loss**.
-- **Validated, atomic import.** Backups are schema-checked (v1 and v2 accepted) before
-  anything is written.
-- **Error boundary + service-worker update detection.** A failed render shows a recovery
-  screen instead of a blank page; a new deploy surfaces an "update available" prompt.
-- **Three test suites in CI** plus a live-deployment smoke workflow that waits for GitHub
-  Pages and asserts the deployed bundle actually changed.
-
-### Usability
-- **7 views** with a real navigation shell: Today, Plan, Meals, Shopping, Progress,
-  Family, Guide — plus mobile bottom tab bar and a command palette (`Ctrl/⌘ + K`).
-- **Undo on destructive actions** via toast actions; every destructive flow confirms first.
-- **Editable family members**, meal portion multipliers that are *actually applied* to the
-  macros you see, water logging, extra/skipped meals, and printable day sheets.
-- **Full keyboard support**: `1`–`7` to switch views, `T` for theme, `Esc` closes sheets,
-  focus-trapped dialogs, visible focus rings, and a `prefers-reduced-motion` path.
-
-### Craft
-- Token-driven design system with light/dark theming, an animated aurora background, data
-  visualisations drawn as inline SVG (rings, macro bars, trend lines, adherence heatmap,
-  bar charts), skeleton states, and a print stylesheet.
-- 24 Greek-Mediterranean recipes with quantified ingredients and step-by-step method.
-- All interpolated content passes through `esc()` — no XSS surface.
-
-## Safety model
-
-ZENITH PRO is an educational wellness tool, not medical care. Adolescent profiles are
-structurally protected: **no deficit goal and no adult BMI category is offered below age
-20** (`ADULT_BMI_AGE = 20`). This is enforced in the nutrition engine *and* re-checked in
-the profile form submit handler, so it cannot be bypassed through the UI. The
-"only additions" rule is surfaced in the daughter's persona card, in the shopping
-transparency block and in the coverage card.
+All data stays in the browser (IndexedDB, with a localStorage fallback). There is no account, no server, no analytics and no third-party
+request: a strict Content-Security-Policy (`default-src 'self'`, no inline script) and the audits below both confirm the app never talks to
+another origin. The typeface (Inter Variable, Greek + Latin) is self-hosted. There are **zero runtime dependencies**.
 
 ## Architecture
 
 ```
-index.html              App shell (Greek lang, full meta/OG, aurora layer)
-styles/app.css          Token-driven design system, light/dark, print
-src/data.js             All content. Zero I/O.
-src/nutrition-engine.js Pure functions. All physiology + statistics.
-src/storage.js          IndexedDB (+ localStorage fallback), backup/import.
-src/ui.js               Rendering primitives, icons, SVG charts, sheets, toasts.
-src/views.js            Pure render functions returning HTML strings.
-src/app.js              State, boot, routing, one delegated event dispatcher.
-sw.js                   Network-first navigation, stale-while-revalidate assets.
+index.html               App shell: CSP, preloads, landmarks
+styles/tokens.css        Design tokens — the only place the two themes differ
+styles/base.css          Reset, layout, the three responsive shells (sidebar · rail · floating tab bar)
+styles/components.css    Buttons, chips, cards, sheets, toasts, forms
+styles/views.css         Per-view layout
+styles/print.css         Print stylesheet
+src/dates.js             Calendar-day arithmetic — the plan can never shift with DST or timezone
+src/foods.js             41 foods per 100 g with USDA FDC ids
+src/recipes.js           28 recipes as quantified lines, plus the 28-day rotation
+src/data.js              Profiles, sources, method, safety text, glossary
+src/nutrition-engine.js  Pure functions: physiology, plate model, shopping list, statistics
+src/storage.js           IndexedDB (+ localStorage fallback), backup and import
+src/ui.js · art.js       Rendering primitives, icons, charts · 19 inline-SVG plate illustrations
+src/views.js             Pure view functions that return HTML strings
+src/app.js               State, routing, one delegated `data-act` click dispatcher
+sw.js                    Network-first navigation, stale-while-revalidate assets
 ```
 
-Views are pure: they return HTML with `data-act` attributes. `app.js` owns all state and
-handles every interaction through a single delegated click listener. Cook Mode state lives
-outside the persisted `state` object, so transient cooking UI is never saved.
+Views are pure functions returning HTML with `data-act` attributes; `app.js` owns all state and handles every interaction through one
+delegated listener. There is no build step — edit a file, reload.
 
-## Local development
+## Develop
 
 ```bash
-npm run serve      # python3 -m http.server 8080
+npm install          # dev tools only (jsdom, fake-indexeddb, axe-core)
+npm run serve        # http://127.0.0.1:8137/
+npm run verify       # syntax · all test suites · PWA integrity · DOM smoke test
 ```
 
-There is no build step. Edit a file, reload the browser.
+| Command | What it proves |
+|---|---|
+| `npm test` | Engine maths, data integrity, **USDA provenance**, menu rules, EFSA reference values, personas, and the plan across 8 timezones. |
+| `npm run smoke` | Boots the real `index.html` in jsdom and drives every view and interaction, on both storage backends. |
+| `npm run verify:pwa` | Every precached file exists, every module the app imports is precached, versions agree, the manifest and its icons are valid, the CSP forbids inline script. |
+| `npm run audit:layout` | Real Chromium at phone width: no horizontal overflow, touch targets ≥ 36 px, Cook Mode navigation pinned. |
+| `npm run audit:a11y` | **axe-core** (WCAG 2.2 A/AA + best practice) on every view and overlay — phone and desktop, light and dark, all four members, first run and with data. |
+| `npm run audit:contrast` | WCAG contrast **measured from rendered pixels** for every text run (axe cannot decide text over tints and gradients). |
+| `npm run shots` | Regenerates the screenshots in `docs/`, the install-dialog images and the social card. |
 
-## Tests
+The browser audits need Python with `playwright numpy pillow` and the app served on port 8137. Add `--quick` for a faster matrix.
+CI runs everything: the quick browser matrix on branches, the full one on `main`. After each deploy, *Production Smoke* waits for GitHub
+Pages to serve that exact build and checks that every precached file is really live.
 
-```bash
-npm test           # nutrition-engine + data-integrity + persona & kitchen suites
-npm run smoke      # DOM smoke test: localStorage path AND IndexedDB path (130 checks)
-npm run check      # syntax check every module
-npm run shots:mobile   # phone-width render + layout audit (needs Playwright)
-npm run audit:selftest # proves the layout audit can actually fail
-```
+Refreshing food data: `USDA_API_KEY=… npm run data:usda` (or `node scripts/fetch_usda.mjs --portal`, which uses the public FoodData Central
+site), then `npm test` — the provenance test will say what changed.
 
-The DOM smoke test boots the real `index.html` in jsdom, imports the real `src/app.js`,
-and drives all seven views and the primary interactions end to end — including the persona
-briefs, Cook Mode and the shopping filters. It requires `jsdom` and `fake-indexeddb`, which
-are dev-only:
+## Licence
 
-```bash
-npm install        # installs devDependencies
-npm run smoke
-```
-
-`npm run shots:mobile` needs Playwright and a local server on port 8137. jsdom has no
-layout engine, so this is the only suite that can catch a mobile layout regression; it
-runs in CI as its own job.
-
-One trap worth knowing before editing that audit: it must compare
-`documentElement.scrollWidth` against **`documentElement.clientWidth`**, never
-`window.innerWidth`. Under Playwright's `is_mobile=True` the layout viewport grows to
-accommodate the overflow, so `innerWidth` reports the inflated width and the assertion
-silently becomes `405 <= 405` — passing while the page scrolls sideways. It did exactly
-that for one release.
-
-## License
-
-See `LICENSE`.
+See [`LICENSE`](LICENSE). Font: Inter, SIL Open Font Licence 1.1 (`assets/fonts/`).
