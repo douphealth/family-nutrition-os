@@ -13,26 +13,26 @@
 
 import {
   APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, SLOT_TIME, AISLES,
-  PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES
+  PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY
 } from './data.js';
 import {
-  isMinor, targetsFor, dayMacros, planCoverage, mealMacros, weightTrend,
-  loggingStreak, hydrationTarget, contextualGuidance, energyRange,
-  personaPoints, trainingFueling, ironMeals, householdServings, upgradeMemberNames, nextMealNudge
+  isMinor, targetsFor, dayMacros, planCoverage, weightTrend, loggingStreak,
+  contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
+  upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
+  householdRoleServings, buildShoppingList
 } from './nutrition-engine.js';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
   storageInfo, requestPersistence, activeBackend
 } from './storage.js';
 import {
-  esc, icon, logo, byId, $, $$, avatar, registerMembers,
-  localDateKey, addDays, mondayOf, cycleDayIndex, cycleWeek, dateFromKey,
-  num, num1, pct, mlToText, bytesToText, longDate, shortDate, GREEK_DAYS_SHORT,
-  toast, openSheet, closeSheet, isSheetOpen, clockText
+  esc, icon, logo, byId, $$, avatar, registerMembers,
+  localDateKey, addDays, mondayOf, cycleDayIndex, dateFromKey,
+  num, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
 } from './ui.js';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
-  guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody
+  guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
 } from './views.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
@@ -48,13 +48,15 @@ const NAV = [
 ];
 const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'progress'];
 const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
+const THEMES = ['auto', 'light', 'dark'];
+const THEME_COLOR = { light: '#F3F5F0', dark: '#070C09' };
 
 /* ── State ─────────────────────────────────────────────────────────────── */
 
 let state = {
   view: 'today',
   member: 'mother',
-  theme: 'dark',
+  theme: 'auto',            // 'auto' follows the device; 'light' / 'dark' are a family choice
   trainingLoad: 'normal',
   weekOffset: 0,
   onboarded: false,
@@ -81,6 +83,43 @@ let paletteIndex = 0;
 let cook = { open: false, recipeId: null, step: 0, done: {} };
 let cookTimer = { id: null, remaining: 0, total: 0, running: false };
 
+/* ── Theme ─────────────────────────────────────────────────────────────── */
+
+const darkQuery = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const resolvedTheme = () => (state.theme === 'light' || state.theme === 'dark' ? state.theme : (darkQuery?.matches ? 'dark' : 'light'));
+
+/** Reflect the chosen theme on <html>, the browser chrome colour and the boot mirror. */
+function applyTheme() {
+  const root = document.documentElement;
+  const theme = resolvedTheme();
+  root.dataset.theme = theme;
+  root.dataset.themePref = state.theme;
+  try { localStorage.setItem('zenith:theme', state.theme); } catch { /* storage blocked: the choice lasts this session */ }
+  // Two <meta theme-color> tags carry media queries for "auto". A forced theme
+  // overrides both so the address bar matches the page; "auto" restores them.
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+    meta.dataset.auto ||= meta.getAttribute('content');
+    meta.setAttribute('content', state.theme === 'auto' ? meta.dataset.auto : THEME_COLOR[theme]);
+  });
+}
+
+function toggleTheme() {
+  state.theme = resolvedTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  persistSettings();
+  renderShell();
+}
+
+function setThemeAuto() {
+  state.theme = 'auto';
+  applyTheme();
+  persistSettings();
+  renderShell();
+  toast('Το θέμα ακολουθεί πλέον τη συσκευή.');
+}
+
+darkQuery?.addEventListener?.('change', () => { if (state.theme === 'auto') { applyTheme(); renderShell(); } });
+
 /* ── Derived helpers ───────────────────────────────────────────────────── */
 
 const recipeById = id => RECIPES.find(r => r.id === id) || null;
@@ -88,6 +127,24 @@ const currentProfile = () => cache.profiles.find(p => p.id === state.member) || 
 /** Today's meals that are meaningful iron sources — used by the growth profile. */
 const ironTodayFor = planDay => ironMeals(planDay, recipeById, IRON_RICH);
 const currentLoad = p => (p?.athlete ? state.trainingLoad : 'normal');
+
+/* Plate size — each member's plate is sized so the rotation lands on the centre
+ * of their estimated energy range. The rotation average depends only on the
+ * profile's own numbers and the load, so it is computed once per distinct input. */
+const planEnergyCache = new Map();
+function planEnergy(p, load) {
+  const key = [p.age, p.sex, p.weight, p.height, p.activityFactor, p.goal, p.athlete ? 1 : 0, load].join('|');
+  let kcal = planEnergyCache.get(key);
+  if (kcal == null) {
+    kcal = rotationEnergy(p, load, PLAN_28, recipeById);
+    planEnergyCache.set(key, kcal);
+  }
+  return kcal;
+}
+function sized(p) {
+  const load = currentLoad(p);
+  return { ...p, plate: plateScale(p, planEnergy(p, load), load) };
+}
 
 function planForDate(date) {
   return PLAN_28[cycleDayIndex(dateFromKey(date)) - 1];
@@ -99,10 +156,6 @@ function emptyLog(memberId, date) {
 
 function logFor(memberId, date) {
   return cache.logs.find(l => l.memberId === memberId && l.date === date) || emptyLog(memberId, date);
-}
-
-function dayMacrosFor(planDay, profile, load, log) {
-  return dayMacros(planDay, profile, load, log, recipeById);
 }
 
 function measurementsFor(memberId) {
@@ -119,7 +172,6 @@ function loggedDateKeys(memberId) {
 
 function heatCellsFor(memberId) {
   const start = addDays(mondayOf(), -21);
-  const today = localDateKey();
   const out = [];
   for (let i = 0; i < 28; i++) {
     const date = addDays(start, i);
@@ -139,45 +191,22 @@ function weekDaysFor(offset) {
   });
 }
 
-function buildShopping(weekDays) {
-  const servings = householdServings(cache.profiles);
-  const map = new Map();
-  for (const day of weekDays) {
-    for (const slot of SLOTS) {
-      const r = recipeById(day.plan[slot]);
-      if (!r) continue;
-      for (const ing of r.ingredients) {
-        const key = `${ing.a}::${ing.n}`;
-        const cur = map.get(key) || { key, name: ing.n, aisle: ing.a, unit: ing.u, qty: 0, count: 0, perServing: ing.q };
-        cur.qty += ing.q * servings;
-        cur.count += 1;
-        map.set(key, cur);
-      }
-    }
-  }
-  return [...map.values()]
-    .map(i => ({ ...i, qty: roundQty(i.qty, i.unit) }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'el'));
-}
-
-function roundQty(q, unit) {
-  if (unit === 'τεμ') return Math.round(q);
-  if (q >= 1000) return Math.round(q / 100) * 100;
-  if (q >= 100) return Math.round(q / 10) * 10;
-  if (q >= 20) return Math.round(q / 5) * 5;
-  return Math.round(q);
-}
+const shopKey = weekDays => weekDays.length ? `w:${weekDays[0].date}` : 'w:none';
 
 /* ── Context for views ─────────────────────────────────────────────────── */
+
+let diagnosticsCache = { backend: 'idb', persisted: false, usageText: '—', quotaText: '—', sw: '—', online: navigator.onLine };
 
 function buildCtx() {
   const profile = currentProfile();
   const load = currentLoad(profile);
+  const sizedProfiles = cache.profiles.map(sized);
+  const me = sizedProfiles.find(p => p.id === profile.id) || sized(profile);
   const dateKey = localDateKey();
   const planDay = planForDate(dateKey);
   const log = logFor(profile.id, dateKey);
   const targets = targetsFor(profile, load);
-  const totals = dayMacrosFor(planDay, profile, load, log);
+  const totals = dayMacros(planDay, me, load, log, recipeById);
   const snackPool = RECIPES.filter(r => r.slot === 'snack');
   const coverage = planCoverage(profile, load, totals, targets, snackPool);
   const completeness = {
@@ -188,40 +217,45 @@ function buildCtx() {
   const measurements = measurementsFor(profile.id);
   const trend = weightTrend(measurements);
   const weekDays = weekDaysFor(state.weekOffset);
-  const shopList = buildShopping(weekDays);
+  const shopList = buildShoppingList({ days: weekDays, profiles: sizedProfiles, recipeById });
   const shopChecked = state.shopChecked[shopKey(weekDays)] || {};
+  const heatCells = heatCellsFor(profile.id);
+  const checked = shopList.filter(i => shopChecked[i.key]).length;
 
   return {
-    state, profiles: cache.profiles, profile, load, loadLabel: TRAINING_LOADS.find(l => l[0] === load)?.[1] || 'Κανονική',
+    state, profiles: cache.profiles, sizedProfiles, sized: me, plate: me.plate,
+    platesByMember: Object.fromEntries(sizedProfiles.map(p => [p.id, p.plate])),
+    profile, load, loadLabel: TRAINING_LOADS.find(l => l[0] === load)?.[1] || 'Κανονική',
     dateKey, planDay, log, targets, totals, coverage, completeness, streak, updateReady,
-    onboarded: state.onboarded, trainingLoads: TRAINING_LOADS, guidance: contextualGuidance({ profile, trainingLoad: load, today: log, plannedMeal: recipeById(planDay[SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner']) }),
-    recipeById, planForDate, logFor, dayMacrosFor, recipes: RECIPES, filters: state.filters,
+    refs: referenceValues(profile),
+    onboarded: state.onboarded, trainingLoads: TRAINING_LOADS,
+    guidance: contextualGuidance({ profile, trainingLoad: load, today: log, plannedMeal: recipeById(planDay[SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner']) }),
+    recipeById, planForDate, logFor,
+    dayMacrosFor: (day, p, l, lg) => dayMacros(day, p, l, lg, recipeById),
+    recipes: RECIPES, filters: state.filters,
     weekDays, weekOffset: state.weekOffset, shopList, shopChecked,
     shopFilter: state.shopFilter,
     shopMembers: cache.profiles.length,
-    shopServings: householdServings(cache.profiles),
-    shopStats: (() => {
-      const checked = shopList.filter(i => shopChecked[i.key]).length;
-      return {
-        total: shopList.length, checked, remaining: shopList.length - checked,
-        pct: shopList.length ? checked / shopList.length : 0
-      };
-    })(),
-    measurements, trend, heatCells: heatCellsFor(profile.id),
+    roleServings: householdRoleServings(sizedProfiles),
+    shopStats: {
+      total: shopList.length, checked, remaining: shopList.length - checked,
+      pct: shopList.length ? checked / shopList.length : 0
+    },
+    measurements, trend, heatCells,
     loggedDays: loggedDateKeys(profile.id).length,
-    loggedDays28: heatCellsFor(profile.id).filter(c => c.logged).length,
+    loggedDays28: heatCells.filter(c => c.logged).length,
     weekAdherence: weekDays.map(d => {
       const l = logFor(profile.id, d.date);
       return { date: d.date, meals: Object.values(l.meals || {}).filter(m => m?.status === 'done').length };
     }),
-    coverageByMember: cache.profiles.map(p => {
-      const l = p.athlete ? state.trainingLoad : 'normal';
+    coverageByMember: sizedProfiles.map(p => {
+      const l = currentLoad(p);
       const t = targetsFor(p, l);
-      const tot = dayMacrosFor(planDay, p, l, emptyLog(p.id, dateKey));
+      const tot = dayMacros(planDay, p, l, emptyLog(p.id, dateKey), recipeById);
       const c = planCoverage(p, l, tot, t, snackPool);
       return { id: p.id, name: p.name, pct: c.pct, status: c.status, gap: c.gapKcal };
     }),
-    targetsByMember: Object.fromEntries(cache.profiles.map(p => [p.id, targetsFor(p, p.athlete ? state.trainingLoad : 'normal')])),
+    targetsByMember: Object.fromEntries(cache.profiles.map(p => [p.id, targetsFor(p, currentLoad(p))])),
     persona: personaPoints(profile, {
       trainingLoad: load,
       targets,
@@ -230,43 +264,40 @@ function buildCtx() {
       streak,
       ironToday: ironTodayFor(planDay),
       hydrationMl: Number(log?.waterMl) || 0,
-      measurements: measurements.length
+      measurements: measurements.length,
+      refs: referenceValues(profile)
     }),
     nudge: nextMealNudge({ log, slotTimes: SLOT_TIME, now: new Date() }),
     personaFocus: PERSONA_FOCUS[profile.goal] || null,
     fueling: trainingFueling(profile, load),
     ironToday: ironTodayFor(planDay),
     cook,
+    contentW: byId('view')?.clientWidth || 0,
     diagnostics: diagnosticsCache
   };
 }
-
-let diagnosticsCache = { backend: 'idb', persisted: false, usageText: '—', quotaText: '—', sw: '—', online: navigator.onLine };
-
-const shopKey = weekDays => weekDays.length ? `w:${weekDays[0].date}` : 'w:none';
 
 /* ── Shell rendering ───────────────────────────────────────────────────── */
 
 function renderShell() {
   const profile = currentProfile();
   registerMembers(cache.profiles);
-  document.documentElement.dataset.theme = state.theme;
-  document.documentElement.style.setProperty('--accent', profile?.accent || '#0E9F6E');
-  document.documentElement.style.setProperty('--accent-2', profile?.accent || '#0E9F6E');
+  applyTheme();
+  document.documentElement.style.setProperty('--member', profile?.accent || '#0E9F6E');
 
-  byId('brandMark').innerHTML = logo(38);
-  byId('paletteBtn').innerHTML = `${icon('search', 16)}<span class="palette-label">Εντολές</span><kbd>Ctrl K</kbd>`;
-  byId('sideVer').innerHTML = `${icon('shield', 13)}<span>v${esc(APP.version)} · τοπικά δεδομένα</span>`;
+  byId('brandMark').innerHTML = logo(42);
+  byId('paletteBtn').innerHTML = `${icon('search', 17)}<span class="palette-label">Εντολές</span><kbd>Ctrl K</kbd>`;
+  byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · τοπικά δεδομένα</span>`;
 
   byId('sideNav').innerHTML = NAV.map(([id, label, ic]) =>
-    `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
-      ${icon(ic, 18)}<span>${esc(label)}</span></button>`).join('');
+    `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" aria-label="${esc(label)}" ${state.view === id ? 'aria-current="page"' : ''}>
+      <span class="nav-ic">${icon(ic, 19)}</span><span class="nav-label">${esc(label)}</span></button>`).join('');
 
   const strip = byId('memberStrip');
   strip.innerHTML = cache.profiles.map(p =>
     `<button type="button" class="member-chip ${p.id === state.member ? 'active' : ''}" data-act="member" data-id="${esc(p.id)}"
       aria-pressed="${p.id === state.member}" aria-label="${esc(p.name)} — ${esc(p.relation || '')}">
-      ${avatar(p, 30)}<span class="member-name">${esc(p.name)}</span></button>`).join('');
+      ${avatar(p, 38)}<span class="member-name">${esc(p.name)}</span></button>`).join('');
   // On a phone the strip scrolls horizontally, so a member selected from the
   // command palette — or restored on load — can sit off-screen and the switcher
   // then looks like it belongs to someone else. Centre it, but only when the
@@ -278,12 +309,15 @@ function renderShell() {
 
   byId('tabbar').innerHTML = PRIMARY_TABS.map(id => {
     const entry = NAV.find(n => n[0] === id);
-    return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}">
-      ${icon(entry[2], 20)}<span>${esc(entry[1])}</span></button>`;
-  }).join('') + `<button type="button" class="tab-btn" data-act="more">${icon('more', 20)}<span>Άλλα</span></button>`;
+    return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
+      ${icon(entry[2], 22)}<span>${esc(entry[1])}</span></button>`;
+  }).join('') + `<button type="button" class="tab-btn ${['family', 'guide'].includes(state.view) ? 'active' : ''}" data-act="more">${icon('more', 22)}<span>Άλλα</span></button>`;
 
-  byId('themeBtn').innerHTML = icon(state.theme === 'light' ? 'moon' : 'sun', 18);
-  byId('themeBtn').setAttribute('aria-label', state.theme === 'light' ? 'Σκούρο θέμα' : 'Φωτεινό θέμα');
+  const dark = resolvedTheme() === 'dark';
+  byId('themeBtn').innerHTML = icon(dark ? 'moon' : 'sun', 19);
+  const label = dark ? 'Αλλαγή σε φωτεινό θέμα' : 'Αλλαγή σε σκούρο θέμα';
+  byId('themeBtn').setAttribute('aria-label', label);
+  byId('themeBtn').setAttribute('title', state.theme === 'auto' ? `${label} (τώρα: αυτόματο)` : label);
 }
 
 function render() {
@@ -369,6 +403,8 @@ async function submitMemberForm(e) {
   const height = Number(fd.get('height'));
   const weight = Number(fd.get('weight'));
   if (![age, height, weight].every(Number.isFinite)) { toast('Έλεγξε τα αριθμητικά πεδία.', { tone: 'danger' }); return; }
+  // The energy equations used (Schofield 10–18, Mifflin–St Jeor for adults) are not valid for young children.
+  if (age < 10) { toast('Η εφαρμογή σχεδιάστηκε για ηλικίες από 10 ετών.', { tone: 'danger' }); return; }
   profile.name = String(fd.get('name') || '').trim().slice(0, 24) || profile.name;
   profile.relation = String(fd.get('relation') || '').trim().slice(0, 16);
   profile.role = String(fd.get('role') || '').trim().slice(0, 60) || profile.role;
@@ -427,13 +463,14 @@ async function boot() {
     const settings = await get('settings', 'app');
     if (settings) {
       state = { ...state, ...settings, filters: { ...state.filters, ...(settings.filters || {}) }, shopChecked: settings.shopChecked || {} };
-      // v12 is a deliberate dark-first redesign. Existing v11 installs migrate
-      // once to Midnight; the normal theme toggle remains available afterwards.
-      if (settings.version === '11.0.0') state.theme = 'dark';
+      // v11 and v12 pinned the theme to "dark"; from v13 the device decides until
+      // the family makes a choice of their own.
+      if (parseInt(String(settings.version || '0'), 10) < 13) state.theme = 'auto';
     }
     const profiles = await all('profiles');
     if (profiles.length) cache.profiles = profiles;
     await applyMemberNameUpgrade();
+    await applyActivityUpgrade();
     cache.logs = (await all('logs')).map(migrateLog);
     cache.measurements = await all('measurements');
     cache.plans = await all('plans');
@@ -443,7 +480,7 @@ async function boot() {
     if (NAV.some(n => n[0] === requested)) state.view = requested;
     if (!cache.profiles.some(p => p.id === state.member)) state.member = cache.profiles[0]?.id || 'mother';
     if (!NAV.some(n => n[0] === state.view)) state.view = 'today';
-    if (state.theme !== 'dark' && state.theme !== 'light') state.theme = 'light';
+    if (!THEMES.includes(state.theme)) state.theme = 'auto';
     if (!TRAINING_LOADS.some(l => l[0] === state.trainingLoad)) state.trainingLoad = 'normal';
 
     renderAll();
@@ -456,7 +493,7 @@ async function boot() {
 }
 
 function splash() {
-  return `<div class="splash">${logo(52)}<div><b>${esc(APP.name)}</b><br><span class="tiny">Φόρτωση τοπικών δεδομένων…</span></div></div>`;
+  return `<div class="splash">${logo(56)}<div><b>${esc(APP.name)}</b><br><span class="tiny">Φόρτωση τοπικών δεδομένων…</span></div></div>`;
 }
 
 /**
@@ -470,6 +507,16 @@ async function applyMemberNameUpgrade() {
   cache.profiles = profiles;
   for (const p of cache.profiles) {
     try { await put('profiles', p); } catch (err) { console.error('[ZENITH] member rename save failed', err); }
+  }
+}
+
+/** v13: move activity levels that sat below EFSA/FAO's lowest free-living level onto the EFSA ladder. */
+async function applyActivityUpgrade() {
+  const { profiles, changed } = upgradeActivityLevels(cache.profiles, LEGACY_ACTIVITY);
+  if (!changed) return;
+  cache.profiles = profiles;
+  for (const p of cache.profiles) {
+    try { await put('profiles', p); } catch (err) { console.error('[ZENITH] activity upgrade save failed', err); }
   }
 }
 
@@ -502,14 +549,19 @@ function renderCookSheet(create) {
   const host = byId('sheet');
   const existing = host && !host.classList.contains('hidden') ? host.querySelector('.sheet-body') : null;
   if (create || !existing) {
+    const ctx = buildCtx();
     openSheet({
       title: `Μαγείρεμα · ${recipe.name}`,
-      body: cookBody(buildCtx(), recipe),
+      body: cookBody(ctx, recipe),
+      footer: cookFooter(ctx, recipe),
       size: 'xl',
       onClose: () => { stopCookTimer(true); cook.open = false; }
     });
   } else {
-    existing.innerHTML = cookBody(buildCtx(), recipe);
+    const ctx = buildCtx();
+    existing.innerHTML = cookBody(ctx, recipe);
+    const foot = host.querySelector('.sheet-foot');
+    if (foot) foot.innerHTML = cookFooter(ctx, recipe);
   }
 }
 
@@ -570,6 +622,7 @@ document.addEventListener('click', async e => {
       state.view = target.dataset.view;
       state.weekOffset = 0;
       history.replaceState(null, '', `${location.pathname}?view=${state.view}`);
+      if (isSheetOpen()) closeSheet();
       await persistSettings();
       renderAll();
       try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch { /* not supported in this webview */ }
@@ -580,29 +633,32 @@ document.addEventListener('click', async e => {
         title: 'Περισσότερα',
         size: 'sm',
         body: `<div class="stack">
-          <button type="button" class="palette-item" data-act="nav" data-view="progress">${icon('chart', 18)}<span>Πρόοδος & τάσεις</span></button>
-          <button type="button" class="palette-item" data-act="nav" data-view="family">${icon('users', 18)}<span>Οικογένεια & προφίλ</span></button>
-          <button type="button" class="palette-item" data-act="nav" data-view="guide">${icon('book', 18)}<span>Μεθοδολογία & πηγές</span></button>
-          <button type="button" class="palette-item" data-act="theme">${icon('moon', 18)}<span>Αλλαγή θέματος</span></button>
-          <button type="button" class="palette-item" data-act="print">${icon('printer', 18)}<span>Εκτύπωση</span></button>
-          <button type="button" class="palette-item" data-act="export">${icon('download', 18)}<span>Export δεδομένων</span></button>
-          <button type="button" class="palette-item" data-act="import">${icon('upload', 18)}<span>Import δεδομένων</span></button>
+          <button type="button" class="palette-item" data-act="palette">${icon('search', 19)}<span>Γρήγορη αναζήτηση</span></button>
+          <button type="button" class="palette-item" data-act="nav" data-view="family">${icon('users', 19)}<span>Οικογένεια & προφίλ</span></button>
+          <button type="button" class="palette-item" data-act="nav" data-view="guide">${icon('book', 19)}<span>Μεθοδολογία & πηγές</span></button>
+          <button type="button" class="palette-item" data-act="theme">${icon(resolvedTheme() === 'dark' ? 'sun' : 'moon', 19)}<span>${resolvedTheme() === 'dark' ? 'Φωτεινό θέμα' : 'Σκούρο θέμα'}</span></button>
+          ${state.theme !== 'auto' ? `<button type="button" class="palette-item" data-act="themeAuto">${icon('monitor', 19)}<span>Θέμα: ακολούθησε τη συσκευή</span></button>` : ''}
+          <button type="button" class="palette-item" data-act="print">${icon('printer', 19)}<span>Εκτύπωση</span></button>
+          <button type="button" class="palette-item" data-act="export">${icon('download', 19)}<span>Export δεδομένων</span></button>
+          <button type="button" class="palette-item" data-act="import">${icon('upload', 19)}<span>Import δεδομένων</span></button>
         </div>`
       });
       break;
     }
     case 'member': {
       state.member = target.dataset.id;
-      document.documentElement.style.setProperty('--accent', currentProfile()?.accent || '#0E9F6E');
       await persistSettings();
       renderAll();
       break;
     }
     case 'theme': {
-      state.theme = state.theme === 'light' ? 'dark' : 'light';
-      document.documentElement.dataset.theme = state.theme;
-      await persistSettings();
-      renderShell();
+      if (isSheetOpen()) closeSheet();
+      toggleTheme();
+      break;
+    }
+    case 'themeAuto': {
+      if (isSheetOpen()) closeSheet();
+      setThemeAuto();
       break;
     }
     case 'load': {
@@ -772,7 +828,7 @@ document.addEventListener('click', async e => {
         const items = visible.filter(i => i.aisle === aisle.id);
         if (!items.length) continue;
         lines.push(`— ${aisle.label} —`);
-        for (const i of items) lines.push(`• ${i.name}: ${num(i.qty)} ${i.unit}`);
+        for (const i of items) lines.push(`• ${i.name}: ${shopAmount(i.qty, i.unit)}`);
         lines.push('');
       }
       const head = onlyTodo ? 'Λίστα αγορών · ό,τι απομένει' : 'Λίστα αγορών';
@@ -884,7 +940,7 @@ document.addEventListener('click', async e => {
     case 'wipe': {
       openSheet({
         title: 'Διαγραφή όλων των δεδομένων', size: 'sm',
-        body: `<div class="notice notice-danger">${icon('alert', 18)}<span><b>⚠️ Μη αναστρέψιμη ενέργεια.</b> Θα διαγραφούν προφίλ, καταγραφές και μετρήσεις από αυτή τη συσκευή.</span></div>
+        body: `<div class="notice notice-danger">${icon('alert', 18)}<span><b>Μη αναστρέψιμη ενέργεια.</b> Θα διαγραφούν προφίλ, καταγραφές και μετρήσεις από αυτή τη συσκευή.</span></div>
                <p class="muted tiny" style="margin-top:12px">Αν δεν έχεις κάνει export, δεν θα μπορείς να τα ανακτήσεις.</p>`,
         footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
                  <button type="button" class="btn btn-danger" data-act="confirmWipe">${icon('trash', 16)} Διαγραφή όλων</button>`
@@ -893,6 +949,7 @@ document.addEventListener('click', async e => {
     }
     case 'confirmWipe': {
       await clearAll();
+      try { localStorage.removeItem('zenith:theme'); } catch { /* ignore */ }
       closeSheet();
       toast('Τα δεδομένα διαγράφηκαν. Επαναφόρτωση…');
       setTimeout(() => location.reload(), 900);
@@ -901,7 +958,7 @@ document.addEventListener('click', async e => {
     case 'print': window.print(); break;
     case 'closeSheet': closeSheet(); break;
     case 'reload': location.reload(); break;
-    case 'palette': openPalette(); break;
+    case 'palette': if (isSheetOpen()) closeSheet(); openPalette(); break;
     case 'palettePick': {
       const item = paletteItems[Number(target.dataset.index)];
       closePalette();
@@ -915,13 +972,13 @@ document.addEventListener('click', async e => {
 /* ── Command palette ───────────────────────────────────────────────────── */
 
 function paletteCommands() {
-  const cmds = NAV.map(([id, label, ic]) => ({
-    label: `Μετάβαση: ${label}`, icon: ic, hint: `G ${id[0].toUpperCase()}`,
+  const cmds = NAV.map(([id, label, ic], i) => ({
+    label: `Μετάβαση: ${label}`, icon: ic, hint: String(i + 1),
     run: () => { state.view = id; state.weekOffset = 0; persistSettings(); renderAll(); }
   }));
   cmds.push(
     { label: 'Κατέγραψε το επόμενο γεύμα', icon: 'check', run: () => {
-        const p = currentProfile(); const date = localDateKey(); const plan = planForDate(date);
+        const p = currentProfile(); const date = localDateKey();
         const log = logFor(p.id, date);
         const slot = SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner';
         log.meals = { ...(log.meals || {}), [slot]: { status: 'done', portion: 1, at: new Date().toISOString() } };
@@ -932,9 +989,10 @@ function paletteCommands() {
         log.waterMl = (Number(log.waterMl) || 0) + 250;
         saveLog(log).then(() => { render(); toast('+250 ml'); });
       } },
-    { label: 'Άνοιξε τη λίστα αγορών', icon: 'cart', run: () => { state.view = 'shopping'; renderAll(); } },
+    { label: 'Άνοιξε τη λίστα αγορών', icon: 'cart', run: () => { state.view = 'shopping'; persistSettings(); renderAll(); } },
     { label: 'Εκτύπωσε', icon: 'printer', run: () => window.print() },
-    { label: 'Εναλλαγή θέματος', icon: 'moon', run: () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = state.theme; persistSettings(); renderShell(); } },
+    { label: 'Εναλλαγή θέματος', icon: 'moon', hint: 'T', run: () => toggleTheme() },
+    { label: 'Θέμα: ακολούθησε τη συσκευή', icon: 'monitor', run: () => setThemeAuto() },
     { label: 'Export δεδομένων', icon: 'download', run: () => document.querySelector('[data-act="export"]')?.click() }
   );
   for (const p of cache.profiles) {
@@ -948,8 +1006,8 @@ function paletteCommands() {
 
 function openPalette() {
   const host = byId('palette');
-  host.innerHTML = `<div class="palette-panel">
-    <div class="palette-input">${icon('search', 18)}<input id="paletteInput" type="text" placeholder="Γράψε εντολή, μέλος ή συνταγή…" aria-label="Αναζήτηση εντολών"></div>
+  host.innerHTML = `<div class="palette-panel" role="dialog" aria-modal="true" aria-label="Γρήγορες εντολές">
+    <div class="palette-input">${icon('search', 20)}<input id="paletteInput" type="text" placeholder="Γράψε εντολή, μέλος ή συνταγή…" aria-label="Αναζήτηση εντολών" autocomplete="off"></div>
     <div id="paletteList"></div>
   </div>`;
   host.classList.remove('hidden');
@@ -1000,16 +1058,12 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (e.key === 'Escape') { closePalette(); return; }
-  if (typing) return;
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key >= '1' && e.key <= '7') {
     const entry = NAV[Number(e.key) - 1];
     if (entry) { state.view = entry[0]; state.weekOffset = 0; persistSettings(); renderAll(); }
   }
-  if (e.key === 't' || e.key === 'T') {
-    state.theme = state.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = state.theme;
-    persistSettings(); renderShell();
-  }
+  if (e.key === 't' || e.key === 'T') toggleTheme();
 });
 
 /* ── Import file input ─────────────────────────────────────────────────── */
@@ -1034,12 +1088,15 @@ byId('backupImport')?.addEventListener('change', async e => {
 window.addEventListener('error', e => console.error('[ZENITH] uncaught', e.error || e.message));
 window.addEventListener('unhandledrejection', e => console.error('[ZENITH] unhandled rejection', e.reason));
 
+/* Charts are drawn at the width of their container, so a resize redraws them. */
+window.addEventListener('resize', debounce(() => { if (state.view === 'progress' && !isSheetOpen()) render(); }, 250));
+
 /* ── Service worker ────────────────────────────────────────────────────── */
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
-    reg.update().catch(() => {});
-    reg.addEventListener('updatefound', () => {
+    reg?.update?.()?.catch?.(() => {});
+    reg?.addEventListener?.('updatefound', () => {
       const worker = reg.installing;
       worker?.addEventListener('statechange', () => {
         if (worker.state === 'installed' && navigator.serviceWorker.controller) {

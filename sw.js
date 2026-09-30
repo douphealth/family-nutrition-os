@@ -10,27 +10,34 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v12-2026-09-29-1';
+const CACHE = 'zenith-v13-2026-09-30-1';
 
 const CORE = [
   './',
   './index.html',
-  './styles/app.css',
-  './styles/polish.css',
-  './styles/enterprise-refinement.css',
-  './styles/ultra-premium.css',
-  './styles/icon-atlas.css',
-  './styles/zenith-v11.css',
-  './styles/zenith-v12-midnight.css',
+  './styles/tokens.css',
+  './styles/base.css',
+  './styles/components.css',
+  './styles/views.css',
+  './styles/print.css',
+  './assets/fonts/inter-greek-wght-normal.woff2',
+  './assets/fonts/inter-latin-wght-normal.woff2',
+  './src/theme-boot.js',
   './src/app.js',
   './src/views.js',
   './src/ui.js',
+  './src/art.js',
+  './src/dates.js',
   './src/data.js',
+  './src/foods.js',
+  './src/recipes.js',
   './src/nutrition-engine.js',
   './src/storage.js',
   './manifest.webmanifest',
+  './assets/icon.svg',
   './assets/icon-192.png',
   './assets/icon-512.png',
+  './assets/icon-maskable-512.png',
   './assets/icon-180.png',
   './assets/favicon.png'
 ];

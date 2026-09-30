@@ -1,0 +1,44 @@
+/* ============================================================================
+   ZENITH PRO · print
+   ----------------------------------------------------------------------------
+   The plan and the shopping list are printed and stuck on the fridge. This strips
+   the app chrome, forces high-contrast dark-on-white in either theme, opens every
+   disclosure, and keeps a card from splitting across pages.
+   ========================================================================== */
+
+@page { margin: 14mm; }
+
+html[data-theme], html[data-theme='dark'] {
+  --bg: #fff; --bg-2: #fff; --surface: #fff; --surface-2: #f6f7f5; --surface-3: #eceeeb; --surface-hover: #f6f7f5;
+  --line: #cfd4d0; --line-2: #b4bcb6;
+  --ink: #000; --ink-2: #111; --ink-3: #3d4640; --ink-4: #666;
+  --brand: #0B7A4B; --brand-ink: #fff; --brand-text: #08663E; --brand-soft: #eef7f1; --brand-line: #bcd9c8;
+  --shadow-xs: none; --shadow-sm: none; --shadow-md: none; --shadow-lg: none;
+  color-scheme: light;
+}
+
+body { background: #fff !important; color: #000; font-size: 11pt; }
+.bg, .sidebar, .topbar, .tabbar, #toast, #sheet, #palette, .skip, .sr-only,
+.btn, .icon-btn, .chip, .sec-action, .toolbar, .meal-more summary, .next-actions,
+.water-tracker, .water-actions, .shop-actions, .shop-chips, .glass, .filter-card { display: none !important; }
+
+.app { display: block; }
+.content { max-width: none; padding: 0; }
+body::before { content: 'ZENITH PRO · Οικογενειακή διατροφή'; display: block; margin-bottom: 6mm; padding-bottom: 3mm; border-bottom: 2px solid #000; font-weight: 800; font-size: 13pt; }
+
+.card, .day-card, .shop-aisle-sec, .recipe-card, .meal-row { break-inside: avoid; box-shadow: none !important; background: #fff !important; border: 1px solid #b4bcb6 !important; }
+.page-head, .dash-head { padding-top: 0; }
+.today-grid, .week-strip { display: block !important; }
+.week-strip { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 4mm; overflow: visible; }
+.day-card { min-width: 0; }
+.shop-aisles { display: block; columns: 2; column-gap: 8mm; }
+.shop-aisle-sec { margin-bottom: 4mm; }
+.shop-head { position: static; }
+.shop-check { border: 1.5px solid #000 !important; background: #fff !important; border-radius: 3px; width: 18px; height: 18px; }
+.shop-check svg { display: none; }
+.shop-item { min-height: 0; padding: 3px 0; }
+.shop-item.is-checked { opacity: 1; }
+details.disclosure > .disclosure-body, details > *:not(summary) { display: block !important; }
+.next-art, .recipe-art .art, .art-tile .art { filter: none; animation: none; }
+a { color: #000; text-decoration: none; }
+*, *::before, *::after { animation: none !important; transition: none !important; }
