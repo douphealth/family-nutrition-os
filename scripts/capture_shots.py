@@ -1,176 +1,172 @@
 #!/usr/bin/env python3
 """
-ZENITH PRO v4 · screenshot capture
+ZENITH PRO · screenshot generator
 ---------------------------------------------------------------------------
-Renders the real app in headless Chromium and writes the docs/ screenshots.
-Covers the seven views, the three persona briefs, the recipe sheet, Cook Mode
-(light + dark), the shopping transparency block, and the dark theme.
+Renders the real app in Chromium and writes
 
-Usage:
-    python scripts/capture_shots.py [base_url] [out_dir]
+  docs/*.webp               the README gallery (desktop and phone, light and dark)
+  assets/screenshot-*.png   the install-dialog screenshots named in manifest.webmanifest
+  assets/og-image.png       the 1200x630 social card advertised in index.html
 
-Defaults: http://127.0.0.1:8137/index.html  ->  docs/
-Requires: pip install playwright && playwright install chromium
+The app is filled in through its own controls first (weigh-ins, meals, water,
+ticked shopping items), so charts, streaks and progress are shown in use rather
+than empty.
+
+    python scripts/capture_shots.py [base_url]
+
+Defaults to http://127.0.0.1:8137/index.html (npm run serve). Needs Playwright
+and Pillow.
 """
 
+import base64
+import glob
+import io
 import os
 import sys
 
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
+from _audit_states import close_sheet, go, js_click, log_today, prepare, seed_progress
+from _browser import launch, utf8_output
+
+utf8_output()
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8137/index.html"
-OUT = sys.argv[2] if len(sys.argv) > 2 else "docs"
+DOCS = os.path.join(ROOT, "docs")
+ASSETS = os.path.join(ROOT, "assets")
+os.makedirs(DOCS, exist_ok=True)
 
-VIEWS = [
-    ("today", "screenshot-today.png"),
-    ("plan", "screenshot-plan.png"),
-    ("meals", "screenshot-meals.png"),
-    ("shopping", "screenshot-shopping.png"),
-    ("progress", "screenshot-progress.png"),
-    ("family", "screenshot-family.png"),
-    ("guide", "screenshot-guide.png"),
-]
-
-os.makedirs(OUT, exist_ok=True)
+for stale in glob.glob(os.path.join(DOCS, "*.png")) + glob.glob(os.path.join(DOCS, "*.webp")):
+    os.remove(stale)
 
 
-def settle(page, ms=700):
-    page.wait_for_timeout(ms)
-
-
-def dismiss_overlays(page):
-    """Close any open sheet and dismiss the onboarding card."""
-    page.evaluate(
-        """() => {
-            document.querySelectorAll('[data-act="closeSheet"]').forEach(b => b.click());
-            document.querySelector('[data-act="dismissOnboarding"]')?.click();
-        }"""
-    )
-    page.wait_for_timeout(250)
-
-
-def seed(page):
-    """Log a meal and some water so the Today view looks alive, not empty."""
-    page.evaluate("""() => document.querySelector('[data-act="meal"][data-portion]')?.click()""")
+def png(page):
+    page.evaluate("window.scrollTo({ top: 0, behavior: 'instant' })")
+    page.evaluate("document.querySelector('#toastClose')?.click()")
     page.wait_for_timeout(350)
-    page.evaluate(
-        """() => {
-            const glasses = document.querySelectorAll('[data-act="water"][data-set]');
-            glasses[3]?.click();
-        }"""
+    return page.screenshot(type="png")
+
+
+def save_webp(data, name):
+    Image.open(io.BytesIO(data)).convert("RGB").save(os.path.join(DOCS, name), "WEBP", quality=88, method=6)
+    print("  docs/" + name)
+
+
+def save_png(data, path):
+    with open(path, "wb") as f:
+        f.write(data)
+    print("  " + os.path.relpath(path, ROOT).replace(os.sep, "/"))
+
+
+def fresh(browser, viewport, scheme, mobile, scale):
+    ctx = browser.new_context(
+        viewport=viewport, is_mobile=mobile, has_touch=mobile, device_scale_factor=scale,
+        color_scheme=scheme, reduced_motion="reduce", locale="el-GR", timezone_id="Europe/Athens", service_workers="block",
     )
-    page.wait_for_timeout(350)
+    prepare(ctx)
+    page = ctx.new_page()
+    page.goto(BASE, wait_until="networkidle")
+    page.wait_for_timeout(600)
+    js_click(page, '[data-act="dismissOnboarding"]')
+    js_click(page, '[data-act="member"][data-id="son"]')       # the teenage athlete: the most complete brief
+    seed_progress(page)
+    log_today(page, meals=2)                                    # breakfast and lunch done: the hero shows what to eat next
+    go(page, "shopping")
+    for _ in range(3):
+        js_click(page, '#view [data-act="shop"][aria-pressed="false"]', 250)
+    return ctx, page
+
+
+def recipe_and_cook(page, prefix, save):
+    go(page, "meals")
+    js_click(page, '#view [data-act="recipe"][data-id]', 700)
+    save(page.screenshot(type="png"), f"{prefix}-recipe.webp")
+    js_click(page, '#sheet [data-act="cook"]', 700)
+    save(page.screenshot(type="png"), f"{prefix}-cook.webp")
+    close_sheet(page)
 
 
 with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=2)
+    browser = launch(p)
+    shots = {}
 
-    errors = []
-    page.on("pageerror", lambda e: errors.append(str(e)[:200]))
+    # ── desktop, light ───────────────────────────────────────────────────────
+    print("desktop · light")
+    ctx, page = fresh(browser, {"width": 1440, "height": 900}, "light", False, 1)
+    for view in ("today", "plan", "meals", "shopping", "progress", "family", "guide"):
+        go(page, view)
+        shots[f"desktop-{view}"] = png(page)
+        save_webp(shots[f"desktop-{view}"], f"desktop-{view}.webp")
+    recipe_and_cook(page, "desktop", save_webp)
+    ctx.close()
 
-    # ── 1. Today (seeded) ────────────────────────────────────────────────
-    page.goto(f"{BASE}?view=today", wait_until="networkidle", timeout=45000)
-    settle(page, 1200)
-    dismiss_overlays(page)
-    seed(page)
-    dismiss_overlays(page)
-    page.screenshot(path=os.path.join(OUT, "screenshot-today.png"))
-    print("captured: today")
+    # ── desktop, dark ────────────────────────────────────────────────────────
+    print("desktop · dark")
+    ctx, page = fresh(browser, {"width": 1440, "height": 900}, "dark", False, 1)
+    for view in ("today", "meals", "shopping"):
+        go(page, view)
+        save_webp(png(page), f"desktop-dark-{view}.webp")
+    ctx.close()
 
-    # ── 2. Remaining views ───────────────────────────────────────────────
-    for view, filename in VIEWS[1:]:
-        page.evaluate(
-            """(v) => document.querySelector(`#sideNav [data-act="nav"][data-view="${v}"]`)?.click()""",
-            view,
-        )
-        settle(page, 800)
-        dismiss_overlays(page)
-        if view == "shopping":
-            # check a few items so the progress bar is meaningful
-            page.evaluate(
-                """() => {
-                    const items = [...document.querySelectorAll('[data-act="shop"][data-key]')];
-                    items.slice(0, 3).forEach(i => i.click());
-                }"""
-            )
-            settle(page, 600)
-        page.screenshot(path=os.path.join(OUT, filename))
-        print(f"captured: {view}")
+    # ── phone, light ─────────────────────────────────────────────────────────
+    print("phone · light")
+    ctx, page = fresh(browser, {"width": 390, "height": 844}, "light", True, 2)
+    for view in ("today", "plan", "meals", "shopping", "progress"):
+        go(page, view)
+        shots[f"phone-{view}"] = png(page)
+        save_webp(shots[f"phone-{view}"], f"phone-{view}.webp")
+    recipe_and_cook(page, "phone", save_webp)
+    ctx.close()
 
-    # ── 2a. Shopping transparency block ──────────────────────────────────
-    # The "why these quantities" disclosure sits at the bottom of the list, so
-    # it needs its own scrolled capture to be reviewable.
-    page.evaluate(
-        """() => document.querySelector('#sideNav [data-act="nav"][data-view="shopping"]')?.click()"""
-    )
-    settle(page, 600)
-    page.evaluate("""() => { const d = document.querySelector('details.why'); if (d) d.open = true; }""")
-    settle(page, 300)
-    page.evaluate("""() => document.querySelector('details.why')?.scrollIntoView({block: 'center'})""")
-    settle(page, 400)
-    page.screenshot(path=os.path.join(OUT, "screenshot-shopping-why.png"))
-    print("captured: shopping transparency")
+    # ── phone, dark ──────────────────────────────────────────────────────────
+    print("phone · dark")
+    ctx, page = fresh(browser, {"width": 390, "height": 844}, "dark", True, 2)
+    for view in ("today", "shopping"):
+        go(page, view)
+        save_webp(png(page), f"phone-dark-{view}.webp")
+    ctx.close()
 
-    # ── 2b. Persona views for the three named users ──────────────────────
-    page.evaluate(
-        """() => document.querySelector('#sideNav [data-act="nav"][data-view="today"]')?.click()"""
-    )
-    settle(page, 700)
-    for member_id, filename in [
-        ("mother", "screenshot-persona-mother.png"),
-        ("son", "screenshot-persona-son.png"),
-        ("daughter", "screenshot-persona-daughter.png"),
-    ]:
-        page.evaluate(
-            """(m) => document.querySelector(`#memberStrip [data-act="member"][data-id="${m}"]`)?.click()""",
-            member_id,
-        )
-        settle(page, 800)
-        dismiss_overlays(page)
-        page.evaluate("window.scrollTo(0, 0)")
-        settle(page, 300)
-        page.screenshot(path=os.path.join(OUT, filename))
-        print(f"captured: persona {member_id}")
+    # ── install-dialog screenshots (manifest.webmanifest) ────────────────────
+    print("install screenshots")
+    ctx, page = fresh(browser, {"width": 1280, "height": 720}, "light", False, 1)
+    go(page, "today")
+    save_png(png(page), os.path.join(ASSETS, "screenshot-wide.png"))
+    ctx.close()
+    save_png(shots["phone-today"], os.path.join(ASSETS, "screenshot-narrow.png"))
 
-    # ── 3. Recipe sheet (light) ──────────────────────────────────────────
-    page.evaluate(
-        """() => document.querySelector('#sideNav [data-act="nav"][data-view="meals"]')?.click()"""
-    )
-    settle(page, 700)
-    page.evaluate("""() => document.querySelector('[data-act="recipe"][data-id]')?.click()""")
-    settle(page, 800)
-    page.screenshot(path=os.path.join(OUT, "screenshot-recipe.png"))
-    print("captured: recipe sheet")
-
-    # ── 3b. Cook Mode ────────────────────────────────────────────────────
-    page.evaluate("""() => document.querySelector('[data-act="cook"]')?.click()""")
-    settle(page, 900)
-    page.screenshot(path=os.path.join(OUT, "screenshot-cook.png"))
-    print("captured: cook mode")
-
-    # ── 4. Recipe sheet (dark) — shows per-member portion scaling ────────
-    page.evaluate("""() => document.getElementById('themeBtn')?.click()""")
-    settle(page, 600)
-    page.screenshot(path=os.path.join(OUT, "screenshot-cook-dark.png"))
-    print("captured: cook mode (dark)")
-
-    # ── 5. Dark theme, main view ─────────────────────────────────────────
-    page.keyboard.press("Escape")  # the sheet closes on Escape
-    settle(page, 500)
-    if page.evaluate("""() => !!document.getElementById('sheet')?.classList.contains('is-open')"""):
-        page.evaluate("""() => document.querySelector('[data-act="closeSheet"]')?.click()""")
-        settle(page, 400)
-    page.evaluate(
-        """() => document.querySelector('#sideNav [data-act="nav"][data-view="progress"]')?.click()"""
-    )
-    settle(page, 900)
-    page.screenshot(path=os.path.join(OUT, "screenshot-dark.png"))
-    print("captured: dark theme")
-
+    # ── social card ──────────────────────────────────────────────────────────
+    print("social card")
+    b64 = lambda data: base64.b64encode(data).decode("ascii")
+    card = f"""
+    <div style="position:fixed;inset:0;overflow:hidden;font-family:var(--font);color:#fff;
+      background:radial-gradient(1000px 620px at 88% 8%,rgba(95,227,178,.5),transparent 62%),
+                 radial-gradient(800px 520px at 6% 112%,rgba(245,184,74,.26),transparent 60%),
+                 linear-gradient(135deg,#06573A 0%,#0B7A4B 55%,#08553A 100%)">
+      <div style="position:absolute;left:64px;top:54px;display:flex;align-items:center;gap:18px">
+        <img src="assets/icon.svg" width="68" height="68" alt="" style="border-radius:17px;box-shadow:0 10px 30px rgba(0,0,0,.35)">
+        <div style="font-size:28px;font-weight:800;letter-spacing:.14em">ZENITH <span style="color:#5FE3B2">PRO</span></div>
+      </div>
+      <div style="position:absolute;left:64px;top:180px;width:560px">
+        <div style="font-size:64px;line-height:1.06;font-weight:800;letter-spacing:-.03em">Ένα μενού.<br>Μερίδα για τον καθένα.</div>
+        <div style="margin-top:22px;font-size:25px;line-height:1.42;opacity:.92">Πλάνο 28 ημερών, λίστα αγορών και καταγραφή — εκτός σύνδεσης, χωρίς λογαριασμό.</div>
+      </div>
+      <div style="position:absolute;left:64px;bottom:48px;display:flex;gap:12px;font-size:18px;font-weight:650">
+        <span style="padding:9px 16px;border-radius:999px;background:rgba(255,255,255,.16)">USDA · EFSA · ΠΟΥ</span>
+        <span style="padding:9px 16px;border-radius:999px;background:rgba(255,255,255,.16)">Ιδιωτικό από προεπιλογή</span>
+      </div>
+      <img alt="" src="data:image/png;base64,{b64(shots['desktop-today'])}" style="position:absolute;left:668px;top:78px;width:620px;border-radius:16px;box-shadow:0 40px 80px rgba(0,0,0,.45);transform:rotate(-2deg)">
+      <img alt="" src="data:image/png;base64,{b64(shots['phone-today'])}" style="position:absolute;left:600px;top:236px;width:224px;border-radius:30px;border:6px solid #0D1A13;box-shadow:0 30px 60px rgba(0,0,0,.5)">
+    </div>"""
+    ctx = browser.new_context(viewport={"width": 1200, "height": 630}, device_scale_factor=1, locale="el-GR", service_workers="block")
+    page = ctx.new_page()
+    page.goto(BASE, wait_until="networkidle")
+    page.wait_for_timeout(500)
+    page.evaluate("(html) => { document.body.className = ''; document.body.style.cssText = 'margin:0;background:#0B7A4B'; document.body.innerHTML = html; }", card)
+    page.wait_for_timeout(600)
+    save_png(page.screenshot(type="png"), os.path.join(ASSETS, "og-image.png"))
+    ctx.close()
     browser.close()
 
-if errors:
-    print("\npage errors:", errors)
-    sys.exit(1)
-print("\nscreenshots written to", os.path.abspath(OUT))
+print("done")

@@ -1,4 +1,9 @@
 name: Production Smoke
+
+# After a push to main, wait for GitHub Pages to publish THIS commit, then prove the
+# live site is complete: the service worker carries this build's cache name, and every
+# file the worker precaches (the whole offline app) is really being served.
+
 on:
   push:
     branches: [main]
@@ -10,53 +15,35 @@ permissions:
 jobs:
   live-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Wait for and validate live GitHub Pages deployment
+      - uses: actions/checkout@v4
+
+      - name: Wait for this build on GitHub Pages, then check every precached file
         shell: bash
         run: |
           set -euo pipefail
           BASE="https://douphealth.github.io/family-nutrition-os"
+
+          EXPECT="$(node -e "const s=require('fs').readFileSync('sw.js','utf8');console.log(/const CACHE = '([^']+)'/.exec(s)[1])")"
+          node -e "const s=require('fs').readFileSync('sw.js','utf8');const c=/const CORE = \[([\s\S]*?)\];/.exec(s)[1];for(const m of c.matchAll(/'([^']+)'/g))console.log(m[1])" > /tmp/core.txt
+          echo "expecting service-worker cache '$EXPECT' and $(wc -l < /tmp/core.txt) precached files"
+
           ok=0
-          for i in $(seq 1 36); do
-            if curl --fail --silent --show-error --location --max-time 15 "$BASE/" -o /tmp/index.html \
-              && grep -q 'ZENITH PRO' /tmp/index.html \
-              && grep -q 'type="module" src="src/app.js"' /tmp/index.html \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/app.js" -o /tmp/app.js \
-              && grep -q 'localDateKey' /tmp/app.js \
-              && grep -q 'openCook' /tmp/app.js \
-              && grep -q 'shopFilter' /tmp/app.js \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/views.js" -o /tmp/views.js \
-              && grep -q 'todayView' /tmp/views.js \
-              && grep -q 'cookBody' /tmp/views.js \
-              && grep -q 'personaCard' /tmp/views.js \
-              && grep -q 'kpi-row' /tmp/views.js \
-              && grep -q 'shop-chip' /tmp/views.js \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/ui.js" -o /tmp/ui.js \
-              && grep -q 'openSheet' /tmp/ui.js \
-              && grep -q 'illustration' /tmp/ui.js \
-              && grep -q 'kpi-bar' /tmp/ui.js \
-              && grep -q 'aria-valuenow' /tmp/ui.js \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/nutrition-engine.js" -o /tmp/engine.js \
-              && grep -q 'personaPoints' /tmp/engine.js \
-              && grep -q 'trainingFueling' /tmp/engine.js \
-              && grep -q 'householdServings' /tmp/engine.js \
-              && grep -q 'memberShare' /tmp/engine.js \
-              && grep -q 'upgradeMemberNames' /tmp/engine.js \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/src/data.js" -o /tmp/data.js \
-              && grep -q 'Αναστασία' /tmp/data.js \
-              && grep -q 'Δημήτρης' /tmp/data.js \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/styles/app.css" -o /tmp/app.css \
-              && grep -q 'cook-cols' /tmp/app.css \
-              && grep -q 'why-body' /tmp/app.css \
-              && grep -q 'kpi-row' /tmp/app.css \
-              && grep -q 'kpi-foot' /tmp/app.css \
-              && curl --fail --silent --show-error --location --max-time 15 "$BASE/manifest.webmanifest" -o /tmp/manifest.webmanifest \
-              && node -e "JSON.parse(require('fs').readFileSync('/tmp/manifest.webmanifest','utf8'))"; then
-              ok=1
-              break
-            fi
-            sleep 5
+          for i in $(seq 1 60); do
+            if curl --fail --silent --location --max-time 15 --output /tmp/live-sw.js "$BASE/sw.js?probe=$i" && grep -q "$EXPECT" /tmp/live-sw.js; then ok=1; break; fi
+            sleep 10
           done
-          test "$ok" -eq 1
-          echo "Live GitHub Pages smoke test: PASS (v4 bundle is being served)"
+          test "$ok" -eq 1 || { echo "the live site never served $EXPECT"; exit 1; }
+
+          missing=0
+          while read -r f; do
+            url="$BASE/${f#./}"
+            code="$(curl --silent --location --output /dev/null --write-out '%{http_code}' --max-time 15 "$url")"
+            if [ "$code" != "200" ]; then echo "MISSING ($code): $url"; missing=1; fi
+          done < /tmp/core.txt
+          test "$missing" -eq 0
+
+          curl --fail --silent --location --max-time 15 "$BASE/manifest.webmanifest" | node -e "JSON.parse(require('fs').readFileSync(0,'utf8'))"
+          curl --fail --silent --location --max-time 15 --output /dev/null "$BASE/assets/og-image.png"
+          echo "Live GitHub Pages smoke test: PASS ($EXPECT)"

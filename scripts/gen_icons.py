@@ -1,63 +1,60 @@
 #!/usr/bin/env python3
-"""Generate ZENITH PRO app icons (maskable + rounded) with PIL."""
-import math
-from PIL import Image, ImageDraw
+"""
+ZENITH PRO · icon generator
+---------------------------------------------------------------------------
+Renders the brand mark (assets/icon.svg, assets/icon-maskable.svg) to the PNG
+sizes the manifest, iOS and browsers ask for, using the same Chromium the audits
+use — so there is no image-library dependency and the icon is exactly what a
+browser draws.
 
-SIZES = [192, 512, 180]  # 180 = apple-touch-icon
+    python scripts/gen_icons.py
 
-def draw_icon(size):
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    # Background: rounded square with vertical emerald->cyan gradient
-    radius = int(size * 0.22)
-    # gradient
-    top = (10, 20, 25)
-    bot = (5, 8, 14)
-    for y in range(size):
-        t = y / size
-        r = int(top[0] + (bot[0] - top[0]) * t)
-        g = int(top[1] + (bot[1] - top[1]) * t)
-        b = int(top[2] + (bot[2] - top[2]) * t)
-        d.line([(0, y), (size, y)], fill=(r, g, b, 255))
-    # rounded mask
-    mask = Image.new("L", (size, size), 0)
-    md = ImageDraw.Draw(mask)
-    md.rounded_rectangle([0, 0, size - 1, size - 1], radius=radius, fill=255)
-    img.putalpha(mask)
+Outputs (assets/):
+    icon-192.png, icon-512.png     rounded mark, purpose "any"
+    icon-maskable-512.png          full-bleed, glyph inside the 80 % safe zone
+    icon-180.png                   apple-touch-icon (full-bleed; iOS rounds it)
+    favicon.png                    64 px rounded mark
+"""
 
-    # outer ring glow
-    ring = int(size * 0.035)
-    d.rounded_rectangle([ring, ring, size - 1 - ring, size - 1 - ring],
-                        radius=int(radius * 0.9), outline=(52, 211, 153, 90), width=ring)
+import pathlib
+import sys
 
-    # lightning bolt (ZENITH zap) centered
-    cx, cy = size * 0.5, size * 0.54
-    w = size * 0.34
-    h = size * 0.52
-    pts = [
-        (cx + w * 0.18, cy - h * 0.55),
-        (cx - w * 0.42, cy + h * 0.12),
-        (cx - w * 0.02, cy + h * 0.12),
-        (cx - w * 0.18, cy + h * 0.55),
-        (cx + w * 0.42, cy - h * 0.12),
-        (cx + w * 0.02, cy - h * 0.12),
-    ]
-    d.polygon(pts, fill=(244, 251, 255, 255))
-    # highlight stripe on bolt
-    stripe = [
-        (pts[0][0] - size * 0.02, pts[0][1] + size * 0.02),
-        (cx - w * 0.30, cy - h * 0.02),
-        (cx - w * 0.05, cy - h * 0.02),
-        (pts[0][0] + size * 0.03, pts[0][1] + size * 0.09),
-    ]
-    d.polygon(stripe, fill=(130, 235, 190, 255))
-    return img
+from playwright.sync_api import sync_playwright
 
-for s in SIZES:
-    draw_icon(s).save(f"assets/icon-{s}.png")
-    print(f"assets/icon-{s}.png")
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+ASSETS = ROOT / "assets"
 
-# Favicon (compact 64 with transparent bg kept small)
-draw_icon(64).save("assets/favicon.png")
-print("assets/favicon.png")
-print("done")
+JOBS = [
+    ("icon.svg", "icon-192.png", 192, True),
+    ("icon.svg", "icon-512.png", 512, True),
+    ("icon-maskable.svg", "icon-maskable-512.png", 512, False),
+    ("icon-maskable.svg", "icon-180.png", 180, False),
+    ("icon.svg", "favicon.png", 64, True),
+]
+
+
+def render(browser, svg_name, out_name, size, transparent):
+    page = browser.new_page(viewport={"width": size, "height": size}, device_scale_factor=1)
+    svg = (ASSETS / svg_name).read_text(encoding="utf-8")
+    page.set_content(
+        f"<!doctype html><style>html,body{{margin:0;background:transparent}}"
+        f"svg{{display:block;width:{size}px;height:{size}px}}</style>{svg}"
+    )
+    page.screenshot(path=str(ASSETS / out_name), omit_background=transparent)
+    page.close()
+    print(f"assets/{out_name}  {size}x{size}")
+
+
+def main():
+    with sync_playwright() as p:
+        try:
+            browser = p.chromium.launch(channel="chrome")
+        except Exception:
+            browser = p.chromium.launch()
+        for job in JOBS:
+            render(browser, *job)
+        browser.close()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

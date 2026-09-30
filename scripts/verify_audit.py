@@ -25,6 +25,8 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
+from _browser import launch
+
 from audit_probe import overflow_failure, overflow_report
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8137/index.html"
@@ -40,7 +42,7 @@ INJECT = """() => {
 }"""
 
 with sync_playwright() as p:
-    browser = p.chromium.launch()
+    browser = launch(p)
     page = browser.new_page(viewport=PHONE, **TOUCH)
     page.goto(BASE)
     page.wait_for_timeout(1400)

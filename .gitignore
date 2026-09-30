@@ -12,3 +12,12 @@ Thumbs.db
 *.log
 .env
 .env.*
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Scratch
+_*.html
+*.tmp

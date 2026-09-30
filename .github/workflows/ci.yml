@@ -1,110 +1,121 @@
 name: CI
+
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
+  # ── Logic: no browser needed ────────────────────────────────────────────────
   test:
+    name: Tests, food-data provenance, PWA integrity
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
 
-      - name: Unit, data-integrity and persona suites
-        run: npm test
-
-      - name: Syntax check application modules
+      - name: Syntax-check every module, script and test
         run: npm run check
 
-      - name: Validate JSON
-        run: |
-          node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8')); JSON.parse(require('fs').readFileSync('package.json','utf8'));"
+      - name: Unit, provenance, menu and reference suites
+        run: npm test
 
-      - name: Verify required PWA files
+      # A plan that shifts by a day when the clocks change, or in another country, is a bug
+      # no unit test in one timezone can see.
+      - name: The same suites in two more timezones
         run: |
-          test -f index.html
-          test -f manifest.webmanifest
-          test -f sw.js
-          test -f styles/app.css
-          test -f src/app.js
-          test -f src/data.js
-          test -f src/ui.js
-          test -f src/views.js
-          test -f src/nutrition-engine.js
-          test -f src/storage.js
+          TZ=Pacific/Auckland npm test
+          TZ=America/Los_Angeles npm test
 
-      - name: Verify critical app wiring
-        run: |
-          grep -q 'type="module" src="src/app.js"' index.html
-          grep -q 'styles/app.css' index.html
-          grep -q 'manifest.webmanifest' index.html
-          grep -q 'lang="el"' index.html
-          grep -q "./src/storage.js" sw.js
-          grep -q "./src/views.js" sw.js
-          grep -q "./src/ui.js" sw.js
+      - name: PWA integrity — precache, manifest, versions, CSP
+        run: npm run verify:pwa
 
-      - name: Verify service-worker strategy
-        run: |
-          # v3+ must be network-first for navigation (v2 was cache-first, which is
-          # why deploys could appear stale) and stale-while-revalidate for assets.
-          # Version-agnostic on the cache name so a routine bump does not fail CI.
-          grep -q "CACHE = 'zenith-v" sw.js
-          grep -q "req.mode === 'navigate'" sw.js
-          grep -q "caches.open(CACHE)" sw.js
-
+  # ── The DOM without a layout engine: both storage backends ─────────────────
   smoke:
+    name: DOM smoke test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
 
-      - name: Install dev-only test dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: DOM smoke test — localStorage fallback
+      - name: localStorage fallback
         run: node scripts/smoke_dom.mjs
-
-      - name: DOM smoke test — IndexedDB path
+      - name: IndexedDB path
         run: node scripts/smoke_dom.mjs --idb
+      - name: IndexedDB path, far from Athens
+        run: TZ=America/Los_Angeles node scripts/smoke_dom.mjs --idb
 
-  # jsdom has no layout engine, so nothing above can catch a mobile layout
-  # regression. This job renders the real app in Chromium at phone width and
-  # asserts no horizontal overflow, thumb-sized tap targets, a pinned Cook Mode
-  # step nav, and a shopping header that does not collapse into its buttons.
-  mobile:
+  # ── The real app in a real Chromium ─────────────────────────────────────────
+  # jsdom cannot see layout or contrast. This renders the app on a phone and on a desktop, in
+  # light and dark, for every view and overlay, and fails on: horizontal overflow, touch targets
+  # under 36 px, any axe-core violation, or any text run below WCAG AA contrast measured from
+  # rendered pixels. Branches get the quick matrix; main gets the full one.
+  browser:
+    name: Browser audits — layout, accessibility, contrast
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
 
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
 
-      - name: Install Playwright
+      - name: Install Playwright and image libraries
         run: |
           python -m pip install --upgrade pip
-          pip install playwright
+          pip install playwright numpy pillow
           python -m playwright install --with-deps chromium
+
+      - name: Choose audit depth
+        id: depth
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/main" ] || [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=--quick" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Serve the app
         run: |
-          python -m http.server 8137 --bind 127.0.0.1 &
+          node scripts/serve.mjs 8137 &
           for i in $(seq 1 20); do
             curl -fsS --max-time 3 http://127.0.0.1:8137/index.html >/dev/null && break
             sleep 1
           done
           curl -fsS --max-time 5 http://127.0.0.1:8137/index.html >/dev/null
 
-      - name: Verify the audit can fail
+      - name: Verify the layout audit can fail
         run: python scripts/verify_audit.py http://127.0.0.1:8137/index.html
 
       - name: Mobile layout audit
         run: python scripts/capture_mobile.py http://127.0.0.1:8137/index.html /tmp/mobile-shots
 
-      - name: Upload mobile screenshots
+      - name: Accessibility audit (axe-core, WCAG 2.2 AA)
+        run: python scripts/audit_a11y.py http://127.0.0.1:8137/index.html ${{ steps.depth.outputs.flag }}
+
+      - name: Contrast audit (measured from rendered pixels)
+        run: python scripts/audit_contrast.py http://127.0.0.1:8137/index.html ${{ steps.depth.outputs.flag }} --crops /tmp/contrast-crops
+
+      - name: Upload screenshots and contrast crops
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-screenshots
-          path: /tmp/mobile-shots
+          name: browser-audit-evidence
+          path: |
+            /tmp/mobile-shots
+            /tmp/contrast-crops
           if-no-files-found: ignore

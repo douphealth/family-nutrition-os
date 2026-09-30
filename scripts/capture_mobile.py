@@ -21,6 +21,8 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
+from _browser import launch
+
 from audit_probe import MIN_TAP, overflow_failure, overflow_report
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8137/index.html"
@@ -126,7 +128,7 @@ def audit(page, label):
 
 
 with sync_playwright() as p:
-    browser = p.chromium.launch()
+    browser = launch(p)
     context = browser.new_context(viewport=PHONE, **TOUCH)
     page = context.new_page()
     page.on("pageerror", lambda e: errors.append(str(e)))
