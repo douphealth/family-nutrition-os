@@ -6,23 +6,35 @@
  * in the UI where it could be bypassed by a new view.
  *
  * Design rule: estimates are always returned as RANGES with a `note`
- * explaining what they are, and energy is always DERIVED from macros via
- * Atwater factors so the numbers can never contradict each other.
+ * explaining what they are, and energy is always DERIVED from macros (4/4/9, and
+ * 2 for fibre) so the numbers can never contradict each other.
  */
+
+import { dayNumber, addDays } from './dates.js';
+import { FOODS, roleWeights, nutrientsIn } from './foods.js';
 
 export const MINOR_AGE = 18;
 export const ADULT_BMI_AGE = 20;
 
-/** Atwater energy factors (kcal per gram). */
-export const ATWATER = { protein: 4, carb: 4, fat: 9 };
+/**
+ * Energy conversion factors (kcal per gram) as EU food labels apply them
+ * (Regulation (EU) 1169/2011, Annex XIV): protein 4, AVAILABLE carbohydrate 4, fat 9,
+ * dietary fibre 2. The classic Atwater general factors are the first three; counting
+ * fibre at 2 rather than folding it into carbohydrate at 4 is what keeps the energy
+ * of a bean or whole-grain dish in line with the label on the packet.
+ */
+export const ATWATER = { protein: 4, carb: 4, fat: 9, fibre: 2 };
+
+const oneDecimal = new Intl.NumberFormat('el-GR', { maximumFractionDigits: 1 });
 
 const round = (n, dp = 0) => {
   const f = 10 ** dp;
   return Math.round(n * f) / f;
 };
 
-export function kcalFromMacros({ p = 0, c = 0, f = 0 }) {
-  return Math.round(ATWATER.protein * p + ATWATER.carb * c + ATWATER.fat * f);
+/** Energy from displayed amounts: `c` is available carbohydrate, `fib` is fibre (g). */
+export function kcalFromMacros({ p = 0, c = 0, f = 0, fib = 0 }) {
+  return Math.round(ATWATER.protein * p + ATWATER.carb * c + ATWATER.fat * f + ATWATER.fibre * fib);
 }
 
 export function isMinor(profile) {
@@ -63,7 +75,7 @@ function adultEnergy(profile) {
   let note = 'Εκτιμώμενο εύρος συντήρησης';
   if (profile.goal === 'gradual_fat_loss') {
     center = Math.round(maintenance * 0.88);
-    note = 'Ηπιο εκτιμώμενο έλλειμμα. Προσάρμοσε μόνο από τάση πολλών εβδομάδων, πείνα και λειτουργικότητα — όχι από μία μέτρηση.';
+    note = 'Ήπιο εκτιμώμενο έλλειμμα. Προσάρμοσε μόνο από τάση πολλών εβδομάδων, πείνα και λειτουργικότητα — όχι από μία μέτρηση.';
   }
   const lower = Math.max(1200, Math.round(center * 0.94 / 50) * 50);
   const upper = Math.round(center * 1.06 / 50) * 50;
@@ -102,15 +114,111 @@ export function proteinRange(profile) {
   return { min: Math.round(1.0 * weight), max: Math.round(1.3 * weight), note: 'Γενικό εύρος υγιούς ενήλικα.' };
 }
 
+/**
+ * EFSA Adequate Intake of TOTAL water — drinks and the water in food — in
+ * litres per day (EFSA 2010; Summary of Dietary Reference Values, Table 3):
+ * 4–8 y 1.6 · 9–13 y 2.1 M / 1.9 F · 14 y and over 2.5 M / 2.0 F.
+ */
+export function totalWaterAI(profile) {
+  const age = Number(profile.age);
+  const male = profile.sex === 'm';
+  if (age >= 14) return male ? 2.5 : 2.0;
+  if (age >= 9) return male ? 2.1 : 1.9;
+  if (age >= 4) return 1.6;
+  return age >= 2 ? 1.3 : 1.0;
+}
+
+/** Share of total water that is assumed to be drunk (the rest arrives in food). A planning rule of thumb. */
+export const DRINKS_SHARE = 0.8;
+
+/**
+ * Daily drinks target. It starts from the EFSA total-water AI for the member's
+ * age and sex — not a body-weight formula — takes the drinks share of it, and
+ * for athletes adds a training top-up for sweat losses.
+ */
 export function hydrationTarget(profile, trainingLoad = 'normal') {
-  const baseMl = Math.round(Number(profile.weight) * 30);
   const add = { rest: 0, light: 250, normal: 500, hard: 750, game: 900, tournament: 1200 }[trainingLoad] || 0;
-  const ml = Math.max(1500, baseMl + (profile.athlete ? add : 0));
+  const drinksMl = totalWaterAI(profile) * 1000 * DRINKS_SHARE + (profile.athlete ? add : 0);
+  const ml = Math.round(drinksMl / 50) * 50;
   return {
     ml,
     glasses: Math.round(ml / 250),
-    note: 'Αρχική εκτίμηση. Ζέστη, εφίδρωση, ασθένεια, φάρμακα και παθήσεις αλλάζουν σημαντικά την ανάγκη.'
+    totalWaterL: totalWaterAI(profile),
+    note: 'Αρχική εκτίμηση από την τιμή αναφοράς της EFSA. Ζέστη, εφίδρωση, ασθένεια, φάρμακα και παθήσεις αλλάζουν σημαντικά την ανάγκη.'
   };
+}
+
+/* ── Reference values ──────────────────────────────────────────────────────
+ * What a member's day is compared against for the four micronutrient signals
+ * the app shows: fibre, iron, calcium and sodium. Every number is quoted from
+ * EFSA's Summary of Dietary Reference Values (version 4, Sept 2017) except the
+ * sodium ceiling, which is the WHO guideline (< 5 g salt = < 2 g sodium a day for
+ * adults), and each is labelled as an intake to aim for or stay under — not as a
+ * diagnosis.
+ *
+ *   fibre    Adequate Intake, g/day:   4–6 y 14 · 7–10 y 16 · 11–14 y 19 · 15–17 y 21 · adults 25
+ *   calcium  Population Ref. Intake:   4–10 y 800 · 11–17 y 1,150 · 18–24 y 1,000 · 25+ y 950
+ *   iron     Population Ref. Intake:   7–11 y 11 · 12–17 y 11 (boys) / 13 (girls) ·
+ *                                      men 11 · women 16 before / 11 after the menopause
+ *   sodium   WHO: < 2,000 mg/day for adults (≈ 5 g salt).
+ *
+ * Women aged 45–54 are around the menopause, so their iron reference is shown as
+ * the range 11–16 mg and the higher figure is used for the progress bar — the
+ * cautious choice.
+ */
+export function referenceValues(profile) {
+  const age = Number(profile.age);
+  const female = profile.sex !== 'm';
+
+  const fibre = age >= 18 ? 25 : age >= 15 ? 21 : age >= 11 ? 19 : age >= 7 ? 16 : age >= 4 ? 14 : 10;
+  const calcium = age >= 25 ? 950 : age >= 18 ? 1000 : age >= 11 ? 1150 : age >= 4 ? 800 : 450;
+
+  let iron;
+  if (age >= 18) {
+    if (!female) iron = { min: 11, max: 11 };
+    else if (age >= 55) iron = { min: 11, max: 11 };
+    else if (age >= 45) iron = { min: 11, max: 16 };
+    else iron = { min: 16, max: 16 };
+  } else if (age >= 12) {
+    iron = female ? { min: 13, max: 13 } : { min: 11, max: 11 };
+  } else {
+    iron = { min: age >= 7 ? 11 : 7, max: age >= 7 ? 11 : 7 };
+  }
+
+  const sodiumMax = 2000;
+  return {
+    fibre: { g: fibre },
+    calcium: { mg: calcium },
+    iron: { ...iron, mg: iron.max },
+    sodium: { maxMg: sodiumMax, saltG: round(sodiumMax * 2.5 / 1000, 1) }
+  };
+}
+
+/** Salt (g) from sodium (mg): salt = sodium × 2.5. */
+export const saltGrams = sodiumMg => round(Number(sodiumMg) * 2.5 / 1000, 1);
+
+/**
+ * Plain-language nutrition badges for a recipe, from its own per-serving totals.
+ * Protein and iron follow the EU claim thresholds (Regulation (EC) 1924/2006):
+ * "high protein" = at least 20 % of energy from protein; "high in" a mineral = at
+ * least twice the 15 % "source of" level, i.e. 30 % of the EU reference value
+ * (Regulation 1169/2011: iron 14 mg) — applied here per serving rather than per
+ * 100 g, since a serving is what a person eats. Fibre and calcium use stricter
+ * cut-offs than the legal ones so a badge stays a distinction: at the legal level
+ * most dishes here would carry them and they would say nothing. Salt is the one
+ * badge that is a caution rather than a compliment.
+ */
+export function nutritionBadges(recipe) {
+  const { p } = recipe.base;
+  const kcal = kcalFromMacros(recipe.base);
+  const m = recipe.micro || {};
+  const out = [];
+  if (kcal > 0 && (p * 4) / kcal >= 0.2) out.push({ id: 'protein', label: 'Υψηλή πρωτεΐνη', tone: 'blue' });
+  if (m.fib >= 10) out.push({ id: 'fibre', label: 'Πλούσιο σε ίνες', tone: 'accent' });      // 40 % of the 25 g adult AI
+  if (m.fe >= 4.2) out.push({ id: 'iron', label: 'Πλούσιο σε σίδηρο', tone: 'rose' });       // 30 % of the 14 mg EU NRV, per serving
+  if (m.ca >= 350) out.push({ id: 'calcium', label: 'Πλούσιο σε ασβέστιο', tone: 'gold' });  // ~45 % of the 800 mg EU NRV, per serving
+  if (m.na >= 900) out.push({ id: 'salt', label: 'Αλμυρό', tone: 'warn' });
+  return out;
 }
 
 export function portionProfile(profile, trainingLoad = 'normal') {
@@ -138,18 +246,101 @@ export function contextualGuidance({ profile, trainingLoad = 'normal', today = {
 }
 
 /* ── Member-scaled meal math ───────────────────────────────────────────────
- * The reference serving's macros are scaled per macro group by the member's
- * portion profile, then by the logged portion multiplier. Energy is derived
- * with Atwater factors. This is the fix for v2, where portion multipliers were
- * displayed but never applied to anything.
+ * A member's plate is the reference serving with each INGREDIENT scaled by the
+ * portion group it belongs to (protein / carbs / fats / vegetables — see `role`
+ * in foods.js) and then by the logged portion multiplier. Macros and
+ * micronutrients are summed from those scaled grams, and energy is derived from
+ * the rounded macros with the Atwater factors.
+ *
+ * Because the numbers come from the grams, the grams the kitchen is told to
+ * plate ("200 g chicken, 190 g potatoes") and the macros the app reports are the
+ * same calculation and cannot disagree. (Before v13 the multipliers were applied
+ * to macro totals, so a plate could not be described in grams at all.)
  */
-export function mealMacros(recipe, profile, trainingLoad = 'normal', portion = 1) {
+
+const NUTRIENT_KEYS = ['p', 'c', 'f', 'fib', 'na', 'fe', 'ca'];
+
+/** The multiplier a member's portion profile applies to one food. */
+export function foodFactor(food, pp) {
+  let k = 0;
+  for (const [role, weight] of Object.entries(roleWeights(food))) k += weight * (pp[role] ?? 1);
+  return k;
+}
+
+/**
+ * A recipe's ingredient lines at this member's scale: `[{ ing, food, g }]`.
+ *
+ * Three independent multipliers, in the order a cook thinks about them:
+ *   1. the portion PROFILE — what the plate is made of (a lighter carbohydrate
+ *      helping, more vegetables…), from `portionProfile`;
+ *   2. the PLATE size `profile.plate` — how big the whole plate is, calibrated to
+ *      the member's estimated energy need (see `plateScale`); 1 when absent;
+ *   3. the logged `portion` — "a bit less / a bit more today".
+ */
+export function scaledIngredients(recipe, profile, trainingLoad = 'normal', portion = 1) {
   const pp = portionProfile(profile, trainingLoad);
-  const mult = Number(portion) || 1;
-  const p = recipe.base.p * pp.protein * mult;
-  const c = recipe.base.c * pp.carbs * mult;
-  const f = recipe.base.f * pp.fats * mult;
-  return { p: round(p, 1), c: round(c, 1), f: round(f, 1), kcal: kcalFromMacros({ p, c, f }) };
+  const plate = Number.isFinite(profile?.plate) && profile.plate > 0 ? profile.plate : 1;
+  const mult = (Number(portion) || 1) * plate;
+  return recipe.ingredients.map(ing => {
+    const food = FOODS[ing.f];
+    return { ing, food, g: ing.g * foodFactor(food, pp) * mult };
+  });
+}
+
+/* ── Plate size ────────────────────────────────────────────────────────────
+ * One shared menu cannot fit four bodies: the reference serving suits an average
+ * adult, and a 15-year-old basketball player needs roughly half as much again.
+ * Rather than leave that as a permanent "gap" warning, each member's plate is
+ * sized so that the rotation's average day lands on the CENTRE of their estimated
+ * energy range.
+ *
+ * Safety rules, enforced here so no view can bypass them:
+ *   • never below 1.0 — the app never proposes a smaller plate to reach a target;
+ *   • never for a gradual-fat-loss adult — their plate composition already
+ *     carries the deficit, and scaling it up would undo it;
+ *   • capped at PLATE_MAX — beyond that, the honest answer is the "add a snack"
+ *     card, not an ever-larger plate.
+ */
+export const PLATE_MIN = 1;
+export const PLATE_MAX = 1.5;
+
+/** Mean planned energy of the rotation for one profile at plate size 1. */
+export function rotationEnergy(profile, trainingLoad, plan, recipeById) {
+  const bare = { ...profile, plate: 1 };
+  let total = 0;
+  for (const day of plan) total += dayMacros(day, bare, trainingLoad, {}, recipeById).planned.kcal;
+  return plan.length ? total / plan.length : 0;
+}
+
+export function plateScale(profile, planKcal, trainingLoad = 'normal') {
+  if (!isMinor(profile) && profile.goal === 'gradual_fat_loss') return 1;
+  if (!(planKcal > 0)) return 1;
+  const { lower, upper } = energyRange(profile, trainingLoad);
+  const raw = ((lower + upper) / 2) / planKcal;
+  return Math.min(PLATE_MAX, Math.max(PLATE_MIN, Math.round(raw * 20) / 20)); // nearest 0.05
+}
+
+/** Sum of nutrients over scaled lines, unrounded. */
+function sumLines(lines) {
+  const acc = Object.fromEntries(NUTRIENT_KEYS.map(k => [k, 0]));
+  for (const { ing, g } of lines) {
+    const n = nutrientsIn(ing.f, g);
+    for (const k of NUTRIENT_KEYS) acc[k] += n[k];
+  }
+  return acc;
+}
+
+/** Round raw sums into the shape the app displays. Energy comes from the ROUNDED macros. */
+function finishNutrition(acc) {
+  const p = round(acc.p, 1), c = round(acc.c, 1), f = round(acc.f, 1), fib = round(acc.fib, 1);
+  return {
+    p, c, f, fib, kcal: kcalFromMacros({ p, c, f, fib }),
+    na: Math.round(acc.na), fe: round(acc.fe, 1), ca: Math.round(acc.ca)
+  };
+}
+
+export function mealMacros(recipe, profile, trainingLoad = 'normal', portion = 1) {
+  return finishNutrition(sumLines(scaledIngredients(recipe, profile, trainingLoad, portion)));
 }
 
 /**
@@ -158,7 +349,8 @@ export function mealMacros(recipe, profile, trainingLoad = 'normal', portion = 1
  * numbers trustworthy.
  */
 export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, recipeById = () => null) {
-  const empty = () => ({ p: 0, c: 0, f: 0, kcal: 0 });
+  const empty = () => Object.fromEntries(NUTRIENT_KEYS.map(k => [k, 0]));
+  const add = (acc, m) => { for (const k of NUTRIENT_KEYS) acc[k] += m[k] ?? 0; };
   const planned = empty();
   const confirmed = empty();
   const slots = ['breakfast', 'lunch', 'snack', 'dinner'];
@@ -170,7 +362,7 @@ export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, r
     const r = id ? recipeById(id) : null;
     if (!r) continue;
     const plannedMacros = mealMacros(r, profile, trainingLoad, 1);
-    planned.p += plannedMacros.p; planned.c += plannedMacros.c; planned.f += plannedMacros.f; planned.kcal += plannedMacros.kcal;
+    add(planned, plannedMacros);
 
     const entry = log?.meals?.[slot];
     const done = entry?.status === 'done';
@@ -178,8 +370,7 @@ export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, r
     // This matters when a family member swaps a recipe for another dish.
     const eaten = done && entry?.recipeId ? (recipeById(entry.recipeId) || r) : r;
     if (done) {
-      const m = mealMacros(eaten, profile, trainingLoad, entry.portion ?? 1);
-      confirmed.p += m.p; confirmed.c += m.c; confirmed.f += m.f; confirmed.kcal += m.kcal;
+      add(confirmed, mealMacros(eaten, profile, trainingLoad, entry.portion ?? 1));
       confirmedSlots.push(slot);
     }
     detail.push({
@@ -189,7 +380,9 @@ export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, r
     });
   }
 
-  const finish = o => ({ p: round(o.p, 1), c: round(o.c, 1), f: round(o.f, 1), kcal: Math.round(o.kcal) });
+  // Energy for a day total is derived from that total's own rounded macros, the
+  // same rule as a single meal, so p·4 + c·4 + f·9 always equals the kcal shown.
+  const finish = finishNutrition;
 
   // Extra items logged outside the rotation (used to close an energy gap for a
   // high-load athlete). They count toward CONFIRMED only — never planned.
@@ -198,7 +391,7 @@ export function dayMacros(planDay, profile, trainingLoad = 'normal', log = {}, r
     const r = recipeById(ex?.recipeId);
     if (!r) continue;
     const m = mealMacros(r, profile, trainingLoad, ex.portion ?? 1);
-    confirmed.p += m.p; confirmed.c += m.c; confirmed.f += m.f; confirmed.kcal += m.kcal;
+    add(confirmed, m);
     extras.push({ id: ex.id, recipe: r, portion: ex.portion ?? 1, macros: m });
   }
 
@@ -262,8 +455,10 @@ export function weightTrend(measurements) {
 
   if (points.length === 0) return { points, count: 0, slopePerWeek: null, change: null, first: null, last: null, spanDays: 0, direction: 'none' };
 
-  const t0 = new Date(points[0].date + 'T00:00:00').getTime();
-  const xs = points.map(p => (new Date(p.date + 'T00:00:00').getTime() - t0) / 86400000);
+  // Calendar days, not elapsed hours: a weigh-in either side of a clock change
+  // must not become 29.96 days apart.
+  const d0 = dayNumber(points[0].date);
+  const xs = points.map(p => dayNumber(p.date) - d0);
   const ys = points.map(p => p.weight);
   const first = points[0].weight;
   const last = points[points.length - 1].weight;
@@ -288,14 +483,11 @@ export function weightTrend(measurements) {
 export function loggingStreak(dateKeys, todayKey) {
   const set = new Set(dateKeys);
   let streak = 0;
-  const cursor = new Date(todayKey + 'T00:00:00');
   // Allow the streak to still count if today isn't logged yet.
-  if (!set.has(todayKey)) cursor.setDate(cursor.getDate() - 1);
-  for (;;) {
-    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
-    if (!set.has(key)) break;
+  let cursor = set.has(todayKey) ? todayKey : addDays(todayKey, -1);
+  while (set.has(cursor)) {
     streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
+    cursor = addDays(cursor, -1);
   }
   return streak;
 }
@@ -377,7 +569,8 @@ export function personaPoints(profile, {
   streak = 0,
   ironToday = [],
   hydrationMl = 0,
-  measurements = 0
+  measurements = 0,
+  refs = null
 } = {}) {
   const points = [];
   const minor = isMinor(profile);
@@ -411,11 +604,15 @@ export function personaPoints(profile, {
   /* ── Minor, non-athlete: growth, iron, variety. Never a deficit. ── */
   if (minor) {
     const ironNames = ironToday.map(e => e.recipe.name);
+    const plannedFe = totals?.planned?.fe;
+    const ironRef = refs?.iron?.mg;
     points.push({
       key: 'iron', icon: 'leaf', tone: 'rose', label: 'Σίδηρος σήμερα',
-      value: `${ironToday.length} ${ironToday.length === 1 ? 'γεύμα' : 'γεύματα'}`,
+      value: plannedFe != null && ironRef
+        ? `${oneDecimal.format(plannedFe)} από ${oneDecimal.format(ironRef)} mg`
+        : `${ironToday.length} ${ironToday.length === 1 ? 'γεύμα' : 'γεύματα'}`,
       body: ironNames.length
-        ? `${ironNames.join(' · ')}. Ο σίδηρος από όσπρια και λαχανικά απορροφάται καλύτερα μαζί με ντομάτα ή λεμόνι — τα περισσότερα γεύματα το έχουν ήδη.`
+        ? `Πλούσια σε σίδηρο σήμερα: ${ironNames.join(' · ')}. Ο σίδηρος από φυτικές τροφές απορροφάται καλύτερα μαζί με ντομάτα ή λεμόνι — τα περισσότερα γεύματα το έχουν ήδη.`
         : 'Καμία πηγή σιδήρου στο σημερινό πλάνο. Οι φακές, τα ρεβίθια και τα μπιφτέκια είναι οι πιο εύκολες προσθήκες.'
     });
     points.push({
@@ -433,15 +630,20 @@ export function personaPoints(profile, {
 
   /* ── Adult, gradual fat loss: rate over speed, protein to keep muscle ── */
   if (profile.goal === 'gradual_fat_loss') {
+    // Expected rate = the plan's daily deficit × 7 ÷ ~7,700 kcal per kg of body-weight change. A rule of
+    // thumb (Hall et al. show the real response is gradual and slows), so it is shown as «≈» — but it is the
+    // number THIS plan implies, not a generic range.
+    const energy = targets?.energy;
+    const deficit = energy ? Math.max(0, energy.maintenance - (energy.lower + energy.upper) / 2) : 0;
     points.push({
       key: 'rate', icon: 'target', tone: 'accent', label: 'Ρυθμός',
-      value: '0,25–0,5 kg / εβδομάδα',
-      body: 'Πιο γρήγορο δεν είναι καλύτερο: χάνεται μυϊκή μάζα και ο ρυθμός δεν κρατά. Η εφαρμογή δεν μειώνει ποτέ μερίδα — προσθέτει όπου λείπει κάτι.'
+      value: deficit > 0 ? `≈ ${oneDecimal.format((deficit * 7) / 7700)} kg / εβδομάδα` : 'αργός και σταθερός · kg / εβδομάδα',
+      body: 'Το μικρό έλλειμμα του πλάνου δίνει αργό, σταθερό ρυθμό. Μέχρι 0,5 kg την εβδομάδα θεωρείται ασφαλές· πιο γρήγορα δεν είναι καλύτερο — χάνεται και μυϊκή μάζα και ο ρυθμός δεν κρατά.'
     });
     points.push({
       key: 'protein', icon: 'drumstick', tone: 'blue', label: 'Πρωτεΐνη',
       value: proteinMin ? `${proteinMin}+ g` : '—',
-      body: 'Η πρωτεΐνη προστατεύει τη μυϊκή μάζα όσο το βάρος πέφτει. Είναι ο μόνος αριθμός που αξίζει να κοιτάς καθημερινά.'
+      body: 'Η πρωτεΐνη βοηθά να διατηρείς μυϊκή μάζα όσο το βάρος πέφτει — είναι ο αριθμός που αξίζει να έχεις στο μυαλό σου κάθε μέρα.'
     });
     points.push({
       key: 'trend', icon: 'chart', tone: 'rose', label: 'Τάση',
@@ -459,10 +661,11 @@ export function personaPoints(profile, {
     value: proteinMin ? `${proteinMin}+ g` : '—',
     body: 'Σταθερή πρωτεΐνη σε κάθε γεύμα κρατά κόρο και μυϊκή μάζα, ανεξάρτητα από το βάρος.'
   });
+  const plannedSalt = totals?.planned?.na != null ? saltGrams(totals.planned.na) : null;
   points.push({
     key: 'salt', icon: 'shield', tone: 'gold', label: 'Αλάτι',
-    value: 'Προσοχή',
-    body: 'Οι ελιές, η φέτα και τα αλλαντικά καλύπτουν το αλάτι της ημέρας. Δεν χρειάζεται επιπλέον στο πιάτο.'
+    value: plannedSalt != null ? `${oneDecimal.format(plannedSalt)} g από 5 g` : 'Προσοχή',
+    body: 'Από τα υλικά του σημερινού πλάνου, χωρίς το αλάτι που προσθέτεις εσύ. Φέτα, ελιές και ψωμί είναι οι κύριες πηγές — το όριο του ΠΟΥ είναι 5 g την ημέρα, οπότε δεν χρειάζεται επιπλέον αλάτι στο πιάτο.'
   });
   points.push({
     key: 'fluid', icon: 'droplet', tone: 'accent', label: 'Υγρά',
@@ -487,6 +690,75 @@ export function householdServings(profiles) {
   const members = Array.isArray(profiles) ? profiles : [];
   if (!members.length) return 1;
   return members.reduce((sum, p) => sum + memberShare(p), 0) || 1;
+}
+
+/**
+ * How many reference servings of each portion group the household eats from one
+ * cooked dish: the sum, over members, of their portion-group multiplier × their
+ * plate size. This is what the shopping list and Cook Mode scale by, and what
+ * the "why these quantities" note quotes.
+ */
+export function householdRoleServings(profiles, loadFor = () => 'normal') {
+  const out = { protein: 0, carbs: 0, fats: 0, vegetables: 0 };
+  for (const p of Array.isArray(profiles) ? profiles : []) {
+    const pp = portionProfile(p, loadFor(p));
+    const plate = Number.isFinite(p.plate) && p.plate > 0 ? p.plate : 1;
+    for (const k of Object.keys(out)) out[k] += pp[k] * plate;
+  }
+  return out;
+}
+
+/**
+ * A recipe cooked for the whole household: each ingredient's total and each
+ * member's share of it, in grams, plus each member's plate totals. Cook Mode and
+ * the recipe sheet read this so the cook is told what to weigh out for four
+ * people — and what to put on each plate — instead of one reference serving.
+ */
+export function householdPlate(recipe, profiles, loadFor = () => 'normal') {
+  const members = (Array.isArray(profiles) ? profiles : []).map(p => {
+    const lines = scaledIngredients(recipe, p, loadFor(p), 1);
+    return { id: p.id, name: p.name, lines, ...finishNutrition(sumLines(lines)) };
+  });
+  const lines = recipe.ingredients.map((ing, i) => {
+    const perMember = members.map(m => ({ id: m.id, name: m.name, g: m.lines[i].g }));
+    return { ing, food: FOODS[ing.f], totalG: perMember.reduce((a, m) => a + m.g, 0), perMember };
+  });
+  return { lines, members: members.map(({ lines: _drop, ...rest }) => rest) };
+}
+
+/* ── Shopping list ─────────────────────────────────────────────────────────
+ * Built from the real week: every meal on every day, every ingredient scaled to
+ * each member's plate, summed over the household, merged by canonical food (so
+ * "Αυγά" and "Αυγό" are one line), and then rounded UP to a unit a person can
+ * actually buy — a quarter-kilo of tomatoes, a half-dozen eggs, 50 ml of oil.
+ *
+ * Rounding up is deliberate and is what the in-app explanation promises: a list
+ * that leaves you a little short is worse than one that leaves a little over.
+ */
+export function buildShoppingList({ days, profiles, recipeById, loadFor = () => 'normal' }) {
+  const need = new Map();
+  for (const day of Array.isArray(days) ? days : []) {
+    for (const slot of MEAL_ORDER) {
+      const recipe = recipeById(day?.plan?.[slot]);
+      if (!recipe) continue;
+      const perMember = (Array.isArray(profiles) ? profiles : []).map(p => scaledIngredients(recipe, p, loadFor(p), 1));
+      recipe.ingredients.forEach((ing, i) => {
+        const grams = perMember.reduce((sum, lines) => sum + lines[i].g, 0);
+        const cur = need.get(ing.f) || { grams: 0, meals: 0 };
+        cur.grams += grams;
+        cur.meals += 1;
+        need.set(ing.f, cur);
+      });
+    }
+  }
+
+  return [...need.entries()].map(([id, { grams, meals }]) => {
+    const food = FOODS[id];
+    const { unit, step } = food.shop;
+    const raw = unit === 'ml' ? grams / (food.density ?? 1) : unit === 'τεμ' ? grams / food.pieceG : grams;
+    const qty = Math.max(step, Math.ceil(raw / step - 1e-9) * step);
+    return { id, key: id, name: food.plural, aisle: food.aisle, unit, qty, exact: raw, meals };
+  }).sort((a, b) => a.name.localeCompare(b.name, 'el'));
 }
 
 /* ── Member name upgrade ───────────────────────────────────────────────────
@@ -518,6 +790,25 @@ export function upgradeMemberNames(profiles, legacyNames, shippedFamily) {
   return { profiles: next, changed };
 }
 
+
+/**
+ * v13 moved activity levels onto the EFSA/FAO ladder (1.4 · 1.6 · 1.8 · 2.0): a
+ * value of 1.35 is below the lowest physical-activity level any free-living adult
+ * sustains. Like the name upgrade, this only touches a profile that still holds the
+ * exact value the app itself shipped — `legacy` maps id → [old, new] — so a level a
+ * person chose for themselves is never overwritten.
+ */
+export function upgradeActivityLevels(profiles, legacy) {
+  const list = Array.isArray(profiles) ? profiles : [];
+  let changed = 0;
+  const next = list.map(p => {
+    const rule = legacy?.[p?.id];
+    if (!rule || Number(p.activityFactor) !== rule[0]) return p;
+    changed += 1;
+    return { ...p, activityFactor: rule[1] };
+  });
+  return { profiles: next, changed };
+}
 
 /* ── Time-aware next meal ─────────────────────────────────────────────────
  * Pure and deterministic: caller injects both clock and schedule.

@@ -162,8 +162,8 @@ assert.ok(heavier.postProtein > lighter.postProtein, 'fuelling must scale with b
 
 /* ── Iron selection ────────────────────────────────────────────────────── */
 
-const hits = ironMeals({ breakfast: 'oats', lunch: 'lentils', dinner: 'omelet' }, recipeById, IRON_RICH);
-assert.equal(hits.length, 1, 'only the lentil meal is an iron source here');
+const hits = ironMeals({ breakfast: 'oats', lunch: 'lentils', dinner: 'trahana' }, recipeById, IRON_RICH);
+assert.equal(hits.length, 1, 'only the lentil meal is a high-iron source here');
 assert.equal(hits[0].slot, 'lunch');
 assert.equal(hits[0].recipe.id, 'lentils');
 assert.deepEqual(ironMeals({}, recipeById, IRON_RICH), [], 'an empty plan yields no iron meals');

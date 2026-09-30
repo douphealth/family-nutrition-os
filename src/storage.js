@@ -14,6 +14,8 @@
  * existing data completely untouched.
  */
 
+import { APP } from './data.js';
+
 const DB_NAME = 'zenith-pro-v2'; // intentionally unchanged from v2 → in-place upgrade
 const DB_VERSION = 2;
 export const STORES = ['settings', 'profiles', 'logs', 'measurements', 'plans', 'checklists'];
@@ -209,7 +211,7 @@ export async function exportBackup() {
     schema: BACKUP_SCHEMA,
     exportedAt: new Date().toISOString(),
     app: 'ZENITH PRO',
-    version: '3.0.0',
+    version: APP.version,
     data: {}
   };
   for (const store of STORES) payload.data[store] = await all(store);
