@@ -13,10 +13,10 @@
  */
 
 import assert from 'node:assert/strict';
-import { RECIPES, FAMILY, IRON_RICH, RECIPE_ART, PERSONA_FOCUS, FUELING, LEGACY_MEMBER_NAMES } from '../src/data.js';
+import { RECIPES, FAMILY, IRON_RICH, RECIPE_ART, PERSONA_FOCUS, FUELING, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY } from '../src/data.js';
 import {
   personaPoints, trainingFueling, ironMeals, targetsFor, isMinor,
-  memberShare, householdServings, upgradeMemberNames
+  memberShare, householdServings, upgradeMemberNames, upgradeActivityLevels, PAL_FLOOR
 } from '../src/nutrition-engine.js';
 import { parseStepTimers, clockText } from '../src/ui.js';
 
@@ -279,5 +279,33 @@ const twice = upgradeMemberNames(upgraded.profiles, LEGACY_MEMBER_NAMES, FAMILY)
 assert.equal(twice.changed, 0, 'running the upgrade twice is a no-op');
 assert.equal(upgradeMemberNames(null, LEGACY_MEMBER_NAMES, FAMILY).changed, 0, 'null profiles are tolerated');
 assert.equal(upgradeMemberNames([{}], LEGACY_MEMBER_NAMES, FAMILY).changed, 0, 'a member without an id is skipped');
+
+/* ── Activity levels: the v12 → v13 upgrade ─────────────────────────────── */
+
+assert.equal(PAL_FLOOR, 1.4, 'the floor is EFSA/FAO lowest free-living PAL');
+const shipped = upgradeActivityLevels([{ id: 'mother', activityFactor: 1.35 }, { id: 'daughter', activityFactor: 1.55 }], LEGACY_ACTIVITY);
+assert.deepEqual(shipped.profiles.map(p => p.activityFactor), [1.4, 1.6], 'the levels v12 shipped move onto the EFSA ladder');
+assert.equal(shipped.changed, 2);
+
+// v12's profile form offered 1.2 / 1.35 / 1.5 / 1.65 / 1.8, so a save silently wrote 1.2 for anyone whose level was not in
+// that list (the father's 1.40 and the daughter's 1.55 were not). Rehearsed against the real v12 app.
+const fromForm = upgradeActivityLevels([{ id: 'daughter', activityFactor: 1.2 }, { id: 'father', activityFactor: 1.2 }], LEGACY_ACTIVITY);
+assert.equal(fromForm.profiles[0].activityFactor, 1.6, "a shipped member's silently rewritten 1.2 returns to her new default");
+assert.equal(fromForm.profiles[1].activityFactor, 1.4, 'any other 1.2 is lifted to the floor');
+
+const chosen = upgradeActivityLevels(
+  [{ id: 'son', activityFactor: 1.8 }, { id: 'father', activityFactor: 1.5 }, { id: 'mother', activityFactor: 1.65 }, { id: 'daughter', activityFactor: 2 }],
+  LEGACY_ACTIVITY
+);
+assert.equal(chosen.changed, 0, 'a level at or above the floor that a person chose is never overwritten');
+assert.equal(upgradeActivityLevels([{ id: 'gran', activityFactor: 1.35 }], LEGACY_ACTIVITY).profiles[0].activityFactor, 1.4, 'a member added later is held to the floor too');
+
+const once = upgradeActivityLevels([{ id: 'mother', activityFactor: 1.35 }, { id: 'daughter', activityFactor: 1.2 }], LEGACY_ACTIVITY);
+assert.equal(upgradeActivityLevels(once.profiles, LEGACY_ACTIVITY).changed, 0, 'the upgrade is idempotent');
+assert.equal(upgradeActivityLevels(null, LEGACY_ACTIVITY).changed, 0, 'null profiles are tolerated');
+assert.equal(upgradeActivityLevels([{}, { id: 'mother' }, { id: 'son', activityFactor: 'abc' }], LEGACY_ACTIVITY).changed, 0, 'missing or non-numeric levels are left alone');
+const original = [{ id: 'mother', activityFactor: 1.35 }];
+upgradeActivityLevels(original, LEGACY_ACTIVITY);
+assert.equal(original[0].activityFactor, 1.35, 'the input is not mutated');
 
 console.log('persona & kitchen tests: PASS');

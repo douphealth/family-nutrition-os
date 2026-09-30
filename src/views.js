@@ -302,8 +302,6 @@ export function todayView(ctx) {
     <span>Υπάρχει νέα έκδοση της εφαρμογής.</span>
     <button type="button" class="btn btn-sm btn-primary" data-act="reload">Ανανέωση τώρα</button></div>` : ''}
 
-  ${!onboarded ? onboardingCard() : ''}
-
   <section class="dash-head">
     <div class="dash-greet">
       <div class="eyebrow">${esc(profile.role)}</div>
@@ -314,6 +312,8 @@ export function todayView(ctx) {
       ${streak > 0 ? `<span class="date-chip is-streak">${icon('flame', 16)}${num(streak)} ${streak === 1 ? 'ημέρα' : 'ημέρες'} σε σειρά</span>` : ''}
     </div>
   </section>
+
+  ${!onboarded ? onboardingCard() : ''}
 
   <div class="today-grid">
   ${nextRecipe ? nextMealCard(ctx, nextSlot, nextRecipe) : `

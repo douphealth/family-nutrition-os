@@ -208,6 +208,57 @@ for (const id of VIEWS) {
   ok(window.location.search.includes(`view=${id}`), `view "${id}" is reflected in the URL`);
 }
 
+/* ── 3b. Structure & accessibility invariants ─────────────────────────────
+ * The browser audits (axe-core, contrast) are the authority, but they need a real
+ * Chromium. These are the structural findings that once slipped through, kept here
+ * so a regression fails in the fast jsdom job too.
+ */
+
+section('Structure & accessibility');
+
+const doc = window.document;
+const outsideSections = tag => [...doc.querySelectorAll(tag)].filter(el => !el.closest('main, article, aside, nav, section'));
+ok(doc.querySelectorAll('main').length === 1, 'exactly one <main> landmark');
+ok(outsideSections('header').length === 1, 'exactly one banner (top-level <header>): the brand');
+ok(outsideSections('footer').length === 1, 'exactly one contentinfo (top-level <footer>): the privacy note');
+ok(doc.querySelectorAll('aside').length === 0, 'no <aside> landmarks that would need unique names');
+const navLabels = [...doc.querySelectorAll('nav')].map(n => n.getAttribute('aria-label'));
+ok(navLabels.length === 2 && navLabels.every(Boolean) && new Set(navLabels).size === navLabels.length,
+  `both <nav> landmarks carry distinct labels (${navLabels.join(' | ')})`);
+
+const accessibleName = el => (el.getAttribute('aria-label') || el.textContent || el.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
+const headingLevels = () => [...doc.querySelectorAll('h1, h2, h3, h4, h5, h6')].filter(h => !h.closest('.hidden, [hidden]')).map(h => Number(h.tagName[1]));
+const skipsALevel = levels => { let previous = 0; return levels.some(l => { const jump = l > previous + 1; previous = l; return jump; }); };
+
+for (const id of VIEWS) {
+  await clickSel(`#sideNav [data-act="nav"][data-view="${id}"]`, window.document, 60);
+  const levels = headingLevels();
+  ok(levels.filter(l => l === 1).length === 1 && levels[0] === 1, `view "${id}": a single <h1> comes first`);
+  ok(!skipsALevel(levels), `view "${id}": heading levels never skip (${levels.join('')})`);
+
+  const unnamed = [...viewEl().querySelectorAll('button, a[href]')].filter(el => !accessibleName(el));
+  ok(unnamed.length === 0, `view "${id}": every button and link has an accessible name (${unnamed.slice(0, 3).map(e => e.className).join(', ')})`);
+
+  const unlabelled = [...viewEl().querySelectorAll('input:not([type="hidden"]), select, textarea')]
+    .filter(f => !f.getAttribute('aria-label') && !f.closest('label') && !(f.id && viewEl().querySelector(`label[for="${f.id}"]`)));
+  ok(unlabelled.length === 0, `view "${id}": every form control has a label (${unlabelled.slice(0, 3).map(f => f.name || f.id).join(', ')})`);
+
+  const strayIcons = [...viewEl().querySelectorAll('svg')].filter(v => v.getAttribute('role') !== 'img' && !v.closest('[aria-hidden="true"]') && v.getAttribute('aria-hidden') !== 'true');
+  ok(strayIcons.length === 0, `view "${id}": decorative SVGs are hidden from assistive tech (${strayIcons.length} exposed)`);
+  const unnamedImages = [...viewEl().querySelectorAll('svg[role="img"]')].filter(v => !v.getAttribute('aria-label'));
+  ok(unnamedImages.length === 0, `view "${id}": every SVG with role=img is named`);
+
+  ok(viewEl().querySelectorAll('[role="grid"]').length === 0, `view "${id}": no ARIA grid without rows`);
+  const ids = [...doc.querySelectorAll('[id]')].map(e => e.id);
+  const dup = ids.filter((v, i) => ids.indexOf(v) !== i);
+  ok(dup.length === 0, `view "${id}": element ids are unique (${[...new Set(dup)].join(', ')})`);
+}
+
+await clickSel('#sideNav [data-act="nav"][data-view="progress"]', window.document, 60);
+ok(!!viewEl().querySelector('.hm[role="group"][aria-label]'), 'the progress calendar is a labelled group of buttons');
+await clickSel('#sideNav [data-act="nav"][data-view="plan"]', window.document, 60);
+ok(viewEl().querySelectorAll('.day-card h2').length >= 7, 'each plan day is an <h2> section under the page <h1>');
+
 /* ── 4. Theme toggle ───────────────────────────────────────────────────── */
 
 section('Theme');
@@ -311,6 +362,11 @@ if (recipeBtn) {
   ok(sheet?.classList.contains('is-open') || sheet?.getAttribute('aria-hidden') === 'false' || text(sheet).length > 0,
     'clicking a recipe opens the sheet');
   ok(text(sheet).length > 100, 'recipe sheet renders recipe content');
+  const panel = sheet.querySelector('.sheet-panel');
+  ok(panel?.getAttribute('role') === 'dialog' && panel.getAttribute('aria-modal') === 'true', 'the sheet is a modal dialog');
+  ok(!!doc.getElementById(panel?.getAttribute('aria-labelledby') || '-'), 'the dialog is labelled by an element that exists');
+  ok(sheet.querySelectorAll('header, footer, aside').length === 0, 'a sheet adds no banner, footer or complementary landmarks');
+  ok(!skipsALevel(headingLevels()), `the page with the sheet open keeps its heading order (${headingLevels().join('')})`);
   ok(text(sheet).includes('Υλικά') || text(sheet).includes('Εκτέλεση') || text(sheet).includes('g'),
     'recipe sheet shows ingredients or steps');
 
@@ -384,6 +440,8 @@ section('Command palette');
 await clickSel('#paletteBtn', window.document, 100);
 const palette = window.document.getElementById('palette');
 ok(palette?.classList.contains('is-open') || text(palette).length > 0, 'palette opens');
+ok(!!palette?.querySelector('.palette-panel[role="dialog"][aria-label]'), 'the palette is a labelled dialog');
+ok(!!palette?.querySelector('[role="listbox"][aria-label]'), 'the palette list is a labelled listbox');
 const firstPick = palette?.querySelector('[data-act="palettePick"], [data-act="nav"]');
 if (firstPick) {
   await click(firstPick, 100);
@@ -543,12 +601,15 @@ if (cookBtn) {
   ok(isOpen(), 'cook mode opens in the sheet');
   ok(!!sheet.querySelector('.cook'), 'cook mode renders its own layout');
   ok(!!sheet.querySelector('.cook-step'), 'cook mode shows the current step');
+  ok(!!sheet.querySelector('.sheet-foot .cook-nav [data-act="cookStep"]'), 'the next-step button lives in the sheet footer, outside the scrolling body');
+  ok(!sheet.querySelector('.sheet-body .cook-nav'), 'the step navigation is not duplicated inside the scrolling body');
 
   const counterBefore = text(sheet.querySelector('.cook-counter'));
   ok(/Βήμα\s*1/.test(counterBefore), `cook mode starts on step 1 (got "${counterBefore}")`);
 
   await click(sheet.querySelector('[data-act="cookStep"][data-to="1"]'), 150);
   ok(text(sheet.querySelector('.cook-counter')) !== counterBefore, 'advancing moves to the next step');
+  ok(sheet.querySelector('.sheet-foot [data-act="cookStep"]')?.dataset.to === '2', "the footer's next-step button follows the current step");
 
   await click(sheet.querySelector('[data-act="cookStep"][data-to="0"]'), 150);
   ok(text(sheet.querySelector('.cook-counter')) === counterBefore, 'going back returns to step 1');
@@ -586,14 +647,30 @@ if (cookBtn) {
 section('Minor safety');
 
 const profiles = await readStore('profiles');
-if (profiles.length) {
-  const minors = profiles.filter(p => Number(p.age) < 20);
-  ok(minors.length >= 1, `at least one minor profile is present (${minors.length})`);
-  ok(minors.every(p => p.goal !== 'loss' && p.goal !== 'deficit'),
-    'no minor profile holds a fat-loss/deficit goal');
-  ok(minors.every(p => p.goal !== 'adult-bmi' && p.goal !== 'bmi'), 'no minor profile holds an adult BMI goal');
-} else {
-  ok(false, 'profiles are readable from the active backend');
+const minors = profiles.filter(p => Number(p.age) < 20);
+ok(minors.length >= 1, `at least one minor profile is present (${minors.length})`);
+ok(minors.every(p => p.goal === 'growth' || p.goal === 'performance'),
+  `every minor is planned for growth or performance, never a deficit (${minors.map(p => p.goal).join(', ')})`);
+
+// The lock must hold in the save handler itself, not merely because the control is greyed out:
+// unlock the goal control of a minor's form, force a fat-loss goal into it, and submit.
+if (minors.length) {
+  const minor = minors[0];
+  await clickSel('#sideNav [data-act="nav"][data-view="family"]', window.document, 80);
+  await click(window.document.querySelector(`[data-act="editMember"][data-id="${minor.id}"]`), 150);
+  const minorForm = window.document.getElementById('memberForm');
+  const goalSelect = minorForm?.querySelector('#fGoal');
+  ok(!!minorForm && !!goalSelect, "a minor's profile form opens with a goal control");
+  ok(goalSelect?.disabled === true, "a minor's goal control is locked in the form");
+  if (goalSelect) {
+    goalSelect.disabled = false;
+    goalSelect.value = 'gradual_fat_loss';
+    minorForm.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    await tick(250);
+    const saved = (await readStore('profiles')).find(p => p.id === minor.id);
+    ok(saved && (saved.goal === 'growth' || saved.goal === 'performance'),
+      `a forced fat-loss goal is refused on save (stored goal: ${saved?.goal})`);
+  }
 }
 
 /* ── 16. Backup export ─────────────────────────────────────────────────── */

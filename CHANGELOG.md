@@ -35,8 +35,14 @@ token-driven design system with a light and a dark theme.
   now calendar-based, anchored on a Monday epoch, and tested across eight timezones.
 - Duplicated and absurd shopping quantities; keyboard-shortcut hints that did nothing; malformed HTML
   in the Guide; contradictory persona and safety wording.
-- Activity levels that sat below EFSA’s lowest free-living level; stored profiles are migrated only
-  while they still hold the old shipped value.
+- Activity levels that sat below EFSA’s lowest free-living level. Stored profiles are migrated on
+  upgrade: levels v12 shipped move onto the EFSA ladder, and any level a person chose at or above the
+  floor is left alone.
+- **v12’s profile form silently rewrote activity levels.** Its menu (1.2 · 1.35 · 1.5 · 1.65 · 1.8) did
+  not contain the father’s or the daughter’s shipped levels, so saving *any* edit stored 1.2 —
+  under-planning a growing teenager. On upgrade a shipped member’s 1.2 returns to their default and any
+  other level below 1.4 is lifted to it. Rehearsed end to end: the real v12 app writes the data, v13
+  boots on the same database, and logs, profiles, theme and member all survive.
 - Contrast: ticked shopping rows dimmed with opacity, the dark-mode toast action, dark tab-bar labels
   and the warning tint all now clear WCAG AA. Accessibility: duplicate landmarks, heading order in the
   Plan, the progress calendar’s ARIA role, an unnamed command list, and Cook Mode step targets.

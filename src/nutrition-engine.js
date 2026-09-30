@@ -791,21 +791,33 @@ export function upgradeMemberNames(profiles, legacyNames, shippedFamily) {
 }
 
 
+/** The lowest physical-activity level (PAL) any free-living person sustains — EFSA and FAO/WHO/UNU. */
+export const PAL_FLOOR = 1.4;
+
+/** The first option of v12's activity menu. v12 wrote it silently, on any save, for a profile whose own level was not in that menu. */
+const V12_MENU_FALLBACK = 1.2;
+
 /**
- * v13 moved activity levels onto the EFSA/FAO ladder (1.4 · 1.6 · 1.8 · 2.0): a
- * value of 1.35 is below the lowest physical-activity level any free-living adult
- * sustains. Like the name upgrade, this only touches a profile that still holds the
- * exact value the app itself shipped — `legacy` maps id → [old, new] — so a level a
- * person chose for themselves is never overwritten.
+ * v13 moved activity levels onto the EFSA/FAO ladder (1.4 · 1.6 · 1.8 · 2.0). Two kinds of stored value are
+ * corrected on upgrade, and nothing else:
+ *   • a shipped member still holding the exact value the app once shipped — `legacy` maps id → [old, new] —
+ *     and the value v12's form silently wrote for such a member (1.2) both become that member's new default;
+ *   • any other level below PAL 1.4, which no free-living person sustains, is raised to the floor.
+ * A level a person chose that is at or above the floor is never overwritten.
  */
 export function upgradeActivityLevels(profiles, legacy) {
   const list = Array.isArray(profiles) ? profiles : [];
   let changed = 0;
   const next = list.map(p => {
+    const current = Number(p?.activityFactor);
+    if (!Number.isFinite(current)) return p;
     const rule = legacy?.[p?.id];
-    if (!rule || Number(p.activityFactor) !== rule[0]) return p;
+    let target = current;
+    if (rule && (current === rule[0] || current === V12_MENU_FALLBACK)) target = rule[1];
+    else if (current < PAL_FLOOR) target = PAL_FLOOR;
+    if (target === current) return p;
     changed += 1;
-    return { ...p, activityFactor: rule[1] };
+    return { ...p, activityFactor: target };
   });
   return { profiles: next, changed };
 }
