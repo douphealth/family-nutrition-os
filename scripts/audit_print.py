@@ -48,6 +48,7 @@ def main() -> None:
         page.emulate_media(media="print")
         page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
 
+        meal_names = page.locator(".planner-week .planner-slot b").all_inner_texts()
         audit = page.evaluate(
             """() => {
               const cards = [...document.querySelectorAll('.planner-week .planner-day')];
@@ -101,14 +102,30 @@ def main() -> None:
     reader = PdfReader(str(out))
     if not 1 <= len(reader.pages) <= 4:
         fail(f"weekly print generated {len(reader.pages)} pages; expected 1-4")
+    all_pdf_text = "\n".join((pdf_page.extract_text() or "") for pdf_page in reader.pages)
+    normalized_pdf = " ".join(all_pdf_text.split())
     for i, pdf_page in enumerate(reader.pages, start=1):
         text = (pdf_page.extract_text() or "").strip()
         if len(text) < 180:
             fail(f"page {i} is effectively blank ({len(text)} extracted characters)")
 
+    # A browser can shrink an oversized horizontal grid to fit the sheet. The DOM
+    # then looks wide enough, yet recipe names print one character per line. Verify
+    # the PDF text itself still contains intact meal names.
+    unique_names = []
+    for name in meal_names:
+        clean = " ".join(name.split())
+        if clean and clean not in unique_names:
+            unique_names.append(clean)
+    intact = sum(1 for name in unique_names if name in normalized_pdf)
+    required = min(8, max(4, len(unique_names) // 3))
+    if intact < required:
+        fail(f"only {intact}/{len(unique_names)} meal names survived intact in the PDF; expected at least {required}")
+
     print(
         f"Print audit PASS: 7 readable day rows, 4 meals/day, "
-        f"{len(reader.pages)} nonblank PDF page(s), {out.stat().st_size} bytes"
+        f"{len(reader.pages)} nonblank PDF page(s), {intact}/{len(unique_names)} intact meal names, "
+        f"{out.stat().st_size} bytes"
     )
 
 
