@@ -961,3 +961,40 @@
   .planner-month-grid .planner-slots { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .planner-month-grid .planner-slot { min-height: 56px; }
 }
+
+
+/* v15 day-planning focus */
+.planner-day-mode { display:grid; gap:10px; }
+.planner-day-picker {
+  display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px;
+}
+.planner-day-picker button {
+  min-height:52px; display:grid; place-items:center; gap:2px;
+  border:1px solid var(--line); border-radius:13px;
+  color:var(--ink-2); background:var(--surface-2);
+}
+.planner-day-picker button span { font-size:.66rem; color:var(--ink-3); }
+.planner-day-picker button b { font-size:.8rem; }
+.planner-day-picker button.active {
+  color:var(--ink); border-color:var(--member-line);
+  background:linear-gradient(135deg,var(--member-soft),var(--surface));
+  box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--member) 10%,transparent);
+}
+.planner-day-focus .planner-day {
+  display:grid; grid-template-columns:minmax(130px,.34fr) minmax(0,1fr);
+  gap:14px; padding:18px;
+}
+.planner-day-focus .planner-slots {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.planner-day-focus .planner-slot { min-height:96px; }
+@media (max-width:759px) {
+  .planner-mode { grid-template-columns:repeat(3,1fr); }
+  .planner-day-picker { gap:4px; }
+  .planner-day-picker button { min-height:46px; padding:2px; }
+  .planner-day-picker button span { font-size:.56rem; }
+  .planner-day-picker button b { font-size:.7rem; }
+  .planner-day-focus .planner-day { display:block; padding:12px; }
+  .planner-day-focus .planner-slots { grid-template-columns:1fr; }
+  .planner-day-focus .planner-slot { min-height:82px; }
+}
