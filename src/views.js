@@ -666,7 +666,7 @@ export function planView(ctx) {
           <h2>${esc(shortDate(d.date))}</h2>
         </div>
         <div class="planner-day-meta">
-          ${ownOverride ? `<span class="planner-custom">${icon('sparkle',12)} ${txt.customized}</span>` : ''}
+          ${ownOverride ? `<span class="planner-custom">${icon('sparkles',12)} ${txt.customized}</span>` : ''}
           <span class="day-kcal">${num(kcal)}<small> kcal</small></span>
         </div>
       </div>
@@ -683,7 +683,7 @@ export function planView(ctx) {
       </div>
       <div class="planner-day-actions">
         <button type="button" class="btn btn-sm btn-ghost" data-act="day" data-date="${esc(d.date)}">${icon('eye',15)} ${en ? 'Details' : 'Λεπτομέρειες'}</button>
-        ${ownOverride ? `<button type="button" class="btn btn-sm btn-ghost" data-act="planResetDay" data-date="${esc(d.date)}" data-scope="${esc(scope)}">${icon('rotateCcw',14)} ${txt.reset}</button>` : ''}
+        ${ownOverride ? `<button type="button" class="btn btn-sm btn-ghost" data-act="planResetDay" data-date="${esc(d.date)}" data-scope="${esc(scope)}">${icon('undo',14)} ${txt.reset}</button>` : ''}
       </div>
     </article>`;
   };
@@ -711,7 +711,7 @@ export function planView(ctx) {
       <div class="planner-scope-group" role="group" aria-label="${en ? 'Plan for' : 'Πλάνο για'}">${scopeTabs}</div>
       <div class="segmented planner-mode" role="group" aria-label="${en ? 'Planner range' : 'Εύρος πλάνου'}">
         <button type="button" class="${mode === 'week' ? 'active' : ''}" data-act="planMode" data-mode="week">${icon('calendar',14)} ${txt.week}</button>
-        <button type="button" class="${mode === 'month' ? 'active' : ''}" data-act="planMode" data-mode="month">${icon('grid',14)} ${txt.month}</button>
+        <button type="button" class="${mode === 'month' ? 'active' : ''}" data-act="planMode" data-mode="month">${icon('calendar',14)} ${txt.month}</button>
       </div>
     </div>
     <div class="planner-control-row planner-toolbar">
