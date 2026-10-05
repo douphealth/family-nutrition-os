@@ -503,6 +503,8 @@ export function toast(message, { actionLabel = '', onAction = null, tone = 'defa
   </div>`;
   host.classList.remove('hidden');
   host.setAttribute('aria-live', 'polite');
+  const ToastEvent = document.defaultView?.CustomEvent;
+  if (ToastEvent) document.dispatchEvent(new ToastEvent('zenith:overlay-rendered'));
 
   const dismiss = () => { host.classList.add('hidden'); host.innerHTML = ''; };
   byId('toastClose')?.addEventListener('click', dismiss);
@@ -534,6 +536,10 @@ export function openSheet({ title, body, footer = '', size = 'md', onMount = nul
     </div>`;
   host.classList.remove('hidden');
   document.body.classList.add('no-scroll');
+  document.querySelector('.app')?.setAttribute('inert', '');
+  document.querySelector('.tabbar')?.setAttribute('inert', '');
+  const SheetEvent = document.defaultView?.CustomEvent;
+  if (SheetEvent) document.dispatchEvent(new SheetEvent('zenith:overlay-rendered'));
   $$('[data-sheet-close]', host).forEach(n => n.addEventListener('click', closeSheet));
   const panel = $('.sheet-panel', host);
   // Sheet content lives outside #view, so view-level input binding never sees
@@ -559,6 +565,8 @@ export function closeSheet() {
   host.innerHTML = '';
   host.onkeydown = null;
   document.body.classList.remove('no-scroll');
+  document.querySelector('.app')?.removeAttribute('inert');
+  document.querySelector('.tabbar')?.removeAttribute('inert');
   lastFocused?.focus?.();
   // Fire the caller's cleanup AFTER the sheet is gone, so a callback that opens
   // another sheet is not immediately torn down by this one.
