@@ -132,8 +132,12 @@
   --shadow-md: 0 2px 4px rgba(12, 32, 20, .04), 0 18px 36px -18px rgba(12, 32, 20, .22);
   --shadow-lg: 0 30px 70px -28px rgba(12, 32, 20, .42);
   --ring-focus: 0 0 0 3px color-mix(in oklab, var(--brand) 38%, transparent);
-  --glass: rgba(255, 255, 255, .72);
-  --glass-bar: rgba(255, 255, 255, .92);   /* the phone tab bar: nearly opaque, so labels never depend on what scrolls under it */
+  --glass: rgba(255, 255, 255, .76);
+  --glass-strong: rgba(255, 255, 255, .91);
+  --glass-soft: rgba(255, 255, 255, .54);
+  --glass-bar: rgba(255, 255, 255, .94);   /* nearly opaque: navigation labels never depend on content below */
+  --toast-bg: #0A1710;
+  --toast-text: #FFFFFF;
   --scrim: rgba(10, 24, 16, .48);
 
   /* Recipe-art palette (light) */
@@ -197,9 +201,13 @@
   --shadow-md: 0 0 0 1px var(--line), 0 22px 44px -20px rgba(0, 0, 0, .7);
   --shadow-lg: 0 0 0 1px var(--line-2), 0 34px 80px -30px rgba(0, 0, 0, .85);
   --ring-focus: 0 0 0 3px color-mix(in oklab, var(--brand) 45%, transparent);
-  --glass: rgba(15, 23, 18, .74);
-  --glass-bar: rgba(15, 23, 18, .93);
-  --scrim: rgba(0, 0, 0, .62);
+  --glass: rgba(15, 23, 18, .78);
+  --glass-strong: rgba(15, 23, 18, .94);
+  --glass-soft: rgba(22, 34, 27, .58);
+  --glass-bar: rgba(11, 18, 14, .95);
+  --toast-bg: #050A07;
+  --toast-text: #F7FBF8;
+  --scrim: rgba(0, 0, 0, .64);
 
   --art-plate: #EFF4F0;  --art-plate-2: #D9E3DC;  --art-shadow: rgba(0, 0, 0, .45);
 
