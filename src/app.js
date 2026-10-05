@@ -463,12 +463,14 @@ function bindViewInputs() {
     const record = { id: `${profile.id}:${date}`, memberId: profile.id, date, weight, note };
     await put('measurements', record);
     cache.measurements = cache.measurements.filter(m => m.id !== record.id).concat(record);
+    broadcastChange('measurements', { id: record.id });
     profile.weight = weight;
     await persistProfiles();
     render();
     toast('Η μέτρηση αποθηκεύτηκε.', { actionLabel: 'Αναίρεση', onAction: async () => {
       await del('measurements', record.id);
       cache.measurements = cache.measurements.filter(m => m.id !== record.id);
+      broadcastChange('measurements', { id: record.id });
       render(); toast('Η μέτρηση αφαιρέθηκε.');
     } });
   });
@@ -530,6 +532,7 @@ async function persistSettings() {
       filters: state.filters, shopChecked: state.shopChecked,
       shopFilter: state.shopFilter, version: APP.version
     });
+    broadcastChange('settings');
   } catch (err) { console.error('[ZENITH] settings save failed', err); }
 }
 
@@ -537,6 +540,7 @@ async function persistProfiles() {
   for (const p of cache.profiles) {
     try { await put('profiles', p); } catch (err) { console.error('[ZENITH] profile save failed', err); }
   }
+  broadcastChange('profiles');
 }
 
 async function saveLog(log) {
@@ -1174,6 +1178,7 @@ document.addEventListener('click', async e => {
       const id = target.dataset.id;
       await del('measurements', id);
       cache.measurements = cache.measurements.filter(m => m.id !== id);
+      broadcastChange('measurements', { id });
       render();
       toast('Η μέτρηση διαγράφηκε.');
       break;
@@ -1272,6 +1277,9 @@ function openPalette() {
     <div id="paletteList"></div>
   </div>`;
   host.classList.remove('hidden');
+  document.querySelector('.app')?.setAttribute('inert', '');
+  document.querySelector('.tabbar')?.setAttribute('inert', '');
+  translateTree(host, state.lang);
   const input = byId('paletteInput');
   const all2 = paletteCommands();
   paletteIndex = 0;
@@ -1280,6 +1288,7 @@ function openPalette() {
     paletteItems = q ? all2.filter(c => c.label.toLowerCase().includes(q)).slice(0, 40) : all2.slice(0, 12);
     paletteIndex = 0;
     byId('paletteList').innerHTML = paletteView(paletteItems, input.value);
+    translateTree(byId('paletteList'), state.lang);
   };
   update();
   input.addEventListener('input', update);
@@ -1307,6 +1316,8 @@ function closePalette() {
   host.classList.add('hidden');
   host.innerHTML = '';
   host.onclick = null;
+  document.querySelector('.app')?.removeAttribute('inert');
+  document.querySelector('.tabbar')?.removeAttribute('inert');
 }
 
 /* ── Global keyboard ───────────────────────────────────────────────────── */
@@ -1344,6 +1355,11 @@ byId('backupImport')?.addEventListener('change', async e => {
   }
 });
 
+document.addEventListener('zenith:overlay-rendered', () => {
+  translateTree(byId('sheet'), state.lang);
+  translateTree(byId('toast'), state.lang);
+});
+
 /* ── Cross-tab/device-local sync ───────────────────────────────────────── */
 const syncBus = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('zenith-family-sync-v1') : null;
 function broadcastChange(type, payload = {}) {
@@ -1357,6 +1373,18 @@ syncBus?.addEventListener('message', async () => {
     cache.checklists = await all('checklists');
     const profiles = await all('profiles');
     if (profiles.length) cache.profiles = profiles;
+    const shared = await get('settings', 'app');
+    if (shared) {
+      state = {
+        ...state,
+        theme: shared.theme ?? state.theme,
+        lang: shared.lang ?? state.lang,
+        trainingLoad: shared.trainingLoad ?? state.trainingLoad,
+        onboarded: shared.onboarded ?? state.onboarded,
+        shopChecked: shared.shopChecked || state.shopChecked,
+        shopFilter: shared.shopFilter || state.shopFilter
+      };
+    }
     renderAll();
   } catch (err) { console.error('[ZENITH] sync refresh failed', err); }
 });
