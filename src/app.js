@@ -34,6 +34,7 @@ import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
 } from './views.js?v=14.1.0';
+import { translateTree } from './i18n.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -401,6 +402,9 @@ function renderShell() {
   const label = dark ? 'Αλλαγή σε φωτεινό θέμα' : 'Αλλαγή σε σκούρο θέμα';
   byId('themeBtn').setAttribute('aria-label', label);
   byId('themeBtn').setAttribute('title', state.theme === 'auto' ? `${label} (τώρα: αυτόματο)` : label);
+  translateTree(document.querySelector('.sidebar'), state.lang);
+  translateTree(document.querySelector('.topbar'), state.lang);
+  translateTree(document.querySelector('.tabbar'), state.lang);
 }
 
 function render() {
@@ -418,6 +422,7 @@ function render() {
     else html = todayView(ctx);
 
     view.innerHTML = html;
+    translateTree(view, state.lang);
     view.classList.remove('view-enter');
     void view.offsetWidth;
     view.classList.add('view-enter');
