@@ -90,7 +90,9 @@ function translated(s) {
 export function translateTree(root, lang) {
   document.documentElement.lang = lang === 'en' ? 'en' : 'el';
   if (lang !== 'en' || !root) return;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const doc = root.ownerDocument || document;
+  const showText = doc.defaultView?.NodeFilter?.SHOW_TEXT ?? 4;
+  const walker = doc.createTreeWalker(root, showText);
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
   for (const node of nodes) {
