@@ -315,6 +315,8 @@ export function todayView(ctx) {
 
   ${!onboarded ? onboardingCard() : ''}
 
+  ${familyCommand(ctx)}
+
   <div class="today-grid">
   ${nextRecipe ? nextMealCard(ctx, nextSlot, nextRecipe) : `
   <section class="next-card next-done" aria-label="Ημέρα ολοκληρωμένη">
@@ -492,6 +494,53 @@ function nextMealCard(ctx, slot, recipe) {
       </div>
     </div>
     <div class="next-art" aria-hidden="true">${illustration(RECIPE_ART[recipe.id], 200)}</div>
+  </section>`;
+}
+
+/** Family command center: the highest-frequency household actions in one place. */
+function familyCommand(ctx) {
+  const members = ctx.familyNow || [];
+  const complete = members.filter(m => m.mealsDone >= m.mealsTotal).length;
+  const mealDone = members.reduce((sum, m) => sum + (m.mealsDone || 0), 0);
+  const mealTotal = members.reduce((sum, m) => sum + (m.mealsTotal || 0), 0);
+  const hydration = members.length
+    ? Math.round(members.reduce((sum, m) => sum + Math.max(0, Math.min(1, m.waterPct || 0)), 0) / members.length * 100)
+    : 0;
+  const nextCount = members.filter(m => m.nextSlot).length;
+
+  const actions = [
+    ['plan', 'calendar', 'Εβδομαδιαίο πλάνο', true],
+    ['shopping', 'cart', 'Λίστα αγορών'],
+    ['meals', 'utensils', 'Συνταγές & γεύματα'],
+    ['family', 'users', 'Μέλη οικογένειας'],
+    ['progress', 'chart', 'Πρόοδος'],
+    ['guide', 'book', 'Γνώση & πηγές']
+  ];
+
+  return `<section class="family-command" aria-labelledby="family-command-title">
+    <div class="family-command-summary">
+      <div class="family-command-heading">
+        <div class="eyebrow">${icon('sparkles', 14)} Κέντρο οικογένειας</div>
+        <strong id="family-command-title">${complete === members.length && members.length ? 'Όλοι είναι τακτοποιημένοι σήμερα' : 'Όλη η διατροφή της οικογένειας, από ένα σημείο'}</strong>
+        <p>
+          <span>${members.length} μέλη</span>
+          <span>${nextCount} με επόμενο γεύμα</span>
+          <span>${complete} ολοκλήρωσαν τη μέρα</span>
+        </p>
+      </div>
+      <div class="family-command-metrics" aria-label="Σύνοψη οικογένειας">
+        <span class="family-command-metric"><b>${mealDone}/${mealTotal}</b><small>Γεύματα σήμερα</small></span>
+        <span class="family-command-metric"><b>${hydration}%</b><small>Μέση ενυδάτωση</small></span>
+        <span class="family-command-metric"><b>${complete}/${members.length}</b><small>Ημέρα ολοκληρωμένη</small></span>
+      </div>
+    </div>
+    <div class="family-command-actions" aria-label="Γρήγορες ενέργειες οικογένειας">
+      ${actions.map(([view, iconName, label, primary]) => `
+        <button type="button" class="family-command-btn ${primary ? 'is-primary' : ''}" data-act="nav" data-view="${view}">
+          ${icon(iconName, 22)}
+          <span>${label}</span>
+        </button>`).join('')}
+    </div>
   </section>`;
 }
 
