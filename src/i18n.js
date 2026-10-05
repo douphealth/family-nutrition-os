@@ -6,7 +6,7 @@
 
 const EXACT = new Map(Object.entries({
   'Σήμερα':'Today','Πλάνο':'Plan','Γεύματα':'Meals','Αγορές':'Shopping','Πρόοδος':'Progress','Οικογένεια':'Family','Γνώση':'Guide',
-  'Περισσότερα':'More','Γρήγορη αναζήτηση':'Quick search','Οικογένεια & προφίλ':'Family & profiles','Μεθοδολογία & πηγές':'Method & sources',
+  'Περισσότερα':'More','Άλλα':'More','Γρήγορη αναζήτηση':'Quick search','Οικογένεια & προφίλ':'Family & profiles','Μεθοδολογία & πηγές':'Method & sources',
   'Φωτεινό θέμα':'Light theme','Σκούρο θέμα':'Dark theme','Θέμα: ακολούθησε τη συσκευή':'Theme: follow device',
   'Εκτύπωση':'Print','Export δεδομένων':'Export data','Import δεδομένων':'Import data',
   'Καλημέρα':'Good morning','Καλησπέρα':'Good afternoon','Καλό βράδυ':'Good evening',
