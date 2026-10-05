@@ -41,11 +41,16 @@ body::before {
 
 /* WEEK: seven horizontal rows. This cannot collapse into the narrow browser cards. */
 .page.plan .week-strip.planner-week {
-  display:grid !important;
-  grid-template-columns:1fr !important;
-  gap:1.8mm !important;
+  display:block !important;
+  grid-template-columns:none !important;
+  grid-auto-flow:row !important;
+  grid-auto-columns:auto !important;
+  grid-auto-rows:auto !important;
   overflow:visible !important;
   width:100% !important;
+}
+.page.plan .week-strip.planner-week > .planner-day {
+  margin:0 0 1.8mm !important;
 }
 .page.plan .planner-day {
   display:grid !important;
