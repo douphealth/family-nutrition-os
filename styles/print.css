@@ -112,7 +112,7 @@ html[lang='en'] body::before { content:'ZENITH PRO · Weekly Nutrition Planner';
 /* Supporting information begins on page 2 rather than leaving a blank page. */
 .page.plan .plan-lower {
   display:grid !important; grid-template-columns:1fr 1fr !important; gap:5mm !important;
-  margin-top:5mm !important; break-before:page;
+  margin-top:5mm !important; break-before:auto !important; page-break-before:auto !important;
 }
 .page.plan .plan-lower .card { padding:4mm !important; border-radius:3mm !important; }
 .page.plan .plan-lower h2 { font-size:14pt !important; margin:0 0 2mm !important; }
