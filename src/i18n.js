@@ -138,6 +138,17 @@ const CONTENT = new Map([
   ["Γνώση & πηγές","Guide & sources"],
   ["Γρήγορες ενέργειες οικογένειας","Family quick actions"],
   ["Σύνοψη οικογένειας","Family summary"],
+  ["Η οικογένεια σήμερα, χωρίς ψάξιμο","Your family today, without hunting around"],
+  ["Τώρα για","Now for"],
+  ["Καταγραφή οικογένειας","Log for family"],
+  ["Η σημερινή μέρα ολοκληρώθηκε","Today is complete"],
+  ["Δες τι ακολουθεί αύριο","See what comes tomorrow"],
+  ["Άνοιξε το οικογενειακό πλάνο","Open the family plan"],
+  ["Έτοιμη λίστα","List ready"],
+  ["επιλογές","options"],
+  ["προφίλ","profiles"],
+  ["Τάσεις & συνέπεια","Trends & consistency"],
+  ["Ολοκλήρωσαν","Completed"],
 
   /* Roles / relations */
   ["Μητέρα","Mother"],["Πατέρας","Father"],["Κόρη","Daughter"],["Γιος","Son"],
