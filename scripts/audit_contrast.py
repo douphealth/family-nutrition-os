@@ -116,9 +116,14 @@ COLLECT = r"""
         if (!clear) continue;
       }
       const c = rgba(cs.color);
+      const ownBg = rgba(cs.backgroundColor);
+      const solidBg = cs.backgroundImage === 'none' && ownBg[3] >= 0.995
+        ? [ownBg[0], ownBg[1], ownBg[2]]
+        : null;
       out.push({
         t: node.data.trim().replace(/\s+/g, ' ').slice(0, 30), s: describe(el), r: [x0, y0, x1, y1],
-        c: [c[0], c[1], c[2], c[3] * opacity], fs: parseFloat(cs.fontSize), fw: parseInt(cs.fontWeight, 10) || 400
+        c: [c[0], c[1], c[2], c[3] * opacity], bgc: solidBg,
+        fs: parseFloat(cs.fontSize), fw: parseInt(cs.fontWeight, 10) || 400
       });
     }
   }
@@ -200,12 +205,23 @@ def measure_view(page, label, only=None):
         x0, x1, y0, y1 = max(0, x0), min(width, x1), max(0, y0), min(height, y1)
         if x1 - x0 < 2 or y1 - y0 < 2:
             continue
-        bg = img[y0:y1, x0:x1].reshape(-1, 3)
+        sampled_bg = img[y0:y1, x0:x1].reshape(-1, 3)
         r, g, b, a = run["c"]
         fg = np.array([r, g, b])
-        shown = fg * a + bg * (1 - a)                    # the text colour as painted over each pixel
-        ratios = contrast(luminance(shown), luminance(bg))
-        worst = float(np.percentile(ratios, 2))
+        # If the text element itself paints an opaque solid background, use that
+        # exact rendered CSS colour. Pixel rectangles can include pixels outside
+        # rounded shapes (e.g. circular avatars), producing false 1:1 failures.
+        # Gradients/translucent surfaces still use rendered-pixel sampling.
+        if run.get("bgc") is not None:
+            bg = np.asarray([run["bgc"]], dtype=np.float64)
+            shown = fg * a + bg * (1 - a)
+            ratios = contrast(luminance(shown), luminance(bg))
+            worst = float(ratios[0])
+        else:
+            bg = sampled_bg
+            shown = fg * a + bg * (1 - a)                # text colour as painted over each pixel
+            ratios = contrast(luminance(shown), luminance(bg))
+            worst = float(np.percentile(ratios, 2))
         large = run["fs"] >= 24 or (run["fs"] >= 18.66 and run["fw"] >= 700)
         need = 3.0 if large else 4.5
         measured += 1
