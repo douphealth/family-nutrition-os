@@ -95,7 +95,7 @@ def audit(page, label):
     # 2. Interactive controls must be big enough to hit with a thumb.
     small = page.evaluate(
         """(min) => {
-            const sel = '.member-chip, .shop-chip, .tab-btn, .btn, .shop-check, .cook-step-btn, .cook-timer-btn';
+            const sel = '.member-chip, .shop-chip, .tab-btn, .btn, .shop-check, .cook-step-btn, .cook-timer-btn, .planner-scope, .planner-slot, .planner-day-picker button';
             const out = [];
             for (const el of document.querySelectorAll(sel)) {
                 const r = el.getBoundingClientRect();
@@ -164,6 +164,31 @@ with sync_playwright() as p:
         bool(strip_state and strip_state["visible"]),
         f"today/son: the active member chip is scrolled into view ({strip_state})",
     )
+
+    # ── Planner v15: the family's weekly planning surface ────────────────
+    go(page, "plan")
+    shot(page, "mobile-plan-week.png")
+    audit(page, "plan/week")
+
+    page.evaluate("""() => document.querySelector('[data-act="planMode"][data-mode="day"]')?.click()""")
+    settle(page, 650)
+    shot(page, "mobile-plan-day.png")
+    audit(page, "plan/day")
+
+    page.evaluate("""() => document.querySelector('[data-act="planMode"][data-mode="month"]')?.click()""")
+    settle(page, 650)
+    shot(page, "mobile-plan-month.png")
+    audit(page, "plan/month")
+
+    page.evaluate("""() => {
+        document.querySelector('[data-act="planMode"][data-mode="week"]')?.click();
+        document.getElementById('langBtn')?.click();
+    }""")
+    settle(page, 650)
+    shot(page, "mobile-plan-en.png")
+    audit(page, "plan/english")
+    page.evaluate("""() => document.getElementById('langBtn')?.click()""")
+    settle(page, 300)
 
     # ── Cook Mode: the mother, at the stove, one instruction at a time ───
     go(page, "meals")
