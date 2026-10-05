@@ -59,6 +59,7 @@ let state = {
   theme: 'auto',            // 'auto' follows the device; 'light' / 'dark' are a family choice
   lang: 'el',
   planScope: 'family',
+  planMode: 'week',
   trainingLoad: 'normal',
   weekOffset: 0,
   onboarded: false,
@@ -218,6 +219,14 @@ function weekDaysFor(offset) {
   });
 }
 
+function monthDaysFor(offset) {
+  const start = addDays(mondayOf(), offset * 7);
+  return Array.from({ length: 28 }, (_, i) => {
+    const date = addDays(start, i);
+    return { date, dateObj: dateFromKey(date), plan: planForDate(date, state.member), recipeById, overridden: hasPlanOverride(date, state.member) };
+  });
+}
+
 const shopKey = weekDays => weekDays.length ? `w:${weekDays[0].date}` : 'w:none';
 
 /* ── Context for views ─────────────────────────────────────────────────── */
@@ -297,7 +306,7 @@ function buildCtx() {
     lang: state.lang, planScope: state.planScope,
     dayMacrosFor: (day, p, l, lg) => dayMacros(day, p, l, lg, recipeById),
     recipes: RECIPES, filters: state.filters,
-    weekDays, weekOffset: state.weekOffset, shopList, shopChecked,
+    weekDays, monthDays: monthDaysFor(state.weekOffset), weekOffset: state.weekOffset, shopList, shopChecked,
     plans: cache.plans,
     shopFilter: state.shopFilter,
     shopMembers: cache.profiles.length,
@@ -510,7 +519,7 @@ function debounce(fn, ms) {
 async function persistSettings() {
   try {
     await put('settings', {
-      id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope,
+      id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope, planMode: state.planMode,
       trainingLoad: state.trainingLoad, onboarded: state.onboarded,
       filters: state.filters, shopChecked: state.shopChecked,
       shopFilter: state.shopFilter, version: APP.version
@@ -557,6 +566,7 @@ async function boot() {
     if (!THEMES.includes(state.theme)) state.theme = 'auto';
     if (!['el','en'].includes(state.lang)) state.lang = 'el';
     if (!['family', ...cache.profiles.map(p => p.id)].includes(state.planScope)) state.planScope = 'family';
+    if (!['week','month'].includes(state.planMode)) state.planMode = 'week';
     if (!TRAINING_LOADS.some(l => l[0] === state.trainingLoad)) state.trainingLoad = 'normal';
 
     renderAll();
@@ -839,6 +849,12 @@ document.addEventListener('click', async e => {
     }
     case 'planScope': {
       state.planScope = target.dataset.scope || 'family';
+      await persistSettings();
+      render();
+      break;
+    }
+    case 'planMode': {
+      state.planMode = target.dataset.mode === 'month' ? 'month' : 'week';
       await persistSettings();
       render();
       break;
