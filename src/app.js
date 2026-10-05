@@ -16,7 +16,7 @@ import {
   PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY
 } from './data.js';
 import {
-  isMinor, targetsFor, dayMacros, planCoverage, weightTrend, loggingStreak,
+  isMinor, targetsFor, dayMacros, mealMacros, planCoverage, weightTrend, loggingStreak,
   contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
   upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
   householdRoleServings, buildShoppingList
