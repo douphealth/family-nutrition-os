@@ -13,7 +13,7 @@
  *     are applied in exactly one place.
  */
 
-import { dateFromKey, weekdayIndex } from './dates.js?v=15.0.0';
+import { dateFromKey, weekdayIndex } from './dates.js?v=15.0.1';
 
 /* ── Escaping & DOM ────────────────────────────────────────────────────── */
 
@@ -32,7 +32,7 @@ export const byId = id => document.getElementById(id);
 export {
   localDateKey, dateFromKey, addDays, mondayOf, weekdayIndex, dayNumber,
   cycleDayIndex, cycleWeek
-} from './dates.js?v=15.0.0';
+} from './dates.js?v=15.0.1';
 
 export const GREEK_DAYS = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο', 'Κυριακή'];
 export const GREEK_DAYS_SHORT = ['Δευ', 'Τρι', 'Τετ', 'Πεμ', 'Παρ', 'Σαβ', 'Κυρ'];
@@ -255,7 +255,7 @@ export function avatar(profile, size = 40) {
 
 /* ── Recipe illustrations ──────────────────────────────────────────────── */
 
-export { illustration } from './art.js?v=15.0.0';
+export { illustration } from './art.js?v=15.0.1';
 
 /* ── Step timing ───────────────────────────────────────────────────────────
  * Pull timing cues out of a recipe step so Cook Mode can offer a real timer
