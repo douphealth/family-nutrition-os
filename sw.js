@@ -10,7 +10,7 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v15-2026-10-05-2';
+const CACHE = 'zenith-v16-2026-10-05-1';
 
 const CORE = [
   './',
@@ -62,7 +62,7 @@ self.addEventListener('activate', event => {
       try {
         const url = new URL(client.url);
         if (url.origin !== self.location.origin) return undefined;
-        url.searchParams.set('__zenith_build', '15.0.1');
+        url.searchParams.set('__zenith_build', '16.0.0');
         return client.navigate(url.href);
       } catch {
         return undefined;
