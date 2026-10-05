@@ -17,7 +17,7 @@ import {
   lineChart, heatmap, barChart, avatar, illustration, glassIcon,
   num, num1, pct, mlToText, longDate, shortDate, dayName, greeting, timeNow,
   kitchenAmount, shopAmount, parseStepTimers, clockText, weekdayIndex,
-  GREEK_DAYS_SHORT, cycleWeek
+  addDays, mondayOf, dateFromKey, GREEK_DAYS_SHORT, cycleWeek
 } from './ui.js?v=15.0.0';
 import {
   SLOTS, SLOT_LABEL, SLOT_TIME, AISLES, SOURCES, METHOD, SAFETY, GLOSSARY, APP,
