@@ -19,7 +19,7 @@ import {
   isMinor, targetsFor, dayMacros, mealMacros, planCoverage, weightTrend, loggingStreak,
   contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
   upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
-  householdRoleServings, buildShoppingList
+  householdRoleServings, buildShoppingList, buildShoppingListForMembers
 } from './nutrition-engine.js?v=14.1.0';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
@@ -57,6 +57,8 @@ let state = {
   view: 'today',
   member: 'mother',
   theme: 'auto',            // 'auto' follows the device; 'light' / 'dark' are a family choice
+  lang: 'el',
+  planScope: 'family',
   trainingLoad: 'normal',
   weekOffset: 0,
   onboarded: false,
@@ -146,8 +148,33 @@ function sized(p) {
   return { ...p, plate: plateScale(p, planEnergy(p, load), load) };
 }
 
-function planForDate(date) {
+function basePlanForDate(date) {
   return PLAN_28[cycleDayIndex(dateFromKey(date)) - 1];
+}
+
+const planRecordId = (scope, date) => `plan:${scope}:${date}`;
+function planRecord(scope, date) {
+  return cache.plans.find(p => p.id === planRecordId(scope, date)) || null;
+}
+function planForDate(date, memberId = state.member) {
+  const member = memberId ? planRecord(memberId, date) : null;
+  const family = planRecord('family', date);
+  return { ...basePlanForDate(date), ...(family?.meals || {}), ...(member?.meals || {}) };
+}
+function hasPlanOverride(date, memberId = state.member) {
+  return !!planRecord(memberId, date) || !!planRecord('family', date);
+}
+async function savePlanOverride(scope, date, meals) {
+  const id = planRecordId(scope, date);
+  const clean = Object.fromEntries(SLOTS.filter(s => meals?.[s]).map(s => [s, meals[s]]));
+  const rec = { id, scope, memberId: scope === 'family' ? null : scope, date, meals: clean, updatedAt: new Date().toISOString(), schema: 1 };
+  cache.plans = cache.plans.filter(p => p.id !== id).concat(rec);
+  await put('plans', rec); broadcastChange('plan', { id });
+}
+async function clearPlanOverride(scope, date) {
+  const id = planRecordId(scope, date);
+  cache.plans = cache.plans.filter(p => p.id !== id);
+  await del('plans', id); broadcastChange('plan', { id });
 }
 
 function emptyLog(memberId, date) {
@@ -187,7 +214,7 @@ function weekDaysFor(offset) {
   const monday = addDays(mondayOf(), offset * 7);
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
-    return { date, dateObj: dateFromKey(date), plan: planForDate(date), recipeById };
+    return { date, dateObj: dateFromKey(date), plan: planForDate(date, state.member), recipeById, overridden: hasPlanOverride(date, state.member) };
   });
 }
 
@@ -203,7 +230,7 @@ function buildCtx() {
   const sizedProfiles = cache.profiles.map(sized);
   const me = sizedProfiles.find(p => p.id === profile.id) || sized(profile);
   const dateKey = localDateKey();
-  const planDay = planForDate(dateKey);
+  const planDay = planForDate(dateKey, profile.id);
   const log = logFor(profile.id, dateKey);
   const targets = targetsFor(profile, load);
   const totals = dayMacros(planDay, me, load, log, recipeById);
@@ -217,7 +244,18 @@ function buildCtx() {
   const measurements = measurementsFor(profile.id);
   const trend = weightTrend(measurements);
   const weekDays = weekDaysFor(state.weekOffset);
-  const shopList = buildShoppingList({ days: weekDays, profiles: sizedProfiles, recipeById });
+  const monday = weekDays[0]?.date || mondayOf();
+  const daysByMember = Object.fromEntries(sizedProfiles.map(p => [
+    p.id,
+    Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(monday, i);
+      return { date, dateObj: dateFromKey(date), plan: planForDate(date, p.id), recipeById };
+    })
+  ]));
+  const shopList = buildShoppingListForMembers({
+    daysByMember, profiles: sizedProfiles, recipeById,
+    loadFor: p => currentLoad(p)
+  });
   const shopChecked = state.shopChecked[shopKey(weekDays)] || {};
   const heatCells = heatCellsFor(profile.id);
   const checked = shopList.filter(i => shopChecked[i.key]).length;
@@ -228,7 +266,8 @@ function buildCtx() {
     const memberTargets = targetsFor(p, memberLoad);
     const memberNudge = nextMealNudge({ log: memberLog, slotTimes: SLOT_TIME, now });
     const mealsDone = Object.values(memberLog.meals || {}).filter(m => m?.status === 'done').length;
-    const mealsTotal = SLOTS.filter(s => planDay[s]).length;
+    const memberPlan = planForDate(dateKey, p.id);
+    const mealsTotal = SLOTS.filter(s => memberPlan[s]).length;
     return {
       id: p.id,
       name: p.name,
@@ -254,10 +293,12 @@ function buildCtx() {
     refs: referenceValues(profile),
     onboarded: state.onboarded, trainingLoads: TRAINING_LOADS,
     guidance: contextualGuidance({ profile, trainingLoad: load, today: log, plannedMeal: recipeById(planDay[SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner']) }),
-    recipeById, planForDate, logFor,
+    recipeById, planForDate, basePlanForDate, hasPlanOverride, logFor,
+    lang: state.lang, planScope: state.planScope,
     dayMacrosFor: (day, p, l, lg) => dayMacros(day, p, l, lg, recipeById),
     recipes: RECIPES, filters: state.filters,
     weekDays, weekOffset: state.weekOffset, shopList, shopChecked,
+    plans: cache.plans,
     shopFilter: state.shopFilter,
     shopMembers: cache.profiles.length,
     roleServings: householdRoleServings(sizedProfiles),
@@ -275,7 +316,8 @@ function buildCtx() {
     coverageByMember: sizedProfiles.map(p => {
       const l = currentLoad(p);
       const t = targetsFor(p, l);
-      const tot = dayMacros(planDay, p, l, emptyLog(p.id, dateKey), recipeById);
+      const memberPlan = planForDate(dateKey, p.id);
+      const tot = dayMacros(memberPlan, p, l, emptyLog(p.id, dateKey), recipeById);
       const c = planCoverage(p, l, tot, t, snackPool);
       return { id: p.id, name: p.name, pct: c.pct, status: c.status, gap: c.gapKcal };
     }),
@@ -310,12 +352,15 @@ function renderShell() {
   document.documentElement.style.setProperty('--member', profile?.accent || '#0E9F6E');
 
   byId('brandMark').innerHTML = logo(42);
-  byId('paletteBtn').innerHTML = `${icon('search', 17)}<span class="palette-label">Εντολές</span><kbd>Ctrl K</kbd>`;
-  byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · τοπικά δεδομένα</span>`;
+  byId('paletteBtn').innerHTML = `${icon('search', 17)}<span class="palette-label">${state.lang === 'en' ? 'Commands' : 'Εντολές'}</span><kbd>Ctrl K</kbd>`;
+  byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · ${state.lang === 'en' ? 'local data' : 'τοπικά δεδομένα'}</span>`;
 
-  byId('sideNav').innerHTML = NAV.map(([id, label, ic]) =>
-    `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" aria-label="${esc(label)}" ${state.view === id ? 'aria-current="page"' : ''}>
-      <span class="nav-ic">${icon(ic, 19)}</span><span class="nav-label">${esc(label)}</span></button>`).join('');
+  const NAV_EN = { today:'Today', plan:'Plan', meals:'Meals', shopping:'Shopping', progress:'Progress', family:'Family', guide:'Guide' };
+  byId('sideNav').innerHTML = NAV.map(([id, label, ic]) => {
+    const shown = state.lang === 'en' ? NAV_EN[id] : label;
+    return `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" aria-label="${esc(shown)}" ${state.view === id ? 'aria-current="page"' : ''}>
+      <span class="nav-ic">${icon(ic, 19)}</span><span class="nav-label">${esc(shown)}</span></button>`;
+  }).join('');
 
   const strip = byId('memberStrip');
   strip.innerHTML = cache.profiles.map(p =>
@@ -338,6 +383,11 @@ function renderShell() {
   }).join('') + `<button type="button" class="tab-btn ${['family', 'guide'].includes(state.view) ? 'active' : ''}" data-act="more">${icon('more', 22)}<span>Άλλα</span></button>`;
 
   const dark = resolvedTheme() === 'dark';
+  const langBtn = byId('langBtn');
+  if (langBtn) {
+    langBtn.textContent = state.lang === 'en' ? 'EL' : 'EN';
+    langBtn.setAttribute('aria-label', state.lang === 'en' ? 'Switch to Greek' : 'Αλλαγή στα Αγγλικά');
+  }
   byId('themeBtn').innerHTML = icon(dark ? 'moon' : 'sun', 19);
   const label = dark ? 'Αλλαγή σε φωτεινό θέμα' : 'Αλλαγή σε σκούρο θέμα';
   byId('themeBtn').setAttribute('aria-label', label);
@@ -460,7 +510,7 @@ function debounce(fn, ms) {
 async function persistSettings() {
   try {
     await put('settings', {
-      id: 'app', view: state.view, member: state.member, theme: state.theme,
+      id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope,
       trainingLoad: state.trainingLoad, onboarded: state.onboarded,
       filters: state.filters, shopChecked: state.shopChecked,
       shopFilter: state.shopFilter, version: APP.version
@@ -476,7 +526,7 @@ async function persistProfiles() {
 
 async function saveLog(log) {
   cache.logs = cache.logs.filter(l => l.id !== log.id).concat(log);
-  try { await put('logs', log); } catch (err) { console.error('[ZENITH] log save failed', err); toast('Δεν αποθηκεύτηκε η καταγραφή.', { tone: 'danger' }); }
+  try { await put('logs', log); broadcastChange('log', { id: log.id }); } catch (err) { console.error('[ZENITH] log save failed', err); toast('Δεν αποθηκεύτηκε η καταγραφή.', { tone: 'danger' }); }
 }
 
 /* ── Boot ──────────────────────────────────────────────────────────────── */
@@ -505,6 +555,8 @@ async function boot() {
     if (!cache.profiles.some(p => p.id === state.member)) state.member = cache.profiles[0]?.id || 'mother';
     if (!NAV.some(n => n[0] === state.view)) state.view = 'today';
     if (!THEMES.includes(state.theme)) state.theme = 'auto';
+    if (!['el','en'].includes(state.lang)) state.lang = 'el';
+    if (!['family', ...cache.profiles.map(p => p.id)].includes(state.planScope)) state.planScope = 'family';
     if (!TRAINING_LOADS.some(l => l[0] === state.trainingLoad)) state.trainingLoad = 'normal';
 
     renderAll();
@@ -776,6 +828,73 @@ document.addEventListener('click', async e => {
       state.trainingLoad = target.dataset.load;
       await persistSettings();
       render();
+      break;
+    }
+    case 'lang': {
+      state.lang = state.lang === 'en' ? 'el' : 'en';
+      document.documentElement.lang = state.lang;
+      await persistSettings();
+      renderAll();
+      break;
+    }
+    case 'planScope': {
+      state.planScope = target.dataset.scope || 'family';
+      await persistSettings();
+      render();
+      break;
+    }
+    case 'planEdit': {
+      const date = target.dataset.date;
+      const slot = target.dataset.slot;
+      const scope = target.dataset.scope || state.planScope || 'family';
+      const current = planForDate(date, scope === 'family' ? null : scope);
+      const currentId = current?.[slot] || '';
+      const options = RECIPES.filter(r => r.slot === slot)
+        .map(r => `<option value="${esc(r.id)}" ${r.id === currentId ? 'selected' : ''}>${esc(r.name)} · ${r.time}′</option>`).join('');
+      const scopeLabel = scope === 'family' ? 'Οικογένεια' : (cache.profiles.find(p => p.id === scope)?.name || scope);
+      openSheet({
+        title: `${SLOT_LABEL[slot]} · ${date}`,
+        size: 'sm',
+        body: `<form id="planEditForm" class="stack" data-date="${esc(date)}" data-slot="${esc(slot)}" data-scope="${esc(scope)}">
+          <div class="notice">${icon('users',18)}<span><b>${esc(scopeLabel)}</b><br>Η αλλαγή εφαρμόζεται μόνο σε αυτό το εύρος.</span></div>
+          <label class="field"><span>Γεύμα</span><select name="recipe" required>${options}</select></label>
+        </form>`,
+        footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Άκυρο</button>
+          <button type="button" class="btn btn-primary" data-act="planSave">${icon('check',16)} Αποθήκευση</button>`
+      });
+      break;
+    }
+    case 'planSave': {
+      const form = byId('planEditForm');
+      if (!form) break;
+      const { date, slot, scope } = form.dataset;
+      const recipeId = form.elements.recipe.value;
+      const current = planRecord(scope, date)?.meals || {};
+      await savePlanOverride(scope, date, { ...current, [slot]: recipeId });
+      closeSheet();
+      renderAll();
+      toast('Το πλάνο ενημερώθηκε άμεσα.');
+      break;
+    }
+    case 'planResetDay': {
+      const scope = target.dataset.scope || state.planScope || 'family';
+      const date = target.dataset.date;
+      await clearPlanOverride(scope, date);
+      renderAll();
+      toast('Η ημέρα επανήλθε στο βασικό πλάνο.');
+      break;
+    }
+    case 'planCopyWeek': {
+      const fromScope = target.dataset.from || 'family';
+      const toScope = target.dataset.to || state.member;
+      const monday = weekDaysFor(state.weekOffset)[0]?.date || mondayOf();
+      for (let i = 0; i < 7; i++) {
+        const date = addDays(monday, i);
+        const meals = planForDate(date, fromScope === 'family' ? null : fromScope);
+        await savePlanOverride(toScope, date, meals);
+      }
+      renderAll();
+      toast('Η εβδομάδα αντιγράφηκε στο μέλος.');
       break;
     }
     case 'week': {
@@ -1192,6 +1311,26 @@ byId('backupImport')?.addEventListener('change', async e => {
   } finally {
     e.target.value = '';
   }
+});
+
+/* ── Cross-tab/device-local sync ───────────────────────────────────────── */
+const syncBus = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('zenith-family-sync-v1') : null;
+function broadcastChange(type, payload = {}) {
+  try { syncBus?.postMessage({ type, payload, at: Date.now() }); } catch { /* unsupported */ }
+}
+syncBus?.addEventListener('message', async () => {
+  try {
+    cache.logs = (await all('logs')).map(migrateLog);
+    cache.measurements = await all('measurements');
+    cache.plans = await all('plans');
+    cache.checklists = await all('checklists');
+    const profiles = await all('profiles');
+    if (profiles.length) cache.profiles = profiles;
+    renderAll();
+  } catch (err) { console.error('[ZENITH] sync refresh failed', err); }
+});
+window.addEventListener('storage', e => {
+  if (e.key?.startsWith('zenith:ls:')) location.reload();
 });
 
 /* ── Error boundary ────────────────────────────────────────────────────── */
