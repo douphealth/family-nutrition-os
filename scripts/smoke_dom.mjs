@@ -315,6 +315,52 @@ if (mealBtn) {
   ok(!!window.document.getElementById('toast')?.textContent?.trim(), 'a toast is shown after logging');
 }
 
+/* ── 6b. Family Flow ───────────────────────────────────────────────────── */
+
+section('Family Flow');
+
+const pulseMembers = window.document.querySelectorAll('.family-pulse-person');
+ok(pulseMembers.length === 4, `Family Pulse renders all four household members (found ${pulseMembers.length})`);
+
+const familyPrompt = window.document.querySelector('[data-act="familyMealPrompt"]');
+ok(!!familyPrompt, 'next meal offers multi-member family logging');
+
+if (familyPrompt) {
+  const familySlot = familyPrompt.dataset.slot;
+  await click(familyPrompt, 100);
+  const familyForm = window.document.getElementById('familyMealForm');
+  ok(!!familyForm, 'family meal action opens the selection sheet');
+  const selectable = familyForm ? [...familyForm.querySelectorAll('input[name="member"]:checked:not(:disabled)')] : [];
+  ok(selectable.length >= 1, `family logger preselects pending members (found ${selectable.length})`);
+
+  const confirmFamily = window.document.querySelector('[data-act="familyMeal"]');
+  await click(confirmFamily, 180);
+
+  const familyLogs = await readStore('logs');
+  const familyDone = familyLogs.filter(l => l.meals?.[familySlot]?.status === 'done');
+  ok(familyDone.length >= selectable.length,
+    `family logging writes a done entry for each selected member (${familyDone.length} logged)`);
+  ok(!window.document.getElementById('sheet')?.classList.contains('is-open'),
+    'family logging closes the sheet after confirmation');
+}
+
+const quickFallback = window.document.querySelector('[data-act="quickMeals"]');
+ok(!!quickFallback, 'next meal offers a fast fallback');
+
+if (quickFallback) {
+  const quickSlot = quickFallback.dataset.slot;
+  await click(quickFallback, 120);
+  ok(window.location.search.includes('view=meals'), 'fast fallback navigates to the recipe library');
+  ok(window.document.querySelectorAll('.recipe-card').length >= 1, 'fast fallback shows matching recipes');
+  const activeFast = [...window.document.querySelectorAll('[data-act="filter"][data-key="tag"]')]
+    .find(el => el.dataset.value === 'fast');
+  ok(activeFast?.classList.contains('active'), 'fast fallback activates the fast recipe filter');
+  const activeSlot = [...window.document.querySelectorAll('[data-act="filter"][data-key="slot"]')]
+    .find(el => el.dataset.value === quickSlot);
+  ok(activeSlot?.classList.contains('active'), `fast fallback keeps the current meal slot (${quickSlot})`);
+  await clickSel('#sideNav [data-act="nav"][data-view="today"]', window.document, 100);
+}
+
 /* ── 7. Water logging ──────────────────────────────────────────────────── */
 
 section('Water');
