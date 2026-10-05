@@ -10,7 +10,7 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v14-2026-10-05-1';
+const CACHE = 'zenith-v14-2026-10-05-2';
 
 const CORE = [
   './',
@@ -84,7 +84,32 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Assets: serve from cache immediately, refresh the cache in the background.
+  const url = new URL(req.url);
+  const isCodeOrStyle = /\.(?:js|css)$/.test(url.pathname);
+
+  // Code and CSS: network-first. Versioned URLs in index/module imports already
+  // defeat older workers; this also prevents future open tabs from pinning code.
+  if (isCodeOrStyle) {
+    event.respondWith(
+      fetch(req, { cache: 'no-store' })
+        .then(res => {
+          if (res && res.ok && res.type === 'basic') {
+            const copy = res.clone();
+            caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(async () => {
+          const exact = await caches.match(req);
+          if (exact) return exact;
+          url.search = '';
+          return caches.match(url.href);
+        })
+    );
+    return;
+  }
+
+  // Other same-origin assets can stay instant while refreshing in background.
   event.respondWith(
     caches.match(req).then(cached => {
       const network = fetch(req)
