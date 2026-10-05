@@ -25,10 +25,11 @@ body { margin:0; font-size:9pt; line-height:1.3; }
 .app, .main { display:block !important; width:auto !important; min-width:0 !important; }
 .content { width:auto !important; max-width:none !important; padding:0 !important; margin:0 !important; }
 body::before {
-  content:'ZENITH PRO · Weekly Nutrition Planner';
+  content:'ZENITH PRO · Εβδομαδιαίο Πλάνο Διατροφής';
   display:block; margin:0 0 4mm; padding:0 0 2.5mm;
   border-bottom:1.5pt solid #0b0e0c; font-weight:800; font-size:11pt;
 }
+html[lang='en'] body::before { content:'ZENITH PRO · Weekly Nutrition Planner'; }
 
 .page-head { padding:0 0 3mm !important; margin:0 !important; }
 .page-head .eyebrow { margin-bottom:1mm !important; font-size:7pt !important; }
