@@ -10,8 +10,8 @@
  * 2 for fibre) so the numbers can never contradict each other.
  */
 
-import { dayNumber, addDays } from './dates.js';
-import { FOODS, roleWeights, nutrientsIn } from './foods.js';
+import { dayNumber, addDays } from './dates.js?v=14.1.0';
+import { FOODS, roleWeights, nutrientsIn } from './foods.js?v=14.1.0';
 
 export const MINOR_AGE = 18;
 export const ADULT_BMI_AGE = 20;
