@@ -53,7 +53,8 @@ const walk = file => {
   if (modules.has(file)) return;
   modules.add(file);
   for (const m of read(file).matchAll(/(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g)) {
-    const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), m[1]));
+    const spec = m[1].split(/[?#]/, 1)[0];
+    const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), spec));
     if (!exists(target)) fail(`${file} imports ${m[1]}, which does not exist`);
     else walk(target);
   }
