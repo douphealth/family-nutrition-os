@@ -394,6 +394,88 @@ ok(todayCardsAfterNav === 0, 'no "today" card is highlighted while viewing a fut
 await clickSel('[data-act="week"][data-reset="1"]', window.document, 80);
 ok(viewEl().querySelectorAll('.day-card.is-today').length >= 1, 'reset returns to the current week with today marked');
 
+/* v15: direct family/member planning, day/month modes, and language switch */
+const scopeButtons = [...window.document.querySelectorAll('[data-act="planScope"]')];
+ok(scopeButtons.length >= 5, `planner exposes family + member scopes (found ${scopeButtons.length})`);
+ok(window.document.querySelectorAll('[data-act="planEdit"]').length >= 4, 'planner exposes direct meal-edit controls');
+
+const familyTodaySlot = window.document.querySelector('.day-card.is-today [data-act="planEdit"]');
+if (familyTodaySlot) {
+  const editDate = familyTodaySlot.dataset.date;
+  const editSlot = familyTodaySlot.dataset.slot;
+  await click(familyTodaySlot, 100);
+  const form = window.document.getElementById('planEditForm');
+  ok(!!form, 'direct meal edit opens the planner form');
+  const select = form?.elements?.recipe;
+  if (select && select.options.length > 1) {
+    const originalRecipe = select.value;
+    const replacement = [...select.options].find(o => o.value !== originalRecipe)?.value;
+    if (replacement) {
+      select.value = replacement;
+      await clickSel('[data-act="planSave"]', window.document, 160);
+      const plans = await readStore('plans');
+      const rec = plans.find(p => p.id === `plan:family:${editDate}`);
+      ok(rec?.meals?.[editSlot] === replacement, 'family day override is persisted');
+      ok(viewEl().querySelector('.day-card.is-today.is-custom'), 'customized day is visibly marked');
+
+      await clickSel('#sideNav [data-act="nav"][data-view="today"]', window.document, 100);
+      const replacementName = [...select.options].find(o => o.value === replacement)?.textContent?.split(' · ')[0]?.trim();
+      ok(!replacementName || viewText().includes(replacementName), 'family plan edit propagates immediately to Today');
+
+      await clickSel('#sideNav [data-act="nav"][data-view="plan"]', window.document, 100);
+      const firstMemberScope = [...window.document.querySelectorAll('[data-act="planScope"]')].find(b => b.dataset.scope !== 'family');
+      ok(!!firstMemberScope, 'member-specific planning scope is available');
+      if (firstMemberScope) {
+        const memberId = firstMemberScope.dataset.scope;
+        await click(firstMemberScope, 80);
+        const memberTodaySlot = window.document.querySelector(`.day-card.is-today [data-act="planEdit"][data-slot="${editSlot}"]`);
+        if (memberTodaySlot) {
+          await click(memberTodaySlot, 80);
+          const mf = window.document.getElementById('planEditForm');
+          const ms = mf?.elements?.recipe;
+          const memberReplacement = ms ? [...ms.options].find(o => o.value !== ms.value)?.value : null;
+          if (ms && memberReplacement) {
+            ms.value = memberReplacement;
+            await clickSel('[data-act="planSave"]', window.document, 160);
+            const memberPlans = await readStore('plans');
+            ok(memberPlans.some(p => p.id === `plan:${memberId}:${editDate}` && p.meals?.[editSlot] === memberReplacement),
+              'member-specific day override is persisted independently');
+          }
+          const resetMember = window.document.querySelector(`[data-act="planResetDay"][data-date="${editDate}"][data-scope="${memberId}"]`);
+          if (resetMember) await click(resetMember, 120);
+        }
+        await clickSel('[data-act="planScope"][data-scope="family"]', window.document, 80);
+      }
+
+      const resetFamily = window.document.querySelector(`[data-act="planResetDay"][data-date="${editDate}"][data-scope="family"]`);
+      if (resetFamily) await click(resetFamily, 120);
+      ok(!(await readStore('plans')).some(p => p.id === `plan:family:${editDate}`), 'family override can be reset cleanly');
+    } else {
+      await clickSel('[data-act="closeSheet"]', window.document, 60);
+    }
+  }
+}
+
+await clickSel('[data-act="planMode"][data-mode="day"]', window.document, 80);
+ok(window.document.querySelectorAll('.planner-day-picker button').length === 7, 'day planner exposes seven-day picker');
+ok(window.document.querySelectorAll('.planner-day-focus [data-act="planEdit"]').length === 4, 'day planner exposes four direct meal edits');
+
+await clickSel('[data-act="planMode"][data-mode="month"]', window.document, 100);
+ok(window.document.querySelectorAll('.planner-month-week').length === 4, '4-week planner renders four complete weeks');
+await clickSel('[data-act="planMode"][data-mode="week"]', window.document, 80);
+
+const langBtn = window.document.getElementById('langBtn');
+ok(!!langBtn, 'one-tap language switch is present');
+if (langBtn) {
+  await click(langBtn, 100);
+  ok(window.document.documentElement.lang === 'en', 'language switch changes document language to English');
+  ok(text(window.document.querySelector('#sideNav')).includes('Plan'), 'English navigation renders after one tap');
+  ok(viewText().includes('Flexible nutrition planner'), 'planner content renders in English');
+  await click(langBtn, 100);
+  ok(window.document.documentElement.lang === 'el', 'second tap restores Greek');
+}
+
+
 /* ── 9. Recipe detail sheet ────────────────────────────────────────────── */
 
 section('Recipe sheet');
