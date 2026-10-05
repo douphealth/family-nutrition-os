@@ -61,6 +61,7 @@ let state = {
   lang: 'el',
   planScope: 'family',
   planMode: 'week',
+  planDate: null,
   trainingLoad: 'normal',
   weekOffset: 0,
   onboarded: false,
@@ -304,7 +305,7 @@ function buildCtx() {
     onboarded: state.onboarded, trainingLoads: TRAINING_LOADS,
     guidance: contextualGuidance({ profile, trainingLoad: load, today: log, plannedMeal: recipeById(planDay[SLOTS.find(s => log.meals?.[s]?.status !== 'done') || 'dinner']) }),
     recipeById, planForDate, basePlanForDate, hasPlanOverride, logFor,
-    lang: state.lang, planScope: state.planScope,
+    lang: state.lang, planScope: state.planScope, planDate: state.planDate || dateKey,
     dayMacrosFor: (day, p, l, lg) => dayMacros(day, p, l, lg, recipeById),
     recipes: RECIPES, filters: state.filters,
     weekDays, monthDays: monthDaysFor(state.weekOffset), weekOffset: state.weekOffset, shopList, shopChecked,
@@ -524,7 +525,7 @@ function debounce(fn, ms) {
 async function persistSettings() {
   try {
     await put('settings', {
-      id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope, planMode: state.planMode,
+      id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope, planMode: state.planMode, planDate: state.planDate,
       trainingLoad: state.trainingLoad, onboarded: state.onboarded,
       filters: state.filters, shopChecked: state.shopChecked,
       shopFilter: state.shopFilter, version: APP.version
@@ -571,7 +572,8 @@ async function boot() {
     if (!THEMES.includes(state.theme)) state.theme = 'auto';
     if (!['el','en'].includes(state.lang)) state.lang = 'el';
     if (!['family', ...cache.profiles.map(p => p.id)].includes(state.planScope)) state.planScope = 'family';
-    if (!['week','month'].includes(state.planMode)) state.planMode = 'week';
+    if (!['day','week','month'].includes(state.planMode)) state.planMode = 'week';
+    if (!state.planDate || !/^\d{4}-\d{2}-\d{2}$/.test(state.planDate)) state.planDate = localDateKey();
     if (!TRAINING_LOADS.some(l => l[0] === state.trainingLoad)) state.trainingLoad = 'normal';
 
     renderAll();
@@ -859,7 +861,15 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'planMode': {
-      state.planMode = target.dataset.mode === 'month' ? 'month' : 'week';
+      state.planMode = ['day','week','month'].includes(target.dataset.mode) ? target.dataset.mode : 'week';
+      if (state.planMode === 'day' && !state.planDate) state.planDate = localDateKey();
+      await persistSettings();
+      render();
+      break;
+    }
+    case 'planDate': {
+      const base = target.dataset.date || state.planDate || localDateKey();
+      state.planDate = target.dataset.date || addDays(base, Number(target.dataset.delta || 0));
       await persistSettings();
       render();
       break;
