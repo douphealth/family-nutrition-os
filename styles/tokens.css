@@ -69,35 +69,35 @@
   --dur-1: 120ms;  --dur-2: 220ms;  --dur-3: 420ms;  --dur-4: 700ms;
 
   /* ── Layout ───────────────────────────────────────────────────────────── */
-  --sidebar-w: 252px;
+  --sidebar-w: 272px;
   --rail-w: 78px;
-  --content-max: 1320px;
+  --content-max: 1480px;
   --tabbar-h: 68px;
   --topbar-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
 
   /* ── Daylight palette ─────────────────────────────────────────────────── */
-  --bg: #F3F5F0;
-  --bg-2: #E9EEE6;
-  --surface: #FFFFFF;
-  --surface-2: #F7F9F4;
-  --surface-3: #ECF0E7;
-  --surface-hover: #F1F5EC;
-  --line: rgba(15, 35, 24, .09);
-  --line-2: rgba(15, 35, 24, .16);
+  --bg: #F4F7F5;
+  --bg-2: #E9F0EC;
+  --surface: rgba(255,255,255,.92);
+  --surface-2: #F8FBF9;
+  --surface-3: #EEF4F0;
+  --surface-hover: #F1F8F4;
+  --line: rgba(10, 32, 22, .085);
+  --line-2: rgba(10, 32, 22, .16);
 
   --ink: #0D1A13;       /* headings, numerals            ≈17:1 on white */
   --ink-2: #2A3B31;     /* body                          ≈11:1 */
   --ink-3: #566A5E;     /* secondary, captions           ≈5.7:1 on white, ≥5.2 on bg */
   --ink-4: #7F9186;     /* decorative only — never text  */
 
-  --brand: #0B7A4B;         /* filled buttons; white text on it ≈5.4:1 */
-  --brand-hi: #0E9560;
+  --brand: #087A57;         /* filled buttons; white text on it ≈5.4:1 */
+  --brand-hi: #10A875;
   --brand-ink: #FFFFFF;
-  --brand-text: #08663E;    /* brand-coloured text on light surfaces ≈6.6:1 */
-  --brand-soft: #E3F3EA;
-  --brand-line: #B9DEC8;
+  --brand-text: #066546;    /* brand-coloured text on light surfaces ≈6.6:1 */
+  --brand-soft: #DDF4E9;
+  --brand-line: #A8DDC4;
 
   --blue: #3454D1;   --blue-text: #2B47B8;   --blue-soft: #E8EDFD;   --blue-line: #C4D0F7;
   --gold: #E29A0E;   --gold-text: #8A5500;   --gold-soft: #FDF0D5;   --gold-line: #F4D690;
@@ -127,15 +127,15 @@
   --slot-dinner: #7A57D9;     --slot-dinner-soft: #EEE8FC;     --slot-dinner-ink: #5B3AB8;
 
   /* Elevation */
-  --shadow-xs: 0 1px 2px rgba(12, 32, 20, .06);
-  --shadow-sm: 0 1px 2px rgba(12, 32, 20, .05), 0 8px 18px -10px rgba(12, 32, 20, .14);
-  --shadow-md: 0 2px 4px rgba(12, 32, 20, .04), 0 18px 36px -18px rgba(12, 32, 20, .22);
-  --shadow-lg: 0 30px 70px -28px rgba(12, 32, 20, .42);
+  --shadow-xs: 0 1px 2px rgba(7, 24, 17, .05), 0 8px 22px -18px rgba(7, 24, 17, .20);
+  --shadow-sm: 0 1px 2px rgba(7, 24, 17, .04), 0 14px 34px -24px rgba(7, 24, 17, .28);
+  --shadow-md: 0 2px 4px rgba(7, 24, 17, .04), 0 24px 56px -30px rgba(7, 24, 17, .34);
+  --shadow-lg: 0 38px 90px -34px rgba(7, 24, 17, .50);
   --ring-focus: 0 0 0 3px color-mix(in oklab, var(--brand) 38%, transparent);
-  --glass: rgba(255, 255, 255, .76);
-  --glass-strong: rgba(255, 255, 255, .91);
-  --glass-soft: rgba(255, 255, 255, .54);
-  --glass-bar: rgba(255, 255, 255, .94);   /* nearly opaque: navigation labels never depend on content below */
+  --glass: rgba(255, 255, 255, .72);
+  --glass-strong: rgba(255, 255, 255, .88);
+  --glass-soft: rgba(255, 255, 255, .48);
+  --glass-bar: rgba(255, 255, 255, .90);   /* nearly opaque: navigation labels never depend on content below */
   --toast-bg: #0A1710;
   --toast-text: #FFFFFF;
   --scrim: rgba(10, 24, 16, .48);
@@ -144,9 +144,9 @@
   --art-plate: #FFFFFF;  --art-plate-2: #EEF1EA;  --art-shadow: rgba(12, 32, 20, .14);
 
   /* Ambient background */
-  --aura-a: rgba(16, 163, 110, .16);
-  --aura-b: rgba(244, 170, 70, .16);
-  --aura-c: rgba(99, 132, 240, .10);
+  --aura-a: rgba(23, 193, 139, .18);
+  --aura-b: rgba(255, 188, 112, .13);
+  --aura-c: rgba(112, 132, 255, .12);
 
   /* The signed-in member (set at runtime from the profile colour) */
   --member: #0E9F6E;
@@ -159,26 +159,26 @@
   color-scheme: dark;
 
   /* ── Midnight palette ─────────────────────────────────────────────────── */
-  --bg: #070C09;
-  --bg-2: #0B120E;
-  --surface: #0F1712;
-  --surface-2: #131D17;
-  --surface-3: #1A2620;
-  --surface-hover: #17231C;
+  --bg: #060908;
+  --bg-2: #0A100D;
+  --surface: rgba(15, 23, 19, .92);
+  --surface-2: #121C17;
+  --surface-3: #19241F;
+  --surface-hover: #16241D;
   --line: rgba(255, 255, 255, .075);
-  --line-2: rgba(255, 255, 255, .15);
+  --line-2: rgba(255, 255, 255, .155);
 
   --ink: #F2F7F4;
   --ink-2: #CCD9D1;
   --ink-3: #9DB0A5;
   --ink-4: #667a6f;
 
-  --brand: #34D399;
-  --brand-hi: #5FE3B2;
+  --brand: #45DBA6;
+  --brand-hi: #6BE9BD;
   --brand-ink: #04150C;
-  --brand-text: #63E6B5;
-  --brand-soft: rgba(52, 211, 153, .12);
-  --brand-line: rgba(52, 211, 153, .32);
+  --brand-text: #78F0C5;
+  --brand-soft: rgba(69, 219, 166, .13);
+  --brand-line: rgba(69, 219, 166, .34);
 
   --blue: #7F9BFF;   --blue-text: #A5B9FF;   --blue-soft: rgba(127, 155, 255, .13);   --blue-line: rgba(127, 155, 255, .34);
   --gold: #F5B84A;   --gold-text: #F8C868;   --gold-soft: rgba(245, 184, 74, .13);    --gold-line: rgba(245, 184, 74, .34);
@@ -211,9 +211,9 @@
 
   --art-plate: #EFF4F0;  --art-plate-2: #D9E3DC;  --art-shadow: rgba(0, 0, 0, .45);
 
-  --aura-a: rgba(52, 211, 153, .13);
-  --aura-b: rgba(245, 184, 74, .07);
-  --aura-c: rgba(127, 155, 255, .10);
+  --aura-a: rgba(69, 219, 166, .16);
+  --aura-b: rgba(255, 185, 96, .08);
+  --aura-c: rgba(122, 142, 255, .13);
 }
 
 @media (prefers-reduced-motion: reduce) {
