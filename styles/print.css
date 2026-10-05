@@ -1,44 +1,130 @@
 /* ============================================================================
-   ZENITH PRO · print
-   ----------------------------------------------------------------------------
-   The plan and the shopping list are printed and stuck on the fridge. This strips
-   the app chrome, forces high-contrast dark-on-white in either theme, opens every
-   disclosure, and keeps a card from splitting across pages.
+   ZENITH PRO · v15 print
+   Weekly planner is a purpose-built A4 landscape document, not a printed app UI.
    ========================================================================== */
 
-@page { margin: 14mm; }
+@page { size: A4 landscape; margin: 9mm; }
 
 html[data-theme], html[data-theme='dark'] {
-  --bg: #fff; --bg-2: #fff; --surface: #fff; --surface-2: #f6f7f5; --surface-3: #eceeeb; --surface-hover: #f6f7f5;
-  --line: #cfd4d0; --line-2: #b4bcb6;
-  --ink: #000; --ink-2: #111; --ink-3: #3d4640; --ink-4: #666;
-  --brand: #0B7A4B; --brand-ink: #fff; --brand-text: #08663E; --brand-soft: #eef7f1; --brand-line: #bcd9c8;
-  --shadow-xs: none; --shadow-sm: none; --shadow-md: none; --shadow-lg: none;
+  --bg:#fff; --bg-2:#fff; --surface:#fff; --surface-2:#f7f8f6; --surface-3:#eef1ed;
+  --surface-hover:#f7f8f6; --line:#cbd2cc; --line-2:#aeb8b0;
+  --ink:#0b0e0c; --ink-2:#242a26; --ink-3:#59625c; --ink-4:#737b76;
+  --brand:#087A4A; --brand-ink:#fff; --brand-text:#08613d; --brand-soft:#edf7f1; --brand-line:#b9d8c6;
+  --shadow-xs:none; --shadow-sm:none; --shadow-md:none; --shadow-lg:none;
   color-scheme: light;
 }
 
-body { background: #fff !important; color: #000; font-size: 11pt; }
+* { box-sizing: border-box; }
+html, body { width: auto !important; min-width: 0 !important; background:#fff !important; color:#0b0e0c !important; }
+body { margin:0; font-size:9pt; line-height:1.3; }
 .bg, .sidebar, .topbar, .tabbar, #toast, #sheet, #palette, .skip, .sr-only,
-.btn, .icon-btn, .chip, .sec-action, .toolbar, .meal-more summary, .next-actions,
-.water-tracker, .water-actions, .shop-actions, .shop-chips, .glass, .filter-card { display: none !important; }
+.btn, .icon-btn, .chip, .sec-action, .toolbar, .planner-control,
+.water-tracker, .water-actions, .shop-actions, .shop-chips, .glass, .filter-card,
+.planner-edit, .planner-day-actions { display:none !important; }
 
-.app { display: block; }
-.content { max-width: none; padding: 0; }
-body::before { content: 'ZENITH PRO · Οικογενειακή διατροφή'; display: block; margin-bottom: 6mm; padding-bottom: 3mm; border-bottom: 2px solid #000; font-weight: 800; font-size: 13pt; }
+.app, .main { display:block !important; width:auto !important; min-width:0 !important; }
+.content { width:auto !important; max-width:none !important; padding:0 !important; margin:0 !important; }
+body::before {
+  content:'ZENITH PRO · Weekly Nutrition Planner';
+  display:block; margin:0 0 4mm; padding:0 0 2.5mm;
+  border-bottom:1.5pt solid #0b0e0c; font-weight:800; font-size:11pt;
+}
 
-.card, .day-card, .shop-aisle-sec, .recipe-card, .meal-row { break-inside: avoid; box-shadow: none !important; background: #fff !important; border: 1px solid #b4bcb6 !important; }
-.page-head, .dash-head { padding-top: 0; }
-.today-grid, .week-strip { display: block !important; }
-.week-strip { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 4mm; overflow: visible; }
-.day-card { min-width: 0; }
-.shop-aisles { display: block; columns: 2; column-gap: 8mm; }
-.shop-aisle-sec { margin-bottom: 4mm; }
-.shop-head { position: static; }
-.shop-check { border: 1.5px solid #000 !important; background: #fff !important; border-radius: 3px; width: 18px; height: 18px; }
-.shop-check svg { display: none; }
-.shop-item { min-height: 0; padding: 3px 0; }
-.shop-item.is-checked { opacity: 1; }
-details.disclosure > .disclosure-body, details > *:not(summary) { display: block !important; }
-.next-art, .recipe-art .art, .art-tile .art { filter: none; animation: none; }
-a { color: #000; text-decoration: none; }
-*, *::before, *::after { animation: none !important; transition: none !important; }
+.page-head { padding:0 0 3mm !important; margin:0 !important; }
+.page-head .eyebrow { margin-bottom:1mm !important; font-size:7pt !important; }
+.page-head h1 { margin:0 !important; font-size:20pt !important; line-height:1.05 !important; letter-spacing:-.03em !important; }
+.page-head p { margin:1.5mm 0 0 !important; max-width:170mm !important; font-size:8pt !important; color:#3e4841 !important; }
+
+.card, .day-card, .shop-aisle-sec, .recipe-card, .meal-row {
+  break-inside:avoid; box-shadow:none !important; background:#fff !important; border:1px solid #b9c1bb !important;
+}
+
+/* WEEK: seven horizontal rows. This cannot collapse into the narrow browser cards. */
+.page.plan .week-strip.planner-week {
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:1.8mm !important;
+  overflow:visible !important;
+  width:100% !important;
+}
+.page.plan .planner-day {
+  display:grid !important;
+  grid-template-columns:24mm minmax(0,1fr) !important;
+  gap:2mm !important;
+  min-width:0 !important; width:100% !important;
+  padding:2mm !important; border-radius:3mm !important;
+  break-inside:avoid !important;
+}
+.page.plan .planner-day.is-today { border:1.5pt solid #087A4A !important; }
+.page.plan .planner-day.is-custom { box-shadow:inset 2.5mm 0 #087A4A !important; }
+.page.plan .day-head {
+  display:flex !important; flex-direction:column !important; align-items:flex-start !important;
+  justify-content:center !important; gap:.7mm !important; padding:0 1.5mm !important;
+}
+.page.plan .day-dow { font-size:7pt !important; }
+.page.plan .day-head h2 { margin:0 !important; font-size:15pt !important; }
+.page.plan .planner-day-meta { justify-items:start !important; }
+.page.plan .planner-custom { font-size:6pt !important; }
+.page.plan .day-kcal { font-size:8pt !important; }
+.page.plan .planner-slots {
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:1.5mm !important; min-width:0 !important;
+}
+.page.plan .planner-slot {
+  display:block !important; min-width:0 !important; min-height:0 !important;
+  padding:1.7mm 2mm !important; border-radius:2mm !important;
+  background:#fafbf9 !important; border:1px solid #d4dad5 !important;
+  text-align:left !important;
+}
+.page.plan .planner-slot i { display:none !important; }
+.page.plan .planner-slot .day-slot-label {
+  display:block !important; margin:0 0 .8mm !important;
+  font-size:6pt !important; font-weight:760 !important; color:#087A4A !important;
+}
+.page.plan .planner-slot b {
+  display:block !important; font-size:7.5pt !important; line-height:1.2 !important;
+  color:#0b0e0c !important; overflow-wrap:anywhere !important;
+}
+
+/* Four-week view prints each week on its own page section. */
+.page.plan .planner-month { display:block !important; }
+.page.plan .planner-month-week {
+  display:block !important; padding:0 !important; margin:0 0 5mm !important;
+  border:0 !important; background:#fff !important; break-after:page;
+}
+.page.plan .planner-month-week:last-child { break-after:auto; }
+.page.plan .planner-month-head { margin:0 0 2mm !important; padding-bottom:1mm !important; border-bottom:1px solid #aaa; }
+.page.plan .planner-month-grid {
+  display:grid !important; grid-template-columns:1fr !important; gap:1.8mm !important;
+}
+.page.plan .planner-month-grid .planner-day {
+  display:grid !important; grid-template-columns:24mm minmax(0,1fr) !important;
+}
+.page.plan .planner-month-grid .planner-day-actions { display:none !important; }
+
+/* Supporting information begins on page 2 rather than leaving a blank page. */
+.page.plan .plan-lower {
+  display:grid !important; grid-template-columns:1fr 1fr !important; gap:5mm !important;
+  margin-top:5mm !important; break-before:page;
+}
+.page.plan .plan-lower .card { padding:4mm !important; border-radius:3mm !important; }
+.page.plan .plan-lower h2 { font-size:14pt !important; margin:0 0 2mm !important; }
+.page.plan .batch-list { gap:2mm !important; }
+.page.plan .batch-item { gap:2mm !important; font-size:8pt !important; }
+.page.plan .bc-row { min-height:7mm !important; }
+.page.plan .bc-track { height:2mm !important; }
+
+/* Shopping remains a useful two-column checklist. */
+.shop-aisles { display:block !important; columns:2; column-gap:8mm; }
+.shop-aisle-sec { margin-bottom:3mm; padding:3mm !important; }
+.shop-head { position:static !important; }
+.shop-check { border:1.5px solid #000 !important; background:#fff !important; border-radius:2px; width:14px; height:14px; }
+.shop-check svg { display:none !important; }
+.shop-item { min-height:0 !important; padding:1.5mm 0 !important; }
+.shop-item.is-checked { opacity:1 !important; }
+
+details.disclosure > .disclosure-body, details > *:not(summary) { display:block !important; }
+.next-art, .recipe-art .art, .art-tile .art { filter:none !important; animation:none !important; }
+a { color:#000 !important; text-decoration:none !important; }
+*, *::before, *::after { animation:none !important; transition:none !important; }
