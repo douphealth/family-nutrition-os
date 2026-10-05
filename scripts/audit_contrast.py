@@ -179,9 +179,13 @@ def measure_view(page, label, only=None):
         return
     normal = Image.open(io.BytesIO(page.screenshot(type="png"))).convert("RGB") if CROPS else None
     page.evaluate(
-        "(css) => { let s = document.getElementById('__ct'); if (!s) { s = document.createElement('style'); s.id = '__ct'; document.head.appendChild(s); } s.textContent = css; }",
+        "(css) => { let s = document.getElementById('__ct'); if (!s) { s = document.createElement('style'); s.id = '__ct'; document.head.appendChild(s); } s.textContent = css; void document.documentElement.offsetHeight; }",
         HIDE_TEXT,
     )
+    # Chromium may keep composited text/backdrop layers from the previous frame.
+    # Wait for two paints so the screenshot is guaranteed to contain the page
+    # *without glyphs*, not a stale layer with the original text still visible.
+    page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
     png = page.screenshot(type="png")
     page.evaluate("document.getElementById('__ct')?.remove()")
     img = np.asarray(Image.open(io.BytesIO(png)).convert("RGB"), dtype=np.float64)
