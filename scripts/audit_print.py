@@ -45,6 +45,8 @@ def main() -> None:
         page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=1)
         page.goto(url, wait_until="networkidle")
         page.wait_for_selector(".planner-week .planner-day")
+        screen_out = out.with_name("zenith-plan-desktop.png")
+        page.screenshot(path=str(screen_out), full_page=False)
         page.emulate_media(media="print")
         page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
 
