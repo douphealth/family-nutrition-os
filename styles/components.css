@@ -317,3 +317,38 @@ details.disclosure > summary::after { content: ''; margin-left: auto; width: 10p
 details.disclosure[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
 details.disclosure > summary:hover { background: var(--surface-hover); }
 .disclosure-body { padding: 0 var(--s-5) var(--s-5); display: grid; gap: var(--s-3); color: var(--ink-2); }
+
+
+/* ── v14 family meal logger ───────────────────────────────────────────── */
+.family-log-form { display: grid; gap: var(--s-4); }
+.family-log-list { display: grid; gap: 7px; }
+.family-log-row {
+  display: grid; grid-template-columns: 24px auto minmax(0,1fr) auto;
+  align-items: center; gap: var(--s-3); min-height: 62px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface-2); cursor: pointer;
+}
+.family-log-row:hover { border-color: var(--line-2); background: var(--surface-hover); }
+.family-log-row.is-done { cursor: default; background: var(--brand-soft); border-color: var(--brand-line); }
+.family-log-row input {
+  appearance: none; width: 22px; height: 22px; padding: 0; border-radius: 7px;
+  border: 2px solid var(--line-2); background: var(--surface);
+  display: grid; place-content: center;
+}
+.family-log-row input::before {
+  content: ''; width: 10px; height: 6px; margin-top: -2px;
+  border-left: 2px solid var(--brand-ink); border-bottom: 2px solid var(--brand-ink);
+  transform: rotate(-45deg) scale(0);
+  transition: transform var(--dur-1) var(--ease);
+}
+.family-log-row input:checked { background: var(--brand); border-color: var(--brand); }
+.family-log-row input:checked::before { transform: rotate(-45deg) scale(1); }
+.family-log-row input:disabled { opacity: .75; }
+.family-log-copy { display: grid; gap: 2px; min-width: 0; }
+.family-log-copy b { color: var(--ink); font-size: var(--fs-md); }
+.family-log-copy small { color: var(--ink-3); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.family-log-state { color: var(--brand-text); }
+@media (max-width: 479px) {
+  .family-log-row { grid-template-columns: 22px auto minmax(0,1fr); }
+  .family-log-state { display: none; }
+}
