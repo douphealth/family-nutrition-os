@@ -329,6 +329,8 @@ export function todayView(ctx) {
     <div class="next-art next-art-done">${icon('sparkles', 84)}</div>
   </section>`}
 
+  ${familyPulse(ctx)}
+
   <section class="card water-card tone-aqua" aria-label="Νερό">
     <div class="card-head">
       <div>
@@ -482,10 +484,52 @@ function nextMealCard(ctx, slot, recipe) {
       <div class="next-actions">
         <button type="button" class="btn btn-primary btn-lg" data-act="meal" data-slot="${slot}" data-portion="1" data-recipe="${esc(recipe.id)}">${icon('check', 20)} Το έφαγα</button>
         <button type="button" class="btn btn-lg btn-quiet" data-act="cook" data-id="${esc(recipe.id)}">${icon('utensils', 18)} Μαγείρεμα</button>
-        <button type="button" class="btn btn-ghost" data-act="recipe" data-id="${esc(recipe.id)}">Συνταγή ${icon('chevronRight', 15)}</button>
+      </div>
+      <div class="next-shortcuts" aria-label="Γρήγορες ενέργειες γεύματος">
+        <button type="button" class="next-shortcut" data-act="familyMealPrompt" data-slot="${slot}" data-recipe="${esc(recipe.id)}">${icon('users', 16)} <span>Το έφαγε η οικογένεια</span></button>
+        <button type="button" class="next-shortcut" data-act="quickMeals" data-slot="${slot}">${icon('zap', 16)} <span>Γρήγορη εναλλακτική</span></button>
+        <button type="button" class="next-shortcut" data-act="recipe" data-id="${esc(recipe.id)}">${icon('book', 16)} <span>Συνταγή</span></button>
       </div>
     </div>
     <div class="next-art" aria-hidden="true">${illustration(RECIPE_ART[recipe.id], 200)}</div>
+  </section>`;
+}
+
+/** Household-wide live status: one glance before drilling into one profile. */
+function familyPulse(ctx) {
+  const members = ctx.familyNow || [];
+  if (!members.length) return '';
+  const complete = members.filter(m => m.mealsDone >= m.mealsTotal).length;
+  const next = members.filter(m => m.nextSlot).length;
+  return `
+  <section class="card card-lg family-pulse" aria-labelledby="family-pulse-title">
+    <div class="family-pulse-head">
+      <div>
+        <div class="eyebrow">${icon('users', 14)} Οικογένεια τώρα</div>
+        <h2 class="card-title" id="family-pulse-title">${complete === members.length ? 'Η μέρα είναι τακτοποιημένη' : `${next} από ${members.length} έχουν επόμενο γεύμα`}</h2>
+        <p class="muted tiny">Πάτησε ένα πρόσωπο για να δεις αμέσως το δικό του πλάνο και τη δική του μερίδα.</p>
+      </div>
+      <button type="button" class="btn btn-sm btn-soft" data-act="nav" data-view="family">${icon('users', 15)} Προφίλ</button>
+    </div>
+    <div class="family-pulse-grid">
+      ${members.map(m => {
+        const done = m.mealsDone >= m.mealsTotal;
+        const hydration = Math.round(Math.max(0, Math.min(1, m.waterPct || 0)) * 100);
+        return `<button type="button" class="family-pulse-person ${m.id === ctx.profile.id ? 'is-current' : ''} ${done ? 'is-complete' : ''}"
+          data-act="member" data-id="${esc(m.id)}" style="--pa:${esc(m.accent || 'var(--brand)')}"
+          aria-label="${esc(m.name)}: ${m.mealsDone} από ${m.mealsTotal} γεύματα, ${m.nextLabel}">
+          ${avatar(ctx.profiles.find(p => p.id === m.id), 42)}
+          <span class="family-pulse-main">
+            <span class="family-pulse-name">${esc(m.name)}</span>
+            <span class="family-pulse-next">${done ? `${icon('checkCircle', 13)} Όλα τα γεύματα` : `${icon('clock', 13)} ${esc(m.nextLabel)}${m.nextTime ? ` · ${esc(m.nextTime)}` : ''}`}</span>
+          </span>
+          <span class="family-pulse-stats">
+            <span><b>${m.mealsDone}/${m.mealsTotal}</b><small>γεύματα</small></span>
+            <span><b>${hydration}%</b><small>νερό</small></span>
+          </span>
+        </button>`;
+      }).join('')}
+    </div>
   </section>`;
 }
 
