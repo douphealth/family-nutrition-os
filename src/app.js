@@ -14,27 +14,27 @@
 import {
   APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, SLOT_TIME, AISLES,
   PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY
-} from './data.js?v=14.1.0';
+} from './data.js?v=15.0.0';
 import {
   isMinor, targetsFor, dayMacros, mealMacros, planCoverage, weightTrend, loggingStreak,
   contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
   upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
   householdRoleServings, buildShoppingList, buildShoppingListForMembers
-} from './nutrition-engine.js?v=14.1.0';
+} from './nutrition-engine.js?v=15.0.0';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
   storageInfo, requestPersistence, activeBackend
-} from './storage.js?v=14.1.0';
+} from './storage.js?v=15.0.0';
 import {
   esc, icon, logo, byId, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, dateFromKey,
   num, num1, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
-} from './ui.js?v=14.1.0';
+} from './ui.js?v=15.0.0';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
-} from './views.js?v=14.1.0';
-import { translateTree } from './i18n.js';
+} from './views.js?v=15.0.0';
+import { translateTree } from './i18n.js?v=15.0.0';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -1365,7 +1365,7 @@ window.addEventListener('resize', debounce(() => { if (state.view === 'progress'
 /* ── Service worker ────────────────────────────────────────────────────── */
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=14.1.0', { scope: './' }).then(reg => {
+  navigator.serviceWorker.register('./sw.js?v=15.0.0', { scope: './' }).then(reg => {
     reg?.update?.()?.catch?.(() => {});
     reg?.addEventListener?.('updatefound', () => {
       const worker = reg.installing;
