@@ -607,7 +607,7 @@ function coverageCard(ctx, coverage) {
 /* ── Plan ──────────────────────────────────────────────────────────────── */
 
 export function planView(ctx) {
-  const { weekDays, monthDays, weekOffset, dateKey, sized, load, planScope, lang } = ctx;
+  const { weekDays, monthDays, weekOffset, dateKey, sized, load, planScope, planDate, lang } = ctx;
   const en = lang === 'en';
   const scope = planScope || 'family';
   const scopeMember = scope === 'family' ? null : ctx.sizedProfiles.find(p => p.id === scope);
@@ -620,12 +620,14 @@ export function planView(ctx) {
 
   const txt = {
     cycle: en ? 'Flexible nutrition planner' : 'Ευέλικτος σχεδιασμός διατροφής',
+    dayTitle: en ? 'Day plan' : 'Πλάνο ημέρας',
     weekTitle: en ? `Week ${shownWeek}` : `Εβδομάδα ${shownWeek}`,
     monthTitle: en ? '4-week plan' : 'Πλάνο 4 εβδομάδων',
     sub: en
       ? 'Plan together or give any family member a different meal. Every edit updates Today and Shopping immediately.'
       : 'Σχεδιάστε μαζί ή δώστε σε οποιοδήποτε μέλος διαφορετικό γεύμα. Κάθε αλλαγή ενημερώνει άμεσα το Σήμερα και τις Αγορές.',
     family: en ? 'Family' : 'Οικογένεια',
+    day: en ? 'Day' : 'Ημέρα',
     week: en ? 'Week' : 'Εβδομάδα',
     month: en ? '4 weeks' : '4 εβδομάδες',
     thisWeek: en ? 'This week' : 'Αυτή η εβδομάδα',
@@ -688,6 +690,18 @@ export function planView(ctx) {
     </article>`;
   };
 
+  const activeDay = (() => {
+    const d = planDate || dateKey;
+    return { date: d, dateObj: dateFromKey(d), plan: ctx.planForDate(d, scope === 'family' ? null : scope), recipeById: ctx.recipeById };
+  })();
+  const dayPickerStart = mondayOf(dateFromKey(activeDay.date));
+  const dayPicker = `<div class="planner-day-picker">${Array.from({length:7},(_,i)=>{
+    const d=addDays(dayPickerStart,i);
+    const active=d===activeDay.date;
+    return `<button type="button" class="${active?'active':''}" data-act="planDate" data-date="${d}">
+      <span>${esc(GREEK_DAYS_SHORT[weekdayIndex(dateFromKey(d))])}</span><b>${esc(shortDate(d))}</b>
+    </button>`;
+  }).join('')}</div>`;
   const monthBoard = `<div class="planner-month">
     ${[0,1,2,3].map(w => {
       const days = monthDays.slice(w*7, w*7+7);
@@ -702,7 +716,7 @@ export function planView(ctx) {
   <div class="page plan">
   <section class="page-head planner-head">
     <div class="eyebrow">${txt.cycle}</div>
-    <h1>${mode === 'month' ? txt.monthTitle : txt.weekTitle} <em>· ${esc(scopeName)}</em></h1>
+    <h1>${mode === 'day' ? txt.dayTitle : mode === 'month' ? txt.monthTitle : txt.weekTitle} <em>· ${esc(scopeName)}</em></h1>
     <p>${txt.sub}</p>
   </section>
 
@@ -710,14 +724,15 @@ export function planView(ctx) {
     <div class="planner-control-row">
       <div class="planner-scope-group" role="group" aria-label="${en ? 'Plan for' : 'Πλάνο για'}">${scopeTabs}</div>
       <div class="segmented planner-mode" role="group" aria-label="${en ? 'Planner range' : 'Εύρος πλάνου'}">
+        <button type="button" class="${mode === 'day' ? 'active' : ''}" data-act="planMode" data-mode="day">${icon('sun',14)} ${txt.day}</button>
         <button type="button" class="${mode === 'week' ? 'active' : ''}" data-act="planMode" data-mode="week">${icon('calendar',14)} ${txt.week}</button>
         <button type="button" class="${mode === 'month' ? 'active' : ''}" data-act="planMode" data-mode="month">${icon('calendar',14)} ${txt.month}</button>
       </div>
     </div>
     <div class="planner-control-row planner-toolbar">
       <div class="week-nav">
-        <button type="button" class="icon-btn" data-act="week" data-delta="${mode === 'month' ? -4 : -1}" aria-label="${en ? 'Previous' : 'Προηγούμενο'}">${icon('chevronLeft',18)}</button>
-        <button type="button" class="icon-btn" data-act="week" data-delta="${mode === 'month' ? 4 : 1}" aria-label="${en ? 'Next' : 'Επόμενο'}">${icon('chevronRight',18)}</button>
+        <button type="button" class="icon-btn" data-act="${mode === 'day' ? 'planDate' : 'week'}" data-delta="${mode === 'month' ? -4 : -1}" aria-label="${en ? 'Previous' : 'Προηγούμενο'}">${icon('chevronLeft',18)}</button>
+        <button type="button" class="icon-btn" data-act="${mode === 'day' ? 'planDate' : 'week'}" data-delta="${mode === 'month' ? 4 : 1}" aria-label="${en ? 'Next' : 'Επόμενο'}">${icon('chevronRight',18)}</button>
         <span class="muted week-label">${weekOffset === 0 ? txt.thisWeek : (weekOffset < 0 ? `${Math.abs(weekOffset)} ${en ? 'weeks back' : 'εβδομάδες πριν'}` : `${weekOffset} ${en ? 'weeks ahead' : 'εβδομάδες μετά'}`)}</span>
         ${weekOffset !== 0 ? `<button type="button" class="chip" data-act="week" data-reset="1">${en ? 'Today' : 'Επιστροφή'}</button>` : ''}
       </div>
@@ -729,9 +744,11 @@ export function planView(ctx) {
     </div>
   </section>
 
-  ${mode === 'month'
-    ? monthBoard
-    : `<div class="week-strip planner-week">${weekDays.map(dayCard).join('')}</div>`}
+  ${mode === 'day'
+    ? `<div class="planner-day-mode">${dayPicker}<div class="planner-day-focus">${dayCard(activeDay)}</div></div>`
+    : mode === 'month'
+      ? monthBoard
+      : `<div class="week-strip planner-week">${weekDays.map(dayCard).join('')}</div>`}
 
   <div class="grid g2 plan-lower">
     <section class="card card-lg">
