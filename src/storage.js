@@ -14,7 +14,7 @@
  * existing data completely untouched.
  */
 
-import { APP } from './data.js?v=15.0.0';
+import { APP } from './data.js?v=15.0.1';
 
 const DB_NAME = 'zenith-pro-v2'; // intentionally unchanged from v2 → in-place upgrade
 const DB_VERSION = 2;
