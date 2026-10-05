@@ -881,8 +881,61 @@
 .planner-mode button { min-height: 38px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; }
 
 .planner-week.week-strip {
-  grid-template-columns: repeat(7, minmax(0,1fr));
-  gap: 7px; overflow: visible;
+  grid-template-columns: 1fr;
+  gap: 8px; overflow: visible;
+}
+.planner-week .planner-day {
+  display: grid;
+  grid-template-columns: 128px minmax(0,1fr) 118px;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 116px;
+  padding: 10px;
+  background:
+    linear-gradient(90deg, color-mix(in oklab, var(--brand-soft) 28%, transparent), transparent 24%),
+    var(--surface);
+}
+.planner-week .planner-day .day-head {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6px 8px;
+  border-right: 1px solid var(--line);
+}
+.planner-week .planner-day-meta { justify-items: start; margin-top: 6px; }
+.planner-week .planner-slots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 7px;
+  align-self: stretch;
+}
+.planner-week .planner-slot {
+  min-height: 94px;
+  padding: 10px 10px 8px 13px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.planner-week .planner-slot b {
+  font-size: .79rem;
+  line-height: 1.28;
+}
+.planner-week .planner-edit { margin-top: auto; padding-top: 5px; }
+.planner-week .planner-day-actions {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+.planner-week .planner-day-actions .btn {
+  width: 100%;
+  min-height: 38px;
+}
+.planner-week .planner-day.is-today {
+  box-shadow: inset 4px 0 var(--brand), 0 0 0 1px var(--brand-line), var(--shadow-sm);
 }
 .planner-day {
   position: relative; min-width: 0; padding: 12px;
@@ -937,8 +990,16 @@
 .planner-month-grid .day-kcal { font-size: .72rem; }
 
 @media (max-width: 1180px) {
-  .planner-week.week-strip,
   .planner-month-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .planner-week .planner-day {
+    grid-template-columns: 104px minmax(0,1fr);
+  }
+  .planner-week .planner-day-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  .planner-week .planner-day-actions .btn { width: auto; }
 }
 @media (max-width: 759px) {
   .planner-control { top: 57px; margin-inline: -2px; padding: 9px; border-radius: 16px; }
@@ -950,6 +1011,27 @@
   .planner-mode button { justify-content: center; }
   .planner-week.week-strip,
   .planner-month-grid { grid-template-columns: 1fr; }
+  .planner-week .planner-day {
+    display: block;
+    min-height: 0;
+    padding: 11px;
+    background: var(--surface);
+  }
+  .planner-week .planner-day .day-head {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0;
+    border-right: 0;
+  }
+  .planner-week .planner-day-meta { justify-items: end; margin-top: 0; }
+  .planner-week .planner-day-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: stretch;
+    margin-top: 7px;
+  }
+  .planner-week .planner-day-actions .btn { width: auto; flex: 1 1 auto; }
   .planner-day { padding: 11px; }
   .planner-slots { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .planner-slot { min-height: 76px; }
