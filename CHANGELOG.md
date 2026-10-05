@@ -1,5 +1,25 @@
 # Changelog
 
+## v16.0.0 — Aurora Health OS · 2026-10-05
+
+### Major visual system redesign
+- Rebuilt the application shell around a premium Aurora Health OS design language.
+- Expanded the desktop canvas, redesigned the floating navigation, family selector, member states and mobile tab bar.
+- Added richer hierarchy, larger typography, more deliberate spacing, stronger depth and calmer glass surfaces.
+- Preserved both light and dark modes with the same semantic color system and accessibility requirements.
+
+### Daily-use productivity
+- Today emphasizes the next actionable meal while keeping family status, hydration and daily meals immediately scannable.
+- Weekly planning is visually optimized as a real family planning workspace: wide day rows, high-clarity editable meal cells and stronger current-day state.
+- Mobile weekly planning keeps large touch targets and readable meal cards.
+- Recipe discovery now behaves like a curated visual library rather than a dense settings screen.
+- Shopping is redesigned as a working grocery command surface with clearer aisle grouping and stronger completion feedback.
+- Family and progress surfaces share the same visual hierarchy and selected-member identity.
+
+### Quality
+- Corrected completed-shopping count contrast in light mode.
+- Existing planning, bilingual, print, offline, local persistence and individualized family-plan behavior remain unchanged.
+
 ## v15.0.0 — Family Planner · 2026-10-05
 
 ### Planning rebuilt around real family use
