@@ -1403,7 +1403,14 @@ window.addEventListener('resize', debounce(() => { if (state.view === 'progress'
 /* ── Service worker ────────────────────────────────────────────────────── */
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=15.0.1', { scope: './' }).then(reg => {
+  let reloadingForWorker = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForWorker) return;
+    reloadingForWorker = true;
+    location.reload();
+  });
+
+  navigator.serviceWorker.register('./sw.js?v=15.0.1', { scope: './', updateViaCache: 'none' }).then(reg => {
     reg?.update?.()?.catch?.(() => {});
     reg?.addEventListener?.('updatefound', () => {
       const worker = reg.installing;
