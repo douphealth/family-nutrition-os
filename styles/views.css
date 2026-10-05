@@ -1145,3 +1145,393 @@
   .planner-day-focus .planner-slots { grid-template-columns:1fr; }
   .planner-day-focus .planner-slot { min-height:82px; }
 }
+
+
+/* ============================================================================
+   v16 · AURORA HEALTH OS · VIEW COMPOSITION
+   ========================================================================== */
+
+/* TODAY — one decisive action first, family context second. */
+.dash-head {
+  padding: 10px 0 22px;
+}
+.dash-greet h1 {
+  font-size: clamp(2.25rem,1.7rem + 2vw,3.8rem);
+  font-weight: 830;
+  letter-spacing: -.055em;
+}
+.date-chip {
+  min-height: 40px;
+  padding-inline: 14px;
+  background: color-mix(in oklab,var(--surface) 90%,transparent);
+  border-color: color-mix(in oklab,var(--line-2) 74%,transparent);
+  box-shadow: inset 0 1px rgba(255,255,255,.14);
+}
+.today-grid { gap: 18px; }
+
+.next-card {
+  min-height: 340px;
+  border-radius: 34px;
+  padding: 34px 34px 34px 38px;
+  border-color: rgba(255,255,255,.105);
+  background:
+    radial-gradient(640px 390px at 96% 0%, color-mix(in oklab,var(--slot) 32%,transparent), transparent 68%),
+    radial-gradient(460px 340px at -2% 105%, rgba(80,200,255,.085), transparent 72%),
+    linear-gradient(132deg,#0B1713 0%,#07100D 50%,#071A13 100%);
+  box-shadow: 0 38px 90px -46px rgba(0,0,0,.78), inset 0 1px rgba(255,255,255,.07);
+}
+.next-card::before {
+  background:
+    radial-gradient(circle at 86% 13%,rgba(255,255,255,.05),transparent 27%),
+    linear-gradient(112deg,transparent 0 61%,rgba(255,255,255,.018) 61.2%,transparent 61.7%);
+}
+.next-card .next-title {
+  font-size: clamp(2.45rem,1.75rem + 2.4vw,4.15rem);
+  line-height: .96;
+  letter-spacing: -.065em;
+  max-width: 11.5ch;
+}
+.next-card .next-actions { gap: 10px; }
+.next-card .btn { min-height: 50px; border-radius: 15px; }
+.next-card .next-shortcut {
+  border-radius: 13px;
+  background: rgba(255,255,255,.05);
+}
+.next-art {
+  width: 278px;
+  height: 278px;
+}
+.next-art .art {
+  width: 260px;
+  height: 260px;
+  filter: drop-shadow(0 28px 36px rgba(0,0,0,.48));
+}
+
+.family-pulse {
+  border-radius: 28px;
+  background:
+    radial-gradient(110% 90% at 100% 0%,color-mix(in oklab,var(--member) 12%,transparent),transparent 68%),
+    linear-gradient(150deg,var(--surface),color-mix(in oklab,var(--surface-2) 66%,var(--surface)));
+}
+.family-pulse-person {
+  min-height: 74px;
+  border-radius: 17px;
+  background: color-mix(in oklab,var(--surface-2) 88%,transparent);
+}
+.family-pulse-person:hover {
+  background: var(--surface-hover);
+  border-color: color-mix(in oklab,var(--member) 18%,var(--line-2));
+}
+
+.water-card {
+  background:
+    radial-gradient(110% 80% at 100% 0%,color-mix(in oklab,var(--aqua) 12%,transparent),transparent 68%),
+    linear-gradient(145deg,var(--surface),color-mix(in oklab,var(--aqua-soft) 20%,var(--surface)));
+}
+.glass {
+  min-height: 76px;
+  border-radius: 20px;
+}
+.meal-row {
+  min-height: 82px;
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg,
+      color-mix(in oklab,var(--surface-2) 96%,transparent),
+      color-mix(in oklab,var(--surface-3) 24%,var(--surface-2)));
+}
+.meal-row.is-next {
+  box-shadow: inset 4px 0 var(--slot);
+}
+.persona {
+  border-radius: 28px;
+  background:
+    radial-gradient(100% 82% at 100% 0%,color-mix(in oklab,var(--pa,var(--member)) 13%,transparent),transparent 68%),
+    linear-gradient(150deg,var(--surface),color-mix(in oklab,var(--member-soft) 28%,var(--surface)));
+}
+.ppoint {
+  border-radius: 17px;
+  background: color-mix(in oklab,var(--surface) 78%,transparent);
+}
+
+/* PLAN — designed as the family’s weekly planning table, not a report. */
+.page.plan .page-head {
+  padding-bottom: 20px;
+}
+.planner-control {
+  position: sticky;
+  top: calc(var(--topbar-h) + 6px);
+  z-index: 13;
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg,
+      color-mix(in oklab,var(--glass-strong) 96%,transparent),
+      color-mix(in oklab,var(--glass) 92%,transparent));
+  border: 1px solid color-mix(in oklab,var(--line-2) 78%,transparent);
+  box-shadow: 0 18px 48px -34px rgba(0,0,0,.45);
+  -webkit-backdrop-filter: blur(28px) saturate(1.3);
+  backdrop-filter: blur(28px) saturate(1.3);
+}
+.planner-scope {
+  min-height: 44px;
+  border-radius: 14px;
+  font-weight: 680;
+}
+.planner-scope.active {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab,var(--brand) 10%,transparent),
+              0 8px 20px -16px color-mix(in oklab,var(--brand) 62%,transparent);
+}
+.planner-mode {
+  padding: 4px;
+  border-radius: 15px;
+  background: color-mix(in oklab,var(--surface-3) 76%,transparent);
+}
+.planner-mode button {
+  min-height: 40px;
+  border-radius: 11px;
+}
+.planner-mode button.active {
+  background: var(--surface);
+  box-shadow: 0 7px 18px -15px rgba(0,0,0,.5), inset 0 0 0 1px var(--line);
+}
+
+.planner-week.week-strip {
+  gap: 11px;
+  margin-top: 14px;
+}
+.planner-week .planner-day {
+  grid-template-columns: 138px minmax(0,1fr) 122px;
+  min-height: 128px;
+  padding: 12px;
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg,
+      color-mix(in oklab,var(--brand-soft) 36%,transparent),
+      transparent 21%),
+    linear-gradient(145deg,var(--surface),color-mix(in oklab,var(--surface-2) 72%,var(--surface)));
+  border-color: color-mix(in oklab,var(--line-2) 72%,transparent);
+  box-shadow: 0 12px 34px -28px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.12);
+}
+.planner-week .planner-day:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab,var(--brand) 22%,var(--line-2));
+  box-shadow: 0 20px 42px -30px rgba(0,0,0,.45);
+}
+.planner-week .planner-day.is-today {
+  background:
+    radial-gradient(130% 110% at 0% 50%,color-mix(in oklab,var(--brand) 12%,transparent),transparent 58%),
+    linear-gradient(145deg,var(--surface),color-mix(in oklab,var(--brand-soft) 30%,var(--surface)));
+  box-shadow: inset 5px 0 var(--brand), 0 18px 44px -30px color-mix(in oklab,var(--brand) 42%,transparent);
+}
+.planner-week .planner-day .day-head {
+  padding: 8px 11px;
+}
+.planner-week .planner-day .day-head h2 {
+  font-size: 1.65rem;
+  font-weight: 820;
+}
+.planner-week .planner-slots { gap: 9px; }
+.planner-week .planner-slot {
+  min-height: 102px;
+  padding: 12px 12px 10px 15px;
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg,
+      color-mix(in oklab,var(--surface-2) 96%,transparent),
+      color-mix(in oklab,var(--surface-3) 20%,var(--surface-2)));
+  transition: transform var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease),background var(--dur-1) var(--ease);
+}
+.planner-week .planner-slot:hover {
+  transform: translateY(-1px);
+  background: var(--surface);
+  border-color: color-mix(in oklab,var(--slot,var(--brand)) 32%,var(--line-2));
+}
+.planner-week .planner-slot b {
+  font-size: .84rem;
+  line-height: 1.3;
+}
+.planner-edit {
+  color: var(--brand-text);
+  font-weight: 700;
+}
+.planner-day-actions .btn {
+  border-radius: 13px;
+}
+.planner-month-week {
+  border-radius: 24px;
+  padding: 15px;
+  background: color-mix(in oklab,var(--glass-soft) 90%,transparent);
+}
+
+/* MEALS — recipe cards feel like a curated visual library. */
+.recipe-grid {
+  grid-template-columns: repeat(auto-fill,minmax(310px,1fr));
+  gap: 18px;
+}
+.recipe-card {
+  border-radius: 26px;
+  background:
+    linear-gradient(150deg,var(--surface),color-mix(in oklab,var(--surface-2) 68%,var(--surface)));
+  border-color: color-mix(in oklab,var(--line-2) 70%,transparent);
+  box-shadow: var(--shadow-sm);
+}
+.recipe-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 26px 58px -36px rgba(0,0,0,.5);
+}
+.recipe-art {
+  height: 184px;
+  background:
+    radial-gradient(240px 150px at 50% 58%,color-mix(in oklab,var(--slot) 26%,transparent),transparent 72%),
+    linear-gradient(145deg,var(--slot-soft),color-mix(in oklab,var(--surface) 20%,var(--slot-soft)));
+}
+.recipe-art .art { filter: drop-shadow(0 18px 22px rgba(0,0,0,.20)); }
+.recipe-time {
+  min-height: 30px;
+  background: color-mix(in oklab,var(--surface) 86%,transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.recipe-body { padding: 18px 20px 20px; }
+.recipe-title { font-size: 1.14rem; font-weight: 770; }
+
+/* SHOPPING — command surface + clean two-column grocery workspace. */
+.shop-head {
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg,
+      color-mix(in oklab,var(--glass-strong) 96%,transparent),
+      color-mix(in oklab,var(--glass) 90%,transparent));
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 54px -38px rgba(0,0,0,.5);
+}
+.shop-progress-ic {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+}
+.shop-chip {
+  min-height: 44px;
+  border-radius: 999px;
+  background: color-mix(in oklab,var(--surface-2) 92%,transparent);
+}
+.shop-aisles { column-gap: 18px; }
+.shop-aisle-sec {
+  padding: 18px;
+  border-radius: 24px;
+  border-color: color-mix(in oklab,var(--line-2) 68%,transparent);
+  background: linear-gradient(145deg,var(--surface),color-mix(in oklab,var(--surface-2) 72%,var(--surface)));
+}
+.shop-aisle-ic {
+  width: 39px;
+  height: 39px;
+  border-radius: 13px;
+}
+.shop-aisle-count {
+  color: var(--ink-2);
+  background: color-mix(in oklab,var(--surface-3) 84%,var(--surface));
+}
+.shop-aisle-count.is-complete {
+  color: var(--brand-text);
+  background: color-mix(in oklab,var(--brand-soft) 86%,var(--surface));
+  border: 1px solid var(--brand-line);
+}
+.shop-item {
+  min-height: 66px;
+  padding-block: 6px;
+}
+.shop-check {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+}
+
+/* FAMILY / PROGRESS — consistent high-end cards. */
+.family-card,
+.trend-card,
+.progress-mid,
+.week-card,
+.history-card {
+  border-radius: 26px;
+}
+.family-card {
+  background:
+    radial-gradient(90% 70% at 100% 0%,color-mix(in oklab,var(--pa) 11%,transparent),transparent 68%),
+    linear-gradient(145deg,var(--surface),color-mix(in oklab,var(--surface-2) 70%,var(--surface)));
+}
+.family-card.is-current {
+  box-shadow: inset 5px 0 var(--pa),0 20px 44px -32px color-mix(in oklab,var(--pa) 52%,transparent);
+}
+.scale-row {
+  border-radius: 17px;
+}
+
+@media (max-width: 1180px) {
+  .planner-week .planner-day { grid-template-columns: 112px minmax(0,1fr); }
+}
+
+@media (max-width: 759px) {
+  .today-grid { gap: 12px; }
+  .dash-greet h1 { font-size: 1.92rem; }
+  .dash-meta { gap: 6px; }
+  .date-chip { min-height: 35px; padding-inline: 11px; font-size: .72rem; }
+
+  .next-card {
+    min-height: 0;
+    padding: 20px;
+    border-radius: 25px;
+  }
+  .next-card .next-title {
+    font-size: clamp(1.95rem,8.8vw,2.45rem);
+    padding-right: 88px;
+    line-height: .98;
+  }
+  .next-art { width: 98px; height: 98px; }
+  .next-art .art { width: 90px; height: 90px; }
+  .next-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .next-actions .btn { min-height: 50px; }
+
+  .family-pulse,
+  .water-card,
+  .meals-card,
+  .persona { border-radius: 22px; }
+
+  .planner-control {
+    top: 58px;
+    margin-inline: -2px;
+    padding: 8px;
+    border-radius: 18px;
+  }
+  .planner-week .planner-day {
+    padding: 12px;
+    border-radius: 20px;
+    background: linear-gradient(145deg,var(--surface),color-mix(in oklab,var(--surface-2) 70%,var(--surface)));
+  }
+  .planner-week .planner-slots {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 7px;
+  }
+  .planner-week .planner-slot {
+    min-height: 88px;
+    padding: 10px 10px 9px 12px;
+    border-radius: 14px;
+  }
+  .planner-week .planner-slot b { font-size: .79rem; }
+  .planner-day-picker button { border-radius: 12px; }
+
+  .recipe-card { border-radius: 20px; }
+  .recipe-art { width: 120px; }
+  .recipe-body { padding: 13px 14px; }
+
+  .shop-head { border-radius: 20px; }
+  .shop-aisles { columns: 1; }
+  .shop-aisle-sec { border-radius: 20px; padding: 15px; }
+}
+
+@media (max-width: 420px) {
+  .next-actions { grid-template-columns: 1fr; }
+  .planner-week .planner-slots { grid-template-columns: 1fr !important; }
+  .planner-week .planner-slot { min-height: 76px; }
+}

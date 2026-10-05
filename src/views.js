@@ -18,17 +18,17 @@ import {
   num, num1, pct, mlToText, longDate, shortDate, dayName, greeting, timeNow,
   kitchenAmount, shopAmount, parseStepTimers, clockText, weekdayIndex,
   addDays, mondayOf, dateFromKey, GREEK_DAYS_SHORT, cycleWeek
-} from './ui.js?v=15.0.0';
+} from './ui.js?v=16.0.0';
 import {
   SLOTS, SLOT_LABEL, SLOT_TIME, AISLES, SOURCES, METHOD, SAFETY, GLOSSARY, APP,
   RECIPE_ART, FUELING, DATA_FACTS
-} from './data.js?v=15.0.0';
-import { FOODS, qtyOf } from './foods.js?v=15.0.0';
+} from './data.js?v=16.0.0';
+import { FOODS, qtyOf } from './foods.js?v=16.0.0';
 import {
   mealMacros, canUseAdultBmi, bmi, adultBmiLabel, isMinor, scaledIngredients,
   householdPlate, householdRoleServings, nutritionBadges, referenceValues, saltGrams,
   PLATE_MAX
-} from './nutrition-engine.js?v=15.0.0';
+} from './nutrition-engine.js?v=16.0.0';
 
 /* ── Small shared pieces ───────────────────────────────────────────────── */
 
