@@ -28,7 +28,7 @@ import {
 import {
   esc, icon, logo, byId, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, dateFromKey,
-  num, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
+  num, num1, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
 } from './ui.js';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
