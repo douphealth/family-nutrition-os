@@ -17,18 +17,18 @@ import {
   lineChart, heatmap, barChart, avatar, illustration, glassIcon,
   num, num1, pct, mlToText, longDate, shortDate, dayName, greeting, timeNow,
   kitchenAmount, shopAmount, parseStepTimers, clockText, weekdayIndex,
-  GREEK_DAYS_SHORT, cycleWeek
-} from './ui.js?v=14.1.0';
+  addDays, mondayOf, dateFromKey, GREEK_DAYS_SHORT, cycleWeek
+} from './ui.js?v=15.0.0';
 import {
   SLOTS, SLOT_LABEL, SLOT_TIME, AISLES, SOURCES, METHOD, SAFETY, GLOSSARY, APP,
   RECIPE_ART, FUELING, DATA_FACTS
-} from './data.js?v=14.1.0';
-import { FOODS, qtyOf } from './foods.js?v=14.1.0';
+} from './data.js?v=15.0.0';
+import { FOODS, qtyOf } from './foods.js?v=15.0.0';
 import {
   mealMacros, canUseAdultBmi, bmi, adultBmiLabel, isMinor, scaledIngredients,
   householdPlate, householdRoleServings, nutritionBadges, referenceValues, saltGrams,
   PLATE_MAX
-} from './nutrition-engine.js?v=14.1.0';
+} from './nutrition-engine.js?v=15.0.0';
 
 /* ── Small shared pieces ───────────────────────────────────────────────── */
 
@@ -607,77 +607,172 @@ function coverageCard(ctx, coverage) {
 /* ── Plan ──────────────────────────────────────────────────────────────── */
 
 export function planView(ctx) {
-  const { weekDays, weekOffset, dateKey, sized, load } = ctx;
+  const { weekDays, monthDays, weekOffset, dateKey, sized, load, planScope, planDate, lang } = ctx;
+  const en = lang === 'en';
+  const scope = planScope || 'family';
+  const scopeMember = scope === 'family' ? null : ctx.sizedProfiles.find(p => p.id === scope);
+  const calcProfile = scopeMember || sized;
+  const calcLoad = scopeMember ? (scopeMember.athlete ? ctx.state.trainingLoad : 'normal') : load;
+  const mode = ctx.state.planMode || 'week';
   const thisWeek = cycleWeek();
   const shownWeek = ((thisWeek - 1 + weekOffset) % 4 + 4) % 4 + 1;
+  const scopeName = scope === 'family' ? (en ? 'Whole family' : 'Όλη η οικογένεια') : (scopeMember?.name || scope);
+
+  const txt = {
+    cycle: en ? 'Flexible nutrition planner' : 'Ευέλικτος σχεδιασμός διατροφής',
+    dayTitle: en ? 'Day plan' : 'Πλάνο ημέρας',
+    weekTitle: en ? `Week ${shownWeek}` : `Εβδομάδα ${shownWeek}`,
+    monthTitle: en ? '4-week plan' : 'Πλάνο 4 εβδομάδων',
+    sub: en
+      ? 'Plan together or give any family member a different meal. Every edit updates Today and Shopping immediately.'
+      : 'Σχεδιάστε μαζί ή δώστε σε οποιοδήποτε μέλος διαφορετικό γεύμα. Κάθε αλλαγή ενημερώνει άμεσα το Σήμερα και τις Αγορές.',
+    family: en ? 'Family' : 'Οικογένεια',
+    day: en ? 'Day' : 'Ημέρα',
+    week: en ? 'Week' : 'Εβδομάδα',
+    month: en ? '4 weeks' : '4 εβδομάδες',
+    thisWeek: en ? 'This week' : 'Αυτή η εβδομάδα',
+    shopping: en ? 'Shopping list' : 'Λίστα αγορών',
+    print: en ? 'Print' : 'Εκτύπωση',
+    edit: en ? 'Change' : 'Αλλαγή',
+    reset: en ? 'Reset day' : 'Επαναφορά ημέρας',
+    customized: en ? 'Customized' : 'Προσαρμοσμένο',
+    copyFamily: en ? 'Copy family week to this member' : 'Αντιγραφή οικογενειακής εβδομάδας στο μέλος',
+    prepEyebrow: en ? 'Weekly prep' : 'Προετοιμασία',
+    prepTitle: en ? 'Cook once, make the week easier' : 'Μαγείρεψε μία φορά, φάε όλη την εβδομάδα',
+    prepSub: en ? 'Four high-leverage prep moves for the week.' : 'Τέσσερις κινήσεις που καλύπτουν το μεγαλύτερο μέρος της εβδομάδας.',
+    checkEyebrow: en ? 'Check' : 'Έλεγχος',
+    checkTitle: en ? 'How today\'s plan fits each person' : 'Πόσο καλύπτει το σημερινό πλάνο κάθε μέλος',
+    checkSub: en ? 'Each person can now have their own menu and portions.' : 'Κάθε μέλος μπορεί πλέον να έχει δικό του μενού και δικές του μερίδες.'
+  };
+
+  const scopeTabs = [
+    ['family', txt.family],
+    ...ctx.profiles.map(p => [p.id, p.name])
+  ].map(([id, label]) => `<button type="button" class="planner-scope ${scope === id ? 'active' : ''}" data-act="planScope" data-scope="${esc(id)}" aria-pressed="${scope === id}">
+      ${id === 'family' ? icon('users', 15) : avatar(ctx.profiles.find(p => p.id === id), 28)}
+      <span>${esc(label)}</span>
+    </button>`).join('');
+
+  const dayCard = d => {
+    const isToday = d.date === dateKey;
+    const ownOverride = ctx.plans.some(p => p.id === `plan:${scope}:${d.date}`);
+    const plan = ctx.planForDate(d.date, scope === 'family' ? null : scope);
+    const kcal = SLOTS.reduce((sum, slot) => {
+      const r = d.recipeById(plan[slot]);
+      return sum + (r ? mealMacros(r, calcProfile, calcLoad, 1).kcal : 0);
+    }, 0);
+    return `<article class="day-card planner-day ${isToday ? 'is-today' : ''} ${ownOverride ? 'is-custom' : ''}">
+      <div class="day-head">
+        <div>
+          <div class="day-dow">${isToday ? (en ? 'Today' : 'Σήμερα') : esc(GREEK_DAYS_SHORT[weekdayIndex(d.dateObj)])}</div>
+          <h2>${esc(shortDate(d.date))}</h2>
+        </div>
+        <div class="planner-day-meta">
+          ${ownOverride ? `<span class="planner-custom">${icon('sparkles',12)} ${txt.customized}</span>` : ''}
+          <span class="day-kcal">${num(kcal)}<small> kcal</small></span>
+        </div>
+      </div>
+      <div class="day-slots planner-slots">
+      ${SLOTS.map(slot => {
+        const r = d.recipeById(plan[slot]);
+        return `<button type="button" class="day-slot planner-slot slot-${slot}" data-act="planEdit" data-date="${esc(d.date)}" data-slot="${slot}" data-scope="${esc(scope)}">
+          <i aria-hidden="true"></i>
+          <span class="day-slot-label">${esc(SLOT_LABEL[slot])}</span>
+          <b>${esc(r?.name || '—')}</b>
+          <span class="planner-edit">${icon('edit', 13)} ${txt.edit}</span>
+        </button>`;
+      }).join('')}
+      </div>
+      <div class="planner-day-actions">
+        <button type="button" class="btn btn-sm btn-ghost" data-act="day" data-date="${esc(d.date)}">${icon('eye',15)} ${en ? 'Details' : 'Λεπτομέρειες'}</button>
+        ${ownOverride ? `<button type="button" class="btn btn-sm btn-ghost" data-act="planResetDay" data-date="${esc(d.date)}" data-scope="${esc(scope)}">${icon('undo',14)} ${txt.reset}</button>` : ''}
+      </div>
+    </article>`;
+  };
+
+  const activeDay = (() => {
+    const d = planDate || dateKey;
+    return { date: d, dateObj: dateFromKey(d), plan: ctx.planForDate(d, scope === 'family' ? null : scope), recipeById: ctx.recipeById };
+  })();
+  const dayPickerStart = mondayOf(dateFromKey(activeDay.date));
+  const dayPicker = `<div class="planner-day-picker">${Array.from({length:7},(_,i)=>{
+    const d=addDays(dayPickerStart,i);
+    const active=d===activeDay.date;
+    return `<button type="button" class="${active?'active':''}" data-act="planDate" data-date="${d}">
+      <span>${esc(GREEK_DAYS_SHORT[weekdayIndex(dateFromKey(d))])}</span><b>${esc(shortDate(d))}</b>
+    </button>`;
+  }).join('')}</div>`;
+  const monthBoard = `<div class="planner-month">
+    ${[0,1,2,3].map(w => {
+      const days = monthDays.slice(w*7, w*7+7);
+      return `<section class="planner-month-week">
+        <div class="planner-month-head"><span>${en ? 'Week' : 'Εβδομάδα'} ${w + 1}</span><small>${shortDate(days[0].date)} - ${shortDate(days[6].date)}</small></div>
+        <div class="planner-month-grid">${days.map(dayCard).join('')}</div>
+      </section>`;
+    }).join('')}
+  </div>`;
 
   return `
   <div class="page plan">
-  <section class="page-head">
-    <div class="eyebrow">Κύκλος 28 ημερών</div>
-    <h1>Εβδομάδα ${shownWeek} <em>από τις 4</em></h1>
-    <p>Ένας κοινός κύκλος Δευτέρα–Κυριακή. Οι μερίδες αλλάζουν ανά μέλος, το μενού όχι.</p>
+  <section class="page-head planner-head">
+    <div class="eyebrow">${txt.cycle}</div>
+    <h1>${mode === 'day' ? txt.dayTitle : mode === 'month' ? txt.monthTitle : txt.weekTitle} <em>· ${esc(scopeName)}</em></h1>
+    <p>${txt.sub}</p>
   </section>
 
-  <div class="card toolbar">
-    <div class="week-nav">
-      <button type="button" class="icon-btn" data-act="week" data-delta="-1" aria-label="Προηγούμενη εβδομάδα">${icon('chevronLeft', 18)}</button>
-      <button type="button" class="icon-btn" data-act="week" data-delta="1" aria-label="Επόμενη εβδομάδα">${icon('chevronRight', 18)}</button>
-      <span class="muted week-label">${weekOffset === 0 ? 'Αυτή η εβδομάδα' : weekOffset < 0 ? `${Math.abs(weekOffset)} ${Math.abs(weekOffset) === 1 ? 'εβδομάδα' : 'εβδομάδες'} πριν` : `${weekOffset} ${weekOffset === 1 ? 'εβδομάδα' : 'εβδομάδες'} μετά`}</span>
-      ${weekOffset !== 0 ? `<button type="button" class="chip" data-act="week" data-reset="1">Επιστροφή</button>` : ''}
+  <section class="planner-control card">
+    <div class="planner-control-row">
+      <div class="planner-scope-group" role="group" aria-label="${en ? 'Plan for' : 'Πλάνο για'}">${scopeTabs}</div>
+      <div class="segmented planner-mode" role="group" aria-label="${en ? 'Planner range' : 'Εύρος πλάνου'}">
+        <button type="button" class="${mode === 'day' ? 'active' : ''}" data-act="planMode" data-mode="day">${icon('sun',14)} ${txt.day}</button>
+        <button type="button" class="${mode === 'week' ? 'active' : ''}" data-act="planMode" data-mode="week">${icon('calendar',14)} ${txt.week}</button>
+        <button type="button" class="${mode === 'month' ? 'active' : ''}" data-act="planMode" data-mode="month">${icon('calendar',14)} ${txt.month}</button>
+      </div>
     </div>
-    <div class="sec-action">
-      <button type="button" class="btn btn-sm btn-soft" data-act="nav" data-view="shopping">${icon('cart', 16)} Λίστα αγορών</button>
-      <button type="button" class="btn btn-sm btn-ghost" data-act="print">${icon('printer', 16)} Εκτύπωση</button>
+    <div class="planner-control-row planner-toolbar">
+      <div class="week-nav">
+        <button type="button" class="icon-btn" data-act="${mode === 'day' ? 'planDate' : 'week'}" data-delta="${mode === 'month' ? -4 : -1}" aria-label="${en ? 'Previous' : 'Προηγούμενο'}">${icon('chevronLeft',18)}</button>
+        <button type="button" class="icon-btn" data-act="${mode === 'day' ? 'planDate' : 'week'}" data-delta="${mode === 'month' ? 4 : 1}" aria-label="${en ? 'Next' : 'Επόμενο'}">${icon('chevronRight',18)}</button>
+        <span class="muted week-label">${weekOffset === 0 ? txt.thisWeek : (weekOffset < 0 ? `${Math.abs(weekOffset)} ${en ? 'weeks back' : 'εβδομάδες πριν'}` : `${weekOffset} ${en ? 'weeks ahead' : 'εβδομάδες μετά'}`)}</span>
+        ${weekOffset !== 0 ? `<button type="button" class="chip" data-act="week" data-reset="1">${en ? 'Today' : 'Επιστροφή'}</button>` : ''}
+      </div>
+      <div class="sec-action">
+        ${scope !== 'family' ? `<button type="button" class="btn btn-sm btn-soft" data-act="planCopyWeek" data-from="family" data-to="${esc(scope)}">${icon('copy',15)} ${txt.copyFamily}</button>` : ''}
+        <button type="button" class="btn btn-sm btn-soft" data-act="nav" data-view="shopping">${icon('cart',16)} ${txt.shopping}</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-act="print">${icon('printer',16)} ${txt.print}</button>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <div class="week-strip">
-    ${weekDays.map(d => {
-      const kcal = SLOTS.reduce((sum, slot) => sum + mealMacros(d.recipeById(d.plan[slot]), sized, load, 1).kcal, 0);
-      const isToday = d.date === dateKey;
-      return `<article class="day-card ${isToday ? 'is-today' : ''}">
-        <div class="day-head">
-          <div>
-            <div class="day-dow">${isToday ? 'Σήμερα' : esc(GREEK_DAYS_SHORT[weekdayIndex(d.dateObj)])}</div>
-            <h2>${esc(shortDate(d.date))}</h2>
-          </div>
-          <span class="day-kcal">${num(kcal)}<small> kcal</small></span>
-        </div>
-        <div class="day-slots">
-        ${SLOTS.map(slot => {
-          const r = d.recipeById(d.plan[slot]);
-          return `<div class="day-slot slot-${slot}"><i aria-hidden="true"></i><span class="day-slot-label">${esc(SLOT_LABEL[slot])}</span><b>${esc(r.name)}</b></div>`;
-        }).join('')}
-        </div>
-        <button type="button" class="btn btn-sm btn-ghost btn-block" data-act="day" data-date="${esc(d.date)}">${icon('eye', 15)} Λεπτομέρειες</button>
-      </article>`;
-    }).join('')}
-  </div>
+  ${mode === 'day'
+    ? `<div class="planner-day-mode">${dayPicker}<div class="planner-day-focus">${dayCard(activeDay)}</div></div>`
+    : mode === 'month'
+      ? monthBoard
+      : `<div class="week-strip planner-week">${weekDays.map(dayCard).join('')}</div>`}
 
   <div class="grid g2 plan-lower">
     <section class="card card-lg">
-      ${sectionHead({ eyebrow: 'Προετοιμασία', title: 'Μαγείρεψε μία φορά, φάε όλη την εβδομάδα', sub: 'Τέσσερις κινήσεις που καλύπτουν το μεγαλύτερο μέρος της εβδομάδας.' })}
+      ${sectionHead({ eyebrow: txt.prepEyebrow, title: txt.prepTitle, sub: txt.prepSub })}
       <div class="batch-list">
         ${[
-          ['Ένα όσπριο σε μεγάλη κατσαρόλα', 'Φακές, ρεβίθια ή φασόλια — κρατούν 3–4 ημέρες στο ψυγείο.'],
-          ['Ένα ταψί πρωτεΐνης', 'Κοτόπουλο ή μπιφτέκια. Κόβεται σε μερίδες και μπαίνει σε ταπεράκια.'],
-          ['Ένα μαγειρεμένο δημητριακό', 'Ρύζι ή ζυμαρικά ολικής. Γίνεται βάση για δύο διαφορετικά βραδινά.'],
-          ['Πλυμένα & κομμένα λαχανικά', 'Σε δοχείο στο ψυγείο — γλιτώνεις 20 λεπτά κάθε βράδυ.']
-        ].map(([t, s]) => `<div class="batch-item">${icon('checkCircle', 20)}<span><b>${esc(t)}</b><span class="muted">${esc(s)}</span></span></div>`).join('')}
+          [en ? 'One large pot of legumes' : 'Ένα όσπριο σε μεγάλη κατσαρόλα', en ? 'Lentils, chickpeas or beans - prepare 3-4 days ahead.' : 'Φακές, ρεβίθια ή φασόλια - κρατούν 3-4 ημέρες στο ψυγείο.'],
+          [en ? 'One tray of protein' : 'Ένα ταψί πρωτεΐνης', en ? 'Chicken or meatballs. Portion and refrigerate.' : 'Κοτόπουλο ή μπιφτέκια. Κόβεται σε μερίδες και μπαίνει σε ταπεράκια.'],
+          [en ? 'One cooked grain' : 'Ένα μαγειρεμένο δημητριακό', en ? 'Rice or wholegrain pasta for multiple meals.' : 'Ρύζι ή ζυμαρικά ολικής. Γίνεται βάση για δύο διαφορετικά βραδινά.'],
+          [en ? 'Washed and cut vegetables' : 'Πλυμένα & κομμένα λαχανικά', en ? 'Ready in the fridge to save time every evening.' : 'Σε δοχείο στο ψυγείο - γλιτώνεις 20 λεπτά κάθε βράδυ.']
+        ].map(([t,s]) => `<div class="batch-item">${icon('checkCircle',20)}<span><b>${esc(t)}</b><span class="muted">${esc(s)}</span></span></div>`).join('')}
       </div>
     </section>
 
     <section class="card card-lg">
-      ${sectionHead({ eyebrow: 'Έλεγχος', title: 'Πόσο καλύπτει το πλάνο κάθε μέλος', sub: 'Το ίδιο μενού, διαφορετικές ανάγκες — με το μέγεθος πιάτου του καθενός.' })}
+      ${sectionHead({ eyebrow: txt.checkEyebrow, title: txt.checkTitle, sub: txt.checkSub })}
       <div class="bc">
         ${ctx.coverageByMember.map(c => `<div class="bc-row">
           <span class="bc-label">${esc(c.name)}</span>
-          <span class="bc-track"><span class="bc-fill tone-${c.status === 'under' ? 'gold' : 'accent'}" style="width:${Math.min(100, c.pct * 100).toFixed(1)}%"></span></span>
+          <span class="bc-track"><span class="bc-fill tone-${c.status === 'under' ? 'gold' : 'accent'}" style="width:${Math.min(100,c.pct*100).toFixed(1)}%"></span></span>
           <span class="bc-val">${pct(c.pct)}</span>
         </div>`).join('')}
       </div>
-      <p class="muted tiny plan-note">Ποσοστό κάλυψης της εκτιμώμενης ενεργειακής ανάγκης από το κοινό μενού, στη μερίδα του καθενός.</p>
+      <p class="muted tiny plan-note">${en ? 'Coverage is estimated from the effective menu and each person\'s portion size.' : 'Η κάλυψη υπολογίζεται από το ενεργό μενού και τη μερίδα κάθε μέλους.'}</p>
     </section>
   </div>
   </div>`;

@@ -1,5 +1,32 @@
 # Changelog
 
+## v15.0.0 — Family Planner · 2026-10-05
+
+### Planning rebuilt around real family use
+- Replaced the fixed shared-menu assumption with layered plans: base rotation → family override → optional member override.
+- Added direct **Day / Week / 4-week** planning from the Plan screen.
+- Any meal slot can be changed in place without editing code or opening a hidden settings screen.
+- Added one-tap **Family / individual member** planning scopes.
+- Added “copy family week to member” for fast personalization.
+- Today, Family Pulse, coverage and Shopping consume the effective personalized plan immediately.
+- Shopping now aggregates the actual plans of every family member.
+
+### Bilingual Greek / English
+- Added persistent one-tap **EN / EL** switch.
+- Navigation, planner, daily actions, family/shopping labels, ingredients, recipe names, recipe instructions and cooking tips translate without changing stored nutrition data.
+
+### Print rebuilt
+- Replaced dashboard printing with a dedicated **A4 landscape weekly planner**.
+- Weekdays print as seven full-width rows with four readable meal cells each.
+- Supporting preparation/coverage information prints on a populated second page instead of a blank sheet.
+- CI now generates a real PDF and fails on collapsed rows, overlapping cells, blank pages, or fragmented meal names.
+
+### Sync and reliability
+- All local plan/log/profile/measurement/shopping changes rerender dependent views immediately.
+- Added BroadcastChannel/local-storage refresh for live synchronization between open tabs/windows on the same browser profile.
+- Modal sheets now make background controls inert and remain accessible.
+- Existing nutrition formulas, minor protections, provenance tests, IndexedDB/localStorage support and offline PWA behavior remain intact.
+
 ## v14.0.0 — Family Flow · 2026-10-05
 
 ### Family-first workflow

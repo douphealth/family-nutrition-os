@@ -13,7 +13,7 @@
  *     are applied in exactly one place.
  */
 
-import { dateFromKey, weekdayIndex } from './dates.js?v=14.1.0';
+import { dateFromKey, weekdayIndex } from './dates.js?v=15.0.0';
 
 /* ── Escaping & DOM ────────────────────────────────────────────────────── */
 
@@ -32,7 +32,7 @@ export const byId = id => document.getElementById(id);
 export {
   localDateKey, dateFromKey, addDays, mondayOf, weekdayIndex, dayNumber,
   cycleDayIndex, cycleWeek
-} from './dates.js?v=14.1.0';
+} from './dates.js?v=15.0.0';
 
 export const GREEK_DAYS = ['Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο', 'Κυριακή'];
 export const GREEK_DAYS_SHORT = ['Δευ', 'Τρι', 'Τετ', 'Πεμ', 'Παρ', 'Σαβ', 'Κυρ'];
@@ -255,7 +255,7 @@ export function avatar(profile, size = 40) {
 
 /* ── Recipe illustrations ──────────────────────────────────────────────── */
 
-export { illustration } from './art.js?v=14.1.0';
+export { illustration } from './art.js?v=15.0.0';
 
 /* ── Step timing ───────────────────────────────────────────────────────────
  * Pull timing cues out of a recipe step so Cook Mode can offer a real timer
@@ -503,6 +503,8 @@ export function toast(message, { actionLabel = '', onAction = null, tone = 'defa
   </div>`;
   host.classList.remove('hidden');
   host.setAttribute('aria-live', 'polite');
+  const ToastEvent = document.defaultView?.CustomEvent;
+  if (ToastEvent) document.dispatchEvent(new ToastEvent('zenith:overlay-rendered'));
 
   const dismiss = () => { host.classList.add('hidden'); host.innerHTML = ''; };
   byId('toastClose')?.addEventListener('click', dismiss);
@@ -534,6 +536,10 @@ export function openSheet({ title, body, footer = '', size = 'md', onMount = nul
     </div>`;
   host.classList.remove('hidden');
   document.body.classList.add('no-scroll');
+  document.querySelector('.app')?.setAttribute('inert', '');
+  document.querySelector('.tabbar')?.setAttribute('inert', '');
+  const SheetEvent = document.defaultView?.CustomEvent;
+  if (SheetEvent) document.dispatchEvent(new SheetEvent('zenith:overlay-rendered'));
   $$('[data-sheet-close]', host).forEach(n => n.addEventListener('click', closeSheet));
   const panel = $('.sheet-panel', host);
   // Sheet content lives outside #view, so view-level input binding never sees
@@ -559,6 +565,8 @@ export function closeSheet() {
   host.innerHTML = '';
   host.onkeydown = null;
   document.body.classList.remove('no-scroll');
+  document.querySelector('.app')?.removeAttribute('inert');
+  document.querySelector('.tabbar')?.removeAttribute('inert');
   lastFocused?.focus?.();
   // Fire the caller's cleanup AFTER the sheet is gone, so a callback that opens
   // another sheet is not immediately torn down by this one.

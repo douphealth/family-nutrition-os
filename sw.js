@@ -10,7 +10,7 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v14-2026-10-05-2';
+const CACHE = 'zenith-v15-2026-10-05-1';
 
 const CORE = [
   './',
@@ -26,6 +26,7 @@ const CORE = [
   './src/app.js',
   './src/views.js',
   './src/ui.js',
+  './src/i18n.js',
   './src/art.js',
   './src/dates.js',
   './src/data.js',

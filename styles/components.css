@@ -118,8 +118,9 @@
 .avatar {
   flex: none; display: inline-grid; place-items: center; border-radius: 50%;
   color: #fff; font-weight: 780; letter-spacing: .02em; line-height: 1;
-  background: color-mix(in oklab, var(--av, var(--member)) 66%, #000);
-  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--av, var(--member)) 60%, #fff), 0 4px 10px -4px color-mix(in oklab, var(--av, var(--member)) 70%, transparent);
+  /* Keep initials readable even for the lightest member accent (amber). */
+  background: color-mix(in oklab, var(--av, var(--member)) 48%, #000);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--av, var(--member)) 52%, #fff), 0 4px 10px -4px color-mix(in oklab, var(--av, var(--member)) 62%, transparent);
 }
 
 /* ── KPI tile, stat, macro bar, meter ──────────────────────────────────── */
@@ -352,3 +353,15 @@ details.disclosure > summary:hover { background: var(--surface-hover); }
   .family-log-row { grid-template-columns: 22px auto minmax(0,1fr); }
   .family-log-state { display: none; }
 }
+
+
+/* v15 language control */
+.lang-btn {
+  min-width: 42px; height: 38px; padding: 0 10px;
+  display: inline-grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 12px;
+  color: var(--ink-2); background: var(--glass-strong);
+  font: 780 .72rem/1 var(--font-sans); letter-spacing: .08em;
+  box-shadow: var(--shadow-xs); cursor: pointer;
+}
+.lang-btn:hover { color: var(--ink); border-color: var(--line-2); background: var(--surface-hover); }
