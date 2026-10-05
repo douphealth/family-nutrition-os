@@ -10,7 +10,7 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v15-2026-10-05-1';
+const CACHE = 'zenith-v15-2026-10-05-2';
 
 const CORE = [
   './',
@@ -52,11 +52,23 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => k.startsWith('zenith-') && k !== CACHE).map(k => caches.delete(k)));
+    await self.clients.claim();
+
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    await Promise.all(windows.map(client => {
+      try {
+        const url = new URL(client.url);
+        if (url.origin !== self.location.origin) return undefined;
+        url.searchParams.set('__zenith_build', '15.0.1');
+        return client.navigate(url.href);
+      } catch {
+        return undefined;
+      }
+    }));
+  })());
 });
 
 self.addEventListener('message', event => {
