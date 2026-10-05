@@ -122,4 +122,5 @@ jobs:
             /tmp/mobile-shots
             /tmp/contrast-crops
             /tmp/zenith-plan-print.pdf
+            /tmp/zenith-plan-desktop.png
           if-no-files-found: ignore
