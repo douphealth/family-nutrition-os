@@ -754,3 +754,93 @@
   .family-pulse-stats { gap: 5px; }
   .family-pulse-stats > span { min-width: 38px; }
 }
+
+
+/* ── v14 screenshot-driven mobile compaction ──────────────────────────── */
+@media (max-width: 759px) {
+  .page.family .page-head,
+  .page.shopping .page-head { padding: 8px 0 14px; }
+  .page.family .page-head h1,
+  .page.shopping .page-head h1 {
+    font-size: clamp(1.9rem, 8.5vw, 2.35rem);
+    line-height: 1.02;
+    max-width: 12ch;
+  }
+  .page.family .page-head p,
+  .page.shopping .page-head p {
+    margin-top: 7px;
+    font-size: .88rem;
+    line-height: 1.48;
+    max-width: 34ch;
+  }
+
+  /* Keep a whole member's essentials in one phone viewport instead of three
+     vertically stacked stat cards. */
+  .member-grid { gap: 10px; }
+  .family-card { gap: 11px; padding: 14px !important; border-radius: 18px; }
+  .family-card .card-head { gap: 8px; }
+  .family-card .family-who { gap: 9px; }
+  .family-card .family-who .avatar { width: 44px !important; height: 44px !important; }
+  .family-card .card-title { font-size: .98rem; }
+  .family-card .muted.tiny { font-size: .7rem; }
+  .family-card .grid.g3.family-stats {
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    gap: 6px;
+  }
+  .family-card .family-stats .stat {
+    min-width: 0; padding: 8px 7px; border-radius: 13px;
+  }
+  .family-card .family-stats .stat-top {
+    gap: 4px; margin-bottom: 5px; align-items: center;
+  }
+  .family-card .family-stats .stat-ic {
+    width: 24px; height: 24px; border-radius: 8px;
+  }
+  .family-card .family-stats .stat-label {
+    min-width: 0; font-size: .57rem; line-height: 1.1;
+  }
+  .family-card .family-stats .stat-val {
+    font-size: clamp(.94rem, 4vw, 1.12rem);
+    line-height: 1.08; white-space: normal; overflow-wrap: normal;
+  }
+  .family-card .family-stats .stat-val small { display: block; margin: 2px 0 0; font-size: .56rem; }
+  .family-card .family-stats .stat-note { display: none; }
+
+  .family-card .family-refs {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 2px 12px; padding: 8px 10px;
+  }
+  .family-card .family-refs li { min-height: 27px; font-size: .68rem; }
+  .family-card .family-refs li b { font-size: .7rem; }
+  .family-card .meal-actions {
+    display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px;
+  }
+  .family-card .meal-actions .btn {
+    min-width: 0; padding-inline: 5px; font-size: .64rem; justify-content: center;
+  }
+
+  /* Shopping: actions become one compact command row, then the list starts. */
+  .page.shopping .page-head p {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .shop-head { padding: 12px; margin-bottom: 12px; border-radius: 18px; }
+  .shop-progress { display: grid; grid-template-columns: minmax(0,1fr); gap: 9px; }
+  .shop-progress-ic { display: none; }
+  .shop-progress-body { order: 0; min-width: 0; flex-basis: auto; gap: 6px; }
+  .shop-progress-body .card-title { font-size: .98rem; }
+  .shop-bar { height: 7px; }
+  .shop-actions {
+    order: 1; width: 100%; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px;
+  }
+  .shop-actions .btn {
+    min-width: 0; min-height: 38px; padding-inline: 5px; font-size: .65rem; justify-content: center;
+  }
+  .shop-chips { gap: 5px; }
+  .shop-chip {
+    flex: 1 1 0; min-width: 0; min-height: 38px; padding: 0 8px;
+    justify-content: center; font-size: .67rem;
+  }
+  .shop-chip-n { min-width: 21px; height: 21px; padding: 0 5px; font-size: .62rem; }
+  .shop-aisle-sec { margin-bottom: 10px; padding: 12px; border-radius: 18px; }
+  .shop-item { min-height: 54px; }
+}
