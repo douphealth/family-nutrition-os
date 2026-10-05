@@ -787,6 +787,79 @@
     }
   }
 
+  /* Contrast hardening: preserve the premium look while clearing measured WCAG
+     contrast on translucent/tinted surfaces in Chromium. */
+  html[data-theme='light'] {
+    --brand: #066A4C;
+    --brand-text: #055F44;
+    --ink-3: #4D6055;
+  }
+
+  .dash-greet h1 em {
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: var(--brand-text);
+    -webkit-text-fill-color: var(--brand-text);
+  }
+
+  .next-card {
+    color: #F8FCFA;
+    border-color: rgba(255,255,255,.10);
+    background:
+      radial-gradient(420px 280px at 92% 8%, color-mix(in oklab, var(--slot, var(--brand)) 32%, transparent), transparent 72%),
+      radial-gradient(360px 260px at 4% 100%, rgba(95,212,168,.08), transparent 74%),
+      linear-gradient(145deg, #0A1712 0%, #07110E 56%, #081712 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 34px 72px -46px rgba(0,0,0,.72);
+  }
+
+  .next-card .next-title,
+  .next-card .next-sub b,
+  .next-card .next-plate b {
+    color: #F8FCFA;
+  }
+
+  .next-card .next-title em {
+    color: #8DE8C5;
+  }
+
+  .next-card .next-sub,
+  .next-card .next-plate,
+  .next-card .next-slot,
+  .next-card .next-shortcut {
+    color: #D8E9E1;
+  }
+
+  .next-card .next-shortcut {
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.12);
+  }
+
+  .next-card .next-shortcut svg {
+    color: #8DE8C5;
+  }
+
+  .next-card .btn-quiet {
+    color: #F7FBF9;
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.14);
+  }
+
+  .family-command-heading p,
+  .family-command-metric small,
+  .family-pulse-next,
+  .family-pulse-stats small,
+  .recipe-ing,
+  .recipe-foot,
+  .meal-facts,
+  .meal-more summary,
+  .shop-src,
+  .why-note {
+    color: var(--ink-3);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .family-command-btn:hover,
     .nav-btn:hover,
