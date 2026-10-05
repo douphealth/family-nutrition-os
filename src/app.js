@@ -16,7 +16,7 @@ import {
   PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY
 } from './data.js';
 import {
-  isMinor, targetsFor, dayMacros, planCoverage, weightTrend, loggingStreak,
+  isMinor, targetsFor, dayMacros, mealMacros, planCoverage, weightTrend, loggingStreak,
   contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
   upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
   householdRoleServings, buildShoppingList
@@ -28,7 +28,7 @@ import {
 import {
   esc, icon, logo, byId, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, dateFromKey,
-  num, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
+  num, num1, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
 } from './ui.js';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
@@ -221,6 +221,30 @@ function buildCtx() {
   const shopChecked = state.shopChecked[shopKey(weekDays)] || {};
   const heatCells = heatCellsFor(profile.id);
   const checked = shopList.filter(i => shopChecked[i.key]).length;
+  const now = new Date();
+  const familyNow = sizedProfiles.map(p => {
+    const memberLog = logFor(p.id, dateKey);
+    const memberLoad = currentLoad(p);
+    const memberTargets = targetsFor(p, memberLoad);
+    const memberNudge = nextMealNudge({ log: memberLog, slotTimes: SLOT_TIME, now });
+    const mealsDone = Object.values(memberLog.meals || {}).filter(m => m?.status === 'done').length;
+    const mealsTotal = SLOTS.filter(s => planDay[s]).length;
+    return {
+      id: p.id,
+      name: p.name,
+      relation: p.relation,
+      accent: p.accent,
+      nextSlot: memberNudge?.slot || null,
+      nextState: memberNudge?.state || 'complete',
+      nextLabel: memberNudge?.slot ? SLOT_LABEL[memberNudge.slot] : 'Ημέρα ολοκληρωμένη',
+      nextTime: memberNudge?.slot ? SLOT_TIME[memberNudge.slot] : '',
+      mealsDone,
+      mealsTotal,
+      waterMl: Number(memberLog.waterMl) || 0,
+      waterTarget: memberTargets.hydration.ml,
+      waterPct: memberTargets.hydration.ml ? Math.min(1, (Number(memberLog.waterMl) || 0) / memberTargets.hydration.ml) : 0
+    };
+  });
 
   return {
     state, profiles: cache.profiles, sizedProfiles, sized: me, plate: me.plate,
@@ -241,7 +265,7 @@ function buildCtx() {
       total: shopList.length, checked, remaining: shopList.length - checked,
       pct: shopList.length ? checked / shopList.length : 0
     },
-    measurements, trend, heatCells,
+    measurements, trend, heatCells, familyNow,
     loggedDays: loggedDateKeys(profile.id).length,
     loggedDays28: heatCells.filter(c => c.logged).length,
     weekAdherence: weekDays.map(d => {
@@ -267,7 +291,7 @@ function buildCtx() {
       measurements: measurements.length,
       refs: referenceValues(profile)
     }),
-    nudge: nextMealNudge({ log, slotTimes: SLOT_TIME, now: new Date() }),
+    nudge: nextMealNudge({ log, slotTimes: SLOT_TIME, now }),
     personaFocus: PERSONA_FOCUS[profile.goal] || null,
     fueling: trainingFueling(profile, load),
     ironToday: ironTodayFor(planDay),
@@ -649,6 +673,93 @@ document.addEventListener('click', async e => {
       state.member = target.dataset.id;
       await persistSettings();
       renderAll();
+      break;
+    }
+    case 'quickMeals': {
+      state.view = 'meals';
+      state.filters = {
+        ...state.filters,
+        q: '',
+        slot: target.dataset.slot || '',
+        tag: 'fast',
+        sort: 'time'
+      };
+      history.replaceState(null, '', location.pathname + '?view=meals');
+      if (isSheetOpen()) closeSheet();
+      await persistSettings();
+      renderAll();
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch { /* not supported */ }
+      break;
+    }
+    case 'familyMealPrompt': {
+      const slot = target.dataset.slot;
+      const recipe = recipeById(target.dataset.recipe || planForDate(localDateKey())?.[slot]);
+      if (!slot || !recipe) break;
+      const ctx = buildCtx();
+      const rows = ctx.sizedProfiles.map(p => {
+        const done = ctx.logFor(p.id, ctx.dateKey)?.meals?.[slot]?.status === 'done';
+        const m = mealMacros(recipe, p, currentLoad(p), 1);
+        return `<label class="family-log-row ${done ? 'is-done' : ''}">
+          <input type="checkbox" name="member" value="${esc(p.id)}" ${done ? 'checked disabled' : 'checked'}>
+          ${avatar(p, 38)}
+          <span class="family-log-copy">
+            <b>${esc(p.name)}</b>
+            <small>${done ? 'Ήδη καταγεγραμμένο' : `${num(m.kcal)} kcal · πιάτο ×${num1(p.plate || 1)}`}</small>
+          </span>
+          <span class="family-log-state">${done ? icon('checkCircle', 18) : icon('utensils', 18)}</span>
+        </label>`;
+      }).join('');
+      openSheet({
+        title: 'Καταγραφή για όλη την οικογένεια',
+        size: 'sm',
+        body: `<form id="familyMealForm" class="family-log-form" data-slot="${esc(slot)}" data-recipe="${esc(recipe.id)}">
+          <div class="notice">${icon('users', 18)}<span><b>${esc(SLOT_LABEL[slot])}: ${esc(recipe.name)}</b><br>Άφησε επιλεγμένους μόνο όσους έφαγαν αυτό το προγραμματισμένο γεύμα.</span></div>
+          <div class="family-log-list">${rows}</div>
+        </form>`,
+        footer: `<button type="button" class="btn btn-ghost" data-act="closeSheet">Ακύρωση</button>
+          <button type="button" class="btn btn-primary" data-act="familyMeal">${icon('check', 17)} Καταγραφή επιλεγμένων</button>`
+      });
+      break;
+    }
+    case 'familyMeal': {
+      const form = byId('familyMealForm');
+      if (!form) break;
+      const slot = form.dataset.slot;
+      const recipeId = form.dataset.recipe || planForDate(localDateKey())?.[slot];
+      const ids = [...form.querySelectorAll('input[name="member"]:checked:not(:disabled)')].map(el => el.value);
+      if (!ids.length) { toast('Διάλεξε τουλάχιστον ένα μέλος.'); break; }
+
+      const date = localDateKey();
+      const plannedId = planForDate(date)?.[slot];
+      const previous = [];
+      for (const id of ids) {
+        if (!cache.profiles.some(p => p.id === id)) continue;
+        const memberLog = logFor(id, date);
+        previous.push({ id, entry: memberLog.meals?.[slot] ? structuredClone(memberLog.meals[slot]) : null });
+        memberLog.meals = { ...(memberLog.meals || {}), [slot]: {
+          status: 'done',
+          portion: 1,
+          at: new Date().toISOString(),
+          ...(recipeId && recipeId !== plannedId ? { recipeId } : {})
+        } };
+        await saveLog(memberLog);
+      }
+      closeSheet();
+      renderAll();
+      toast(`Καταγράφηκε για ${ids.length} ${ids.length === 1 ? 'μέλος' : 'μέλη'}.`, {
+        actionLabel: 'Αναίρεση',
+        onAction: async () => {
+          for (const prev of previous) {
+            const memberLog = logFor(prev.id, date);
+            memberLog.meals = { ...(memberLog.meals || {}) };
+            if (prev.entry) memberLog.meals[slot] = prev.entry;
+            else delete memberLog.meals[slot];
+            await saveLog(memberLog);
+          }
+          renderAll();
+          toast('Η οικογενειακή καταγραφή αναιρέθηκε.');
+        }
+      });
       break;
     }
     case 'theme': {

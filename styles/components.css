@@ -87,8 +87,11 @@
 
 .card {
   position: relative; min-width: 0;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  background:
+    linear-gradient(145deg, color-mix(in oklab, var(--surface) 92%, #fff 8%), var(--surface));
+  border: 1px solid var(--line); border-radius: var(--r-lg);
   padding: var(--s-5); box-shadow: var(--shadow-sm);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08); backdrop-filter: blur(18px) saturate(1.08);
 }
 .card-lg { padding: var(--s-6); border-radius: var(--r-xl); }
 .card-flush { padding: 0; overflow: hidden; }
@@ -125,7 +128,10 @@
 @media (max-width: 899px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi {
   position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0;
-  padding: var(--s-4); border-radius: var(--r-lg); background: var(--surface);
+  padding: var(--s-4); border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 110% at 100% 0%, color-mix(in oklab, var(--tone, var(--brand)) 6%, transparent), transparent 66%),
+    var(--surface);
   border: 1px solid var(--line); box-shadow: var(--shadow-sm); overflow: hidden;
 }
 .kpi.is-hero {
@@ -237,12 +243,13 @@ input[type='search']::-webkit-search-cancel-button { display: none; }
 .toast-card {
   pointer-events: auto; display: flex; align-items: center; gap: var(--s-3);
   padding: 10px 10px 10px var(--s-5); border-radius: var(--r-lg);
-  color: var(--surface); background: var(--ink); box-shadow: var(--shadow-lg);
-  font-size: var(--fs-md); font-weight: 560; animation: toast-in var(--dur-3) var(--ease) both;
+  color: var(--toast-text); background: var(--toast-bg);
+  border: 1px solid color-mix(in oklab, var(--toast-text) 14%, transparent);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--fs-md); font-weight: 590; animation: toast-in var(--dur-3) var(--ease) both;
 }
-[data-theme='dark'] .toast-card { color: var(--ink); background: var(--surface-3); border: 1px solid var(--line-2); }
-.toast-card.tone-danger { background: var(--danger); color: #fff; }
-.toast-msg { flex: 1; min-width: 0; }
+.toast-card.tone-danger { background: #871E2C; color: #fff; }
+.toast-msg { flex: 1; min-width: 0; color: inherit; }
 .toast-action { flex: none; padding: 8px 14px; border-radius: var(--r-pill); font-weight: 720; font-size: var(--fs-sm); color: var(--on-action); background: var(--action); }
 .toast-close { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: inherit; opacity: .75; }
 .toast-close:hover { opacity: 1; background: rgba(127, 127, 127, .2); }
@@ -310,3 +317,38 @@ details.disclosure > summary::after { content: ''; margin-left: auto; width: 10p
 details.disclosure[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
 details.disclosure > summary:hover { background: var(--surface-hover); }
 .disclosure-body { padding: 0 var(--s-5) var(--s-5); display: grid; gap: var(--s-3); color: var(--ink-2); }
+
+
+/* ── v14 family meal logger ───────────────────────────────────────────── */
+.family-log-form { display: grid; gap: var(--s-4); }
+.family-log-list { display: grid; gap: 7px; }
+.family-log-row {
+  display: grid; grid-template-columns: 24px auto minmax(0,1fr) auto;
+  align-items: center; gap: var(--s-3); min-height: 62px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface-2); cursor: pointer;
+}
+.family-log-row:hover { border-color: var(--line-2); background: var(--surface-hover); }
+.family-log-row.is-done { cursor: default; background: var(--brand-soft); border-color: var(--brand-line); }
+.family-log-row input {
+  appearance: none; width: 22px; height: 22px; padding: 0; border-radius: 7px;
+  border: 2px solid var(--line-2); background: var(--surface);
+  display: grid; place-content: center;
+}
+.family-log-row input::before {
+  content: ''; width: 10px; height: 6px; margin-top: -2px;
+  border-left: 2px solid var(--brand-ink); border-bottom: 2px solid var(--brand-ink);
+  transform: rotate(-45deg) scale(0);
+  transition: transform var(--dur-1) var(--ease);
+}
+.family-log-row input:checked { background: var(--brand); border-color: var(--brand); }
+.family-log-row input:checked::before { transform: rotate(-45deg) scale(1); }
+.family-log-row input:disabled { opacity: .75; }
+.family-log-copy { display: grid; gap: 2px; min-width: 0; }
+.family-log-copy b { color: var(--ink); font-size: var(--fs-md); }
+.family-log-copy small { color: var(--ink-3); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.family-log-state { color: var(--brand-text); }
+@media (max-width: 479px) {
+  .family-log-row { grid-template-columns: 22px auto minmax(0,1fr); }
+  .family-log-state { display: none; }
+}

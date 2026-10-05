@@ -1,5 +1,25 @@
 # Changelog
 
+## v14.0.0 — Family Flow · 2026-10-05
+
+### Family-first workflow
+- Added **Family Pulse** to Today: each family member's next meal, meals completed and hydration status are visible without switching profiles.
+- Added **multi-member meal logging**: one shared planned meal can be confirmed for selected family members in one action, with undo.
+- Added **quick fallback recipes** from the next-meal surface, pre-filtered to fast recipes for the same meal slot.
+- Reordered mobile Today around real household flow: next action → family → meals → water → supporting metrics.
+
+### Aurora Glass design system
+- Reworked the existing v13 token architecture instead of adding another theme stylesheet.
+- Increased usable command-center width while tightening the desktop rail.
+- Added stronger frosted-glass navigation, member identity, selected states, premium action surfaces and an asymmetric Today composition.
+- Rebuilt the next-meal card as a stable cinematic action stage while retaining Daylight/Midnight themes.
+- Refined Family, Shopping, KPI and mobile surfaces without reducing touch targets.
+
+### Reliability & accessibility
+- Fixed the v13 dark-theme toast contrast failure that was blocking the full WCAG 2.2 AA browser audit.
+- Added explicit contrast-safe toast tokens for both themes.
+- Preserved existing nutrition, provenance, minor-safety, PWA, storage and offline behavior.
+
 All notable changes to ZENITH PRO are documented here.
 
 ## [13.0.0] — 2026-09-30 · "Aegean"
