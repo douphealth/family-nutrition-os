@@ -735,6 +735,37 @@ export function householdPlate(recipe, profiles, loadFor = () => 'normal') {
  * Rounding up is deliberate and is what the in-app explanation promises: a list
  * that leaves you a little short is worse than one that leaves a little over.
  */
+export function buildShoppingListForMembers({ daysByMember, profiles, recipeById, loadFor = () => 'normal' }) {
+  const need = new Map();
+  const members = Array.isArray(profiles) ? profiles : [];
+
+  for (const p of members) {
+    const days = daysByMember?.[p.id] || [];
+    for (const day of days) {
+      for (const slot of MEAL_ORDER) {
+        const recipe = recipeById(day?.plan?.[slot]);
+        if (!recipe) continue;
+        const lines = scaledIngredients(recipe, p, loadFor(p), 1);
+        recipe.ingredients.forEach((ing, i) => {
+          const grams = Number(lines[i]?.g) || 0;
+          const cur = need.get(ing.f) || { grams: 0, meals: 0 };
+          cur.grams += grams;
+          cur.meals += 1;
+          need.set(ing.f, cur);
+        });
+      }
+    }
+  }
+
+  return [...need.entries()].map(([id, { grams, meals }]) => {
+    const food = FOODS[id];
+    const { unit, step } = food.shop;
+    const raw = unit === 'ml' ? grams / (food.density ?? 1) : unit === 'τεμ' ? grams / food.pieceG : grams;
+    const qty = Math.max(step, Math.ceil(raw / step - 1e-9) * step);
+    return { id, key: id, name: food.plural, aisle: food.aisle, unit, qty, exact: raw, meals };
+  }).sort((a, b) => a.name.localeCompare(b.name, 'el'));
+}
+
 export function buildShoppingList({ days, profiles, recipeById, loadFor = () => 'normal' }) {
   const need = new Map();
   for (const day of Array.isArray(days) ? days : []) {
