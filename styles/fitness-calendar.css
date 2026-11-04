@@ -21,6 +21,7 @@
 .fit-cal-turnaround>svg{color:var(--brand-text)}
 .fit-cal-turnaround strong{color:var(--ink);font-size:.9rem;font-weight:850}
 .fit-cal-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px;margin-top:18px}
+.fit-cal-days:focus-visible{outline:3px solid var(--brand);outline-offset:3px;border-radius:12px}
 .fit-cal-day{display:flex;flex-direction:column;gap:11px;min-width:0;min-height:218px;padding:12px 9px 10px;background:var(--surface-2);border:1px solid var(--line);border-radius:18px}
 .fit-cal-day.is-current{background:color-mix(in oklab,var(--brand-soft) 44%,var(--surface));border-color:var(--brand-line);box-shadow:inset 0 2px 0 var(--brand)}
 .fit-cal-dayhead{display:flex;justify-content:space-between;align-items:center;gap:4px;color:var(--ink-3);font-size:.72rem;font-weight:750;padding:0 3px 4px}
