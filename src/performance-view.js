@@ -108,7 +108,7 @@ function exerciseCard(s,en,index) {
 }
 function weekStrip(program,ctx,en){
  const days=[['MON','ΔΕΥ'],['TUE','ΤΡΙ'],['WED','ΤΕΤ'],['THU','ΠΕΜ'],['FRI','ΠΑΡ'],['SAT','ΣΑΒ'],['SUN','ΚΥΡ']];
- return '<div class="atlas-week-strip" aria-label="'+T(en,'Εβδομάδα σε μία ματιά','Week at a glance')+'">'
+ return '<div class="atlas-week-strip" role="group" tabindex="0" aria-label="'+T(en,'Εβδομάδα σε μία ματιά','Week at a glance')+'">'
   +days.map((d,i)=>{
     const today=ctx.fitnessWeek.days[i],slot=program.sessions.find(x=>x.dayIndex===i);
     const team=today?.sportMinutes||0;
