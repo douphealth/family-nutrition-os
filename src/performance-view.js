@@ -99,10 +99,10 @@ function exerciseCard(s,en,index) {
   +esc(s.start)+'–'+esc(s.end)+'</small><h3>'+esc(label)+'</h3>'
   +'<span>'+esc(s.intensity)+' · '+T(en,'Προτεινόμενος χρόνος','Requested duration')+'</span></div>'
   +'<strong class="atlas-duration">'+s.minutes+'<small>MIN</small></strong></div>'
-  +'<div class="atlas-session-status '+esc(s.state)+'">'+icon(s.state==='blocked'?'alertTriangle':'shield',18)
+  +'<div class="atlas-session-status '+esc(s.state)+'">'+icon(s.state==='blocked'?'alert':'shield',18)
   +'<span><b>'+esc(name)+'</b> — '+esc(reason)+'</span></div>'
   +'<div class="atlas-drill-list">'+steps+'</div>'
-  +'<div class="atlas-workout-footer"><span>'+icon('activity',17)+' '
+  +'<div class="atlas-workout-footer"><span>'+icon('zap',17)+' '
   +T(en,s.type==='recovery'?'Χωρίς έντονη άσκηση':'Τεχνική χωρίς εξάντληση',
     s.type==='recovery'?'No intense training':'Technique, no exhaustion')+'</span>'+completeButton+'</div></article>';
 }
@@ -134,13 +134,13 @@ export function performanceView(ctx){
  }
  const week=ctx.fitnessWeek;
  const headings='<section class="atlas-intro" aria-labelledby="atlas-title"><div class="atlas-intro-grid"><div>'
-  +'<span class="atlas-eyebrow">'+icon('activity',17)+' ATHLETE ATLAS / ZENITH PRO</span>'
+  +'<span class="atlas-eyebrow">'+icon('zap',17)+' ATHLETE ATLAS / ZENITH PRO</span>'
   +'<h1 id="atlas-title">'+T(en,'Η απόδοση χτίζεται με ακρίβεια.','Performance built with precision.')+'</h1>'
   +'<p>'+esc(p.name)+' · '+esc(p.age)+' '+T(en,'ετών','years')+' · '+esc(p.height)+' cm · '+esc(p.weight)+' kg'
   +'. '+T(en,'Συγκεκριμένα μπλοκ δύναμης, κινητικότητας και ελέγχου κίνησης γύρω από την ομάδα — όχι υποσχέσεις για επιδόσεις ή στόχοι βάρους.',
    'Structured strength, mobility and movement work around the team — no performance guarantees or weight targets.')+'</p>'
   +'<div class="atlas-intro-actions">'
-  +'<button class="fitness-btn fitness-primary" data-act="performanceCustomize">'+icon('sliders',18)+' '
+  +'<button class="fitness-btn fitness-primary" data-act="performanceCustomize">'+icon('settings',18)+' '
     +T(en,'Ρύθμισε το πλάνο','Customize plan')+'</button>'
   +'<button class="fitness-btn atlas-ghost-button" data-act="performanceCheckIn">'+icon('heart',18)+' '
     +T(en,'Καθημερινό check-in','Daily check-in')+'</button>'
