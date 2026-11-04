@@ -213,12 +213,18 @@ section('Fitness studio');
 
 await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'),90);
 await clickSel('#sideNav [data-act="nav"][data-view="fitness"]',window.document,90);
-ok(!!viewEl().querySelector('.pp-stage'), 'premium athlete lab renders for selected Dimitris');
-ok(viewEl().querySelectorAll('.pp-session').length===2,'two genuine supplementary sessions are visible');
-ok(viewEl().querySelector('.pp-target')?.textContent.includes('35'),'35 additional personal minutes are visible');
-ok(viewEl().querySelector('.pp-indicators')?.textContent.includes('12h 25m'),'actual team workload is shown separately');
-ok([...viewEl().querySelectorAll('.pp-session')].every(el=>el.querySelector('.pp-step')),
-  'every supplementary session shows guided exercise steps');
+ok(!!viewEl().querySelector('.atlas-intro'), 'premium Athlete Atlas dashboard renders for selected Dimitris');
+ok(viewEl().querySelectorAll('.atlas-workout').length===3,'all three requested personal workout blocks are visible');
+ok(viewEl().querySelector('.atlas-scoreboard')?.textContent.includes('135'),'three 45-minute blocks total 135 requested minutes');
+ok(viewEl().querySelector('.atlas-metrics')?.textContent.includes('12h 25m'),'12h25m actual basketball is shown separately');
+ok([...viewEl().querySelectorAll('.atlas-workout')].every(el=>el.querySelectorAll('.atlas-drill').length>=5),
+  'all personal sessions show full guided exercise steps');
+ok(viewEl().querySelectorAll('.atlas-week-day').length===7,'seven-day athlete training digest renders');
+ok([...viewEl().querySelectorAll('.atlas-workout')].some(el=>
+  el.textContent.includes('06:00')&&el.classList.contains('is-blocked')),
+  'Friday 06:00 shows as unsafe and blocked');
+ok([...viewEl().querySelectorAll('.atlas-workout.is-blocked button')].every(btn=>btn.disabled),
+  'unsafe Friday completion button is disabled');
 ok(!!viewEl().querySelector('#fitnessReadinessForm'), 'today readiness check-in is available');
 ok(viewEl().querySelectorAll('.fitness-day').length===7,'seven daily training sessions are visible');
 ok(!!viewEl().querySelector('.fit-cal'),'real basketball calendar is visible for son');
@@ -246,12 +252,18 @@ const performanceForm=window.document.getElementById('performanceSettingsForm');
 ok(!!performanceForm,'personal performance customization opens');
 if(performanceForm){
   performanceForm.elements.supplementFocus.value='durability';
+  performanceForm.elements.supplementwedMinutes.value='50';
+  performanceForm.elements.supplementfriTime.value='06:10';
   performanceForm.elements.coachSupervised.checked=true;
   performanceForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
   await tick(150);
   const performanceSettings=(await readStore('settings')).find(x=>x.id==='fitness:son');
   ok(performanceSettings?.supplementFocus==='durability','performance goal persists per member');
   ok(performanceSettings?.coachSupervised===true,'qualified coach supervision preference persists');
+  ok(performanceSettings?.supplementwedMinutes===50,'custom personal workout duration persists');
+  ok(performanceSettings?.supplementfriTime==='06:10','custom early Friday time persists');
+  ok(viewEl().querySelector('.atlas-scoreboard')?.textContent.includes('140'),
+    'custom 45+50+45 minute athlete plan updates the UI');
   ok(performanceSettings?.calendarWeeks?.['2026-11-02']?.some(x=>x.end==='22:00'),
     'performance settings preserve prior calendar edits');
 }
