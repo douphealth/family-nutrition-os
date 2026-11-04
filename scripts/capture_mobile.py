@@ -174,6 +174,11 @@ with sync_playwright() as p:
     shot(page, "mobile-fitness-settings.png")
     audit(page, "fitness/settings")
     dismiss_overlays(page)
+    page.evaluate("""() => document.querySelector('[data-act="fitnessCalendarEdit"]')?.click()""")
+    settle(page, 450)
+    shot(page, "mobile-fitness-calendar-editor.png")
+    audit(page, "fitness/calendar-editor")
+    dismiss_overlays(page)
 
     # ── Planner v15: the family's weekly planning surface ────────────────
     go(page, "plan")

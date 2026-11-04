@@ -216,6 +216,26 @@ await clickSel('#sideNav [data-act="nav"][data-view="fitness"]',window.document,
 ok(!!viewEl().querySelector('.fitness-hero'), 'fitness studio renders for the selected athlete');
 ok(!!viewEl().querySelector('#fitnessReadinessForm'), 'today readiness check-in is available');
 ok(viewEl().querySelectorAll('.fitness-day').length===7,'seven daily training sessions are visible');
+ok(!!viewEl().querySelector('.fit-cal'),'real basketball calendar is visible for son');
+ok(viewEl().querySelectorAll('.fit-cal-day').length===7,'seven dated timetable columns are visible');
+await clickSel('[data-act="fitnessCalendarEdit"]',window.document,100);
+const calForm=window.document.getElementById('fitnessCalendarForm');
+ok(!!calForm,'real calendar editing sheet opens');
+if(calForm){
+  const dates=[...calForm.querySelectorAll('[name="calDate"]')];
+  ok(dates.length>=6,'real schedule contains the six basketball sessions');
+  const tuesday=[...calForm.querySelectorAll('.fit-cal-edit-row')].find(row =>
+    row.querySelector('[name="calDate"]')?.value==='2026-11-03'
+    &&row.querySelector('[name="calType"]')?.value==='team');
+  if(tuesday){
+    tuesday.querySelector('[name="calEnd"]').value='22:00';
+    calForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+    await tick(180);
+    const newSettings=(await readStore('settings')).find(x=>x.id==='fitness:son');
+    ok(newSettings?.calendarWeeks?.['2026-11-02']?.some(e=>e.date==='2026-11-03'&&e.end==='22:00'),
+      'calendar edit changes Tuesday end time in persistent profile');
+  }
+}
 await clickSel('[data-act="fitnessEdit"]',window.document,100);
 const fitnessForm=window.document.getElementById('fitnessSettingsForm');
 ok(!!fitnessForm,'customization opens a working settings form');

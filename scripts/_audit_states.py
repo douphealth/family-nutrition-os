@@ -120,6 +120,9 @@ def visit(page, tag, quick, scan):
         scan(f"{tag}/fitness-settings")
         close_sheet(page)
     scan(f"{tag}/fitness-week")
+    if js_click(page, '#view [data-act="fitnessCalendarEdit"]', 400):
+        scan(f"{tag}/fitness-calendar-editor")
+        close_sheet(page)
     if page.query_selector("#fitnessReadinessForm"):
         page.fill('#fitnessReadinessForm [name="sleepHours"]', "9")
         page.select_option('#fitnessReadinessForm [name="energy"]', "4")
