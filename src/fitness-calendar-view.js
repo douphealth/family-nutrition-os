@@ -37,7 +37,12 @@ export function fitnessCalendarPanel(ctx) {
       <div class="fit-cal-metric is-extra"><span>`+tr(en,'ΕΠΙΠΛΕΟΝ ΠΡΟΠΟΝΗΣΗ','ADDITIONAL WORKOUTS')+`</span>
         <b>`+(w.calendarKnown?w.extraMinutes+'′':'—')+`</b><small>`+tr(en,'Εκτός της ομάδας','Separate from the team')+`</small></div>
     </div>
-    `+(w.calendarMissing?`<div class="fit-cal-warning">`+icon('alert',19)+`<span>`+
+    `+(st.shortestSchoolTurnaround && st.shortestSchoolTurnaround.minutes<600 ?
+      `<div class="fit-cal-turnaround">`+icon('clock',18)+`<span><strong>`+
+      durationLabel(st.shortestSchoolTurnaround.minutes,en)+`</strong> `+tr(en,
+      'μεταξύ λήξης μπάσκετ '+shortDate(st.shortestSchoolTurnaround.from)+' και έναρξης σχολείου '+shortDate(st.shortestSchoolTurnaround.to)+'. Αυτό δεν είναι διάρκεια ύπνου: αφαιρούνται μετακίνηση, φαγητό και προετοιμασία.',
+      'between basketball ending '+shortDate(st.shortestSchoolTurnaround.from)+' and school beginning '+shortDate(st.shortestSchoolTurnaround.to)+'. This is not sleep time: travel, meals and wind-down reduce it.')+`</span></div>` : '')+`
+        `+(w.calendarMissing?`<div class="fit-cal-warning">`+icon('alert',19)+`<span>`+
       tr(en,'Χωρίς επιβεβαιωμένη εβδομάδα. Δεν δημιουργούνται αυθαίρετες προπονήσεις. Ενημέρωσε τις ώρες ή εισήγαγε ημερολόγιο.',
        'Week not confirmed. No workouts are invented. Enter times or import a calendar.')+`</span></div>`:'')+`
     `+(w.calendarKnown&&w.highYouthLoad?`<div class="fit-cal-warning">`+icon('shield',19)+`<span>`+
