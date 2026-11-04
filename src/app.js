@@ -35,6 +35,8 @@ import {
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
 } from './views.js?v=16.0.0';
 import { translateTree } from './i18n.js?v=16.0.0';
+import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId } from './fitness-engine.js';
+import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -44,10 +46,11 @@ const NAV = [
   ['meals', 'Γεύματα', 'utensils'],
   ['shopping', 'Αγορές', 'cart'],
   ['progress', 'Πρόοδος', 'chart'],
+  ['fitness', 'Προπόνηση', 'zap'],
   ['family', 'Οικογένεια', 'users'],
   ['guide', 'Γνώση', 'book']
 ];
-const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'progress'];
+const PRIMARY_TABS = ['today', 'plan', 'fitness', 'shopping', 'progress'];
 const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_COLOR = { light: '#F3F5F0', dark: '#070C09' };
@@ -67,6 +70,8 @@ let state = {
   onboarded: false,
   filters: { q: '', slot: '', tag: '', sort: 'slot' },
   shopFilter: 'all',
+  fitnessWeekOffset: 0,
+  fitnessSelectedDate: null,
   shopChecked: {},
   version: APP.version
 };
@@ -76,7 +81,8 @@ const cache = {
   logs: [],
   measurements: [],
   plans: [],
-  checklists: []
+  checklists: [],
+  fitnessSettings: []
 };
 
 let updateReady = false;
@@ -268,6 +274,9 @@ function buildCtx() {
     loadFor: p => currentLoad(p)
   });
   const shopChecked = state.shopChecked[shopKey(weekDays)] || {};
+  const fitnessSettings = cache.fitnessSettings.find(s => s.memberId === profile.id) || defaultFitnessSettings(profile);
+  const fitnessAnchor = addDays(mondayOf(), Math.max(-52, Math.min(52, Number(state.fitnessWeekOffset) || 0)) * 7);
+  const fitnessWeek = buildFitnessWeek(profile, fitnessSettings, cache.checklists.filter(x => x.id?.startsWith('fitness-log:')), fitnessAnchor);
   const heatCells = heatCellsFor(profile.id);
   const checked = shopList.filter(i => shopChecked[i.key]).length;
   const now = new Date();
@@ -317,7 +326,7 @@ function buildCtx() {
       total: shopList.length, checked, remaining: shopList.length - checked,
       pct: shopList.length ? checked / shopList.length : 0
     },
-    measurements, trend, heatCells, familyNow,
+    measurements, trend, heatCells, familyNow, fitnessWeek, fitnessSelectedDate: state.fitnessSelectedDate,
     loggedDays: loggedDateKeys(profile.id).length,
     loggedDays28: heatCells.filter(c => c.logged).length,
     weekAdherence: weekDays.map(d => {
@@ -366,7 +375,7 @@ function renderShell() {
   byId('paletteBtn').innerHTML = `${icon('search', 17)}<span class="palette-label">${state.lang === 'en' ? 'Commands' : 'Εντολές'}</span><kbd>Ctrl K</kbd>`;
   byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · ${state.lang === 'en' ? 'local data' : 'τοπικά δεδομένα'}</span>`;
 
-  const NAV_EN = { today:'Today', plan:'Plan', meals:'Meals', shopping:'Shopping', progress:'Progress', family:'Family', guide:'Guide' };
+  const NAV_EN = { today:'Today', plan:'Plan', meals:'Meals', fitness:'Training', shopping:'Shopping', progress:'Progress', family:'Family', guide:'Guide' };
   byId('sideNav').innerHTML = NAV.map(([id, label, ic]) => {
     const shown = state.lang === 'en' ? NAV_EN[id] : label;
     return `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" aria-label="${esc(shown)}" ${state.view === id ? 'aria-current="page"' : ''}>
@@ -391,7 +400,7 @@ function renderShell() {
     const entry = NAV.find(n => n[0] === id);
     return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
       ${icon(entry[2], 22)}<span>${esc(entry[1])}</span></button>`;
-  }).join('') + `<button type="button" class="tab-btn ${['family', 'guide'].includes(state.view) ? 'active' : ''}" data-act="more">${icon('more', 22)}<span>Άλλα</span></button>`;
+  }).join('') + `<button type="button" class="tab-btn ${['family', 'guide', 'meals'].includes(state.view) ? 'active' : ''}" data-act="more">${icon('more', 22)}<span>Άλλα</span></button>`;
 
   const dark = resolvedTheme() === 'dark';
   const langBtn = byId('langBtn');
@@ -412,12 +421,14 @@ function render() {
   const view = byId('view');
   try {
     const ctx = buildCtx();
+    ctx.fitnessTeaser = fitnessTodayCard(ctx);
     let html;
     if (state.view === 'today') html = todayView(ctx);
     else if (state.view === 'plan') html = planView(ctx);
     else if (state.view === 'meals') html = mealsView(ctx);
     else if (state.view === 'shopping') html = shoppingView(ctx);
     else if (state.view === 'progress') html = progressView(ctx);
+    else if (state.view === 'fitness') html = fitnessView(ctx);
     else if (state.view === 'family') html = familyView(ctx);
     else if (state.view === 'guide') html = guideView(ctx);
     else html = todayView(ctx);
@@ -451,6 +462,38 @@ function bindViewInputs() {
     }, 220));
   }
   byId('recipeSort')?.addEventListener('change', e => { state.filters.sort = e.target.value; render(); });
+  byId('fitnessSettingsForm')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const form=e.currentTarget, fd=new FormData(form), id=form.dataset.member;
+    const p=cache.profiles.find(x=>x.id===id);
+    if(!p)return;
+    const record=normalizeFitnessSettings({
+      goal:String(fd.get('goal')||''), sport:String(fd.get('sport')||''),
+      experience:String(fd.get('experience')||''),equipment:String(fd.get('equipment')||''),
+      minutes:fd.get('minutes'), strengthSessions:fd.get('strengthSessions'),
+      coachSupervised:fd.get('coachSupervised')==='on',
+      schedule:Array.from({length:7},(_,i)=>String(fd.get('day'+i)||'')),
+      updatedAt:new Date().toISOString()
+    },p);
+    try {
+      await put('settings',record);
+      cache.fitnessSettings=cache.fitnessSettings.filter(x=>x.memberId!==id).concat(record);
+      broadcastChange('fitness-settings',{id});closeSheet();renderAll();
+      toast('Το πρόγραμμα αποθηκεύτηκε.');
+    }catch(err){console.error('[ZENITH] fitness save',err);toast('Αποτυχία αποθήκευσης.',{tone:'danger'});}
+  });
+  byId('fitnessReadinessForm')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const form=e.currentTarget, fd=new FormData(form), date=form.dataset.date;
+    const sleepHours=Number(fd.get('sleepHours')),energy=Number(fd.get('energy')),soreness=Number(fd.get('soreness'));
+    if(!Number.isFinite(sleepHours)||sleepHours<0||sleepHours>16||energy<1||energy>5||soreness<1||soreness>5)return;
+    const id=fitnessLogId(state.member,date), prior=cache.checklists.find(x=>x.id===id);
+    const record={...prior,id,memberId:state.member,date,sleepHours,energy,soreness,pain:fd.get('pain')==='on',checkedAt:new Date().toISOString()};
+    try{
+      await put('checklists',record);cache.checklists=cache.checklists.filter(x=>x.id!==id).concat(record);
+      broadcastChange('fitness-checkin',{id});render();toast('Ο έλεγχος αποθηκεύτηκε.');
+    }catch(err){console.error('[ZENITH] readiness save',err);toast('Αποτυχία αποθήκευσης.',{tone:'danger'});}
+  });
 
   byId('measureForm')?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -528,7 +571,7 @@ async function persistSettings() {
   try {
     await put('settings', {
       id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope, planMode: state.planMode, planDate: state.planDate,
-      trainingLoad: state.trainingLoad, onboarded: state.onboarded,
+      trainingLoad: state.trainingLoad, onboarded: state.onboarded, fitnessWeekOffset: state.fitnessWeekOffset, fitnessSelectedDate: state.fitnessSelectedDate,
       filters: state.filters, shopChecked: state.shopChecked,
       shopFilter: state.shopFilter, version: APP.version
     });
@@ -564,10 +607,13 @@ async function boot() {
     if (profiles.length) cache.profiles = profiles;
     await applyMemberNameUpgrade();
     await applyActivityUpgrade();
+    await updateUneditedSonMeasurements();
     cache.logs = (await all('logs')).map(migrateLog);
     cache.measurements = await all('measurements');
     cache.plans = await all('plans');
     cache.checklists = await all('checklists');
+    cache.fitnessSettings = (await all('settings')).filter(x => String(x.id).startsWith('fitness:'));
+    if (!Number.isInteger(state.fitnessWeekOffset) || Math.abs(state.fitnessWeekOffset)>52) state.fitnessWeekOffset=0;
 
     const requested = new URLSearchParams(location.search).get('view');
     if (NAV.some(n => n[0] === requested)) state.view = requested;
@@ -605,6 +651,16 @@ async function applyMemberNameUpgrade() {
   for (const p of cache.profiles) {
     try { await put('profiles', p); } catch (err) { console.error('[ZENITH] member rename save failed', err); }
   }
+}
+
+/** Update only an untouched shipped son profile to the user-provided measurements.
+ * All other stored measurements/customizations take precedence. */
+async function updateUneditedSonMeasurements() {
+  const p=cache.profiles.find(x=>x.id==='son');
+  if (!p || p.age!==15 || Number(p.height)!==179 || Number(p.weight)!==67) return;
+  p.height=181;p.weight=65;
+  try {await put('profiles',p);broadcastChange('profiles',{id:'son'});}
+  catch (err){console.error('[ZENITH] son profile default update failed',err);}
 }
 
 /** v13: move activity levels that sat below EFSA/FAO's lowest free-living level onto the EFSA ladder. */
@@ -731,6 +787,8 @@ document.addEventListener('click', async e => {
         size: 'sm',
         body: `<div class="stack">
           <button type="button" class="palette-item" data-act="palette">${icon('search', 19)}<span>Γρήγορη αναζήτηση</span></button>
+          <button type="button" class="palette-item" data-act="nav" data-view="fitness">${icon('zap', 19)}<span>Προπόνηση / Training</span></button>
+          <button type="button" class="palette-item" data-act="nav" data-view="meals">${icon('utensils', 19)}<span>Συνταγές / Recipes</span></button>
           <button type="button" class="palette-item" data-act="nav" data-view="family">${icon('users', 19)}<span>Οικογένεια & προφίλ</span></button>
           <button type="button" class="palette-item" data-act="nav" data-view="guide">${icon('book', 19)}<span>Μεθοδολογία & πηγές</span></button>
           <button type="button" class="palette-item" data-act="theme">${icon(resolvedTheme() === 'dark' ? 'sun' : 'moon', 19)}<span>${resolvedTheme() === 'dark' ? 'Φωτεινό θέμα' : 'Σκούρο θέμα'}</span></button>
@@ -746,6 +804,43 @@ document.addEventListener('click', async e => {
       state.member = target.dataset.id;
       await persistSettings();
       renderAll();
+      break;
+    }
+    case 'fitnessEdit': {
+      const ctx=buildCtx();
+      openSheet({title:state.lang==='en'?'Customize training':'Προσαρμογή προπόνησης',size:'lg',body:fitnessSettingsForm(ctx),
+        footer:'',onMount:()=>{ const form=byId('fitnessSettingsForm');if(!form)return;const handler=async e=>{e.preventDefault();const fd=new FormData(form), p=currentProfile();const rec=normalizeFitnessSettings({
+          goal:String(fd.get('goal')),sport:String(fd.get('sport')),experience:String(fd.get('experience')),
+          equipment:String(fd.get('equipment')),minutes:fd.get('minutes'),strengthSessions:fd.get('strengthSessions'),
+          coachSupervised:fd.get('coachSupervised')==='on',schedule:Array.from({length:7},(_,i)=>String(fd.get('day'+i))),
+          updatedAt:new Date().toISOString()
+        },p);try{await put('settings',rec);cache.fitnessSettings=cache.fitnessSettings.filter(x=>x.memberId!==p.id).concat(rec);
+        broadcastChange('fitness-settings',{id:p.id});closeSheet();renderAll();toast('Το πρόγραμμα αποθηκεύτηκε.');}
+        catch(err){console.error('[ZENITH] fitness save failed',err);toast('Αποτυχία αποθήκευσης.',{tone:'danger'});}};
+        form.addEventListener('submit',handler);}}
+      );
+      break;
+    }
+    case 'fitnessWeek': {
+      const offset=Number(target.dataset.offset);
+      if(!Number.isFinite(offset))break;
+      state.fitnessWeekOffset=offset===0?0:Math.max(-52,Math.min(52,state.fitnessWeekOffset+Math.sign(offset)));
+      state.fitnessSelectedDate=null;await persistSettings();render();break;
+    }
+    case 'fitnessSelectDay': {
+      const date=target.dataset.date;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date))break;
+      state.fitnessSelectedDate=date;render();break;
+    }
+    case 'fitnessDone': {
+      const date=target.dataset.date,done=target.dataset.done==='true';
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date))break;
+      const id=fitnessLogId(profile.id,date), prior=cache.checklists.find(x=>x.id===id);
+      if(done && buildCtx().fitnessWeek.days.find(x=>x.date===date)?.kind==='stop'){toast('Πρώτα αξιολόγηση του πόνου.',{tone:'danger'});break;}
+      const record={...prior,id,memberId:profile.id,date,done,updatedAt:new Date().toISOString()};
+      try{await put('checklists',record);cache.checklists=cache.checklists.filter(x=>x.id!==id).concat(record);
+        broadcastChange('fitness-done',{id});render();toast(done?'Η ημέρα καταγράφηκε.':'Η καταγραφή αναιρέθηκε.');}
+      catch(err){console.error('[ZENITH] fitness log',err);toast('Αποτυχία αποθήκευσης.',{tone:'danger'});}
       break;
     }
     case 'quickMeals': {
@@ -1163,9 +1258,13 @@ document.addEventListener('click', async e => {
       const id = target.dataset.id;
       for (const l of cache.logs.filter(l => l.memberId === id)) { await del('logs', l.id); }
       for (const m of cache.measurements.filter(m => m.memberId === id)) { await del('measurements', m.id); }
+      for (const row of cache.checklists.filter(x => x.memberId === id && String(x.id).startsWith('fitness-log:'))) await del('checklists',row.id);
+      for (const row of cache.fitnessSettings.filter(x => x.memberId === id)) await del('settings',row.id);
       await del('profiles', id);
       cache.logs = cache.logs.filter(l => l.memberId !== id);
       cache.measurements = cache.measurements.filter(m => m.memberId !== id);
+      cache.checklists = cache.checklists.filter(x => !(x.memberId === id && String(x.id).startsWith('fitness-log:')));
+      cache.fitnessSettings=cache.fitnessSettings.filter(x=>x.memberId!==id);
       cache.profiles = cache.profiles.filter(p => p.id !== id);
       if (state.member === id) state.member = cache.profiles[0].id;
       await persistSettings();
@@ -1371,6 +1470,7 @@ syncBus?.addEventListener('message', async () => {
     cache.measurements = await all('measurements');
     cache.plans = await all('plans');
     cache.checklists = await all('checklists');
+    cache.fitnessSettings=(await all('settings')).filter(x=>String(x.id).startsWith('fitness:'));
     const profiles = await all('profiles');
     if (profiles.length) cache.profiles = profiles;
     const shared = await get('settings', 'app');

@@ -25,8 +25,8 @@ def prepare(context):
 
 
 MEMBERS = ["mother", "father", "daughter", "son"]  # four accent colours: an adult on a fat-loss goal, an adult maintaining, a growing teen, a teen athlete
-VIEWS = ["today", "plan", "meals", "shopping", "progress", "family", "guide"]
-QUICK_VIEWS = ["today", "meals", "shopping", "family"]
+VIEWS = ["today", "plan", "meals", "fitness", "shopping", "progress", "family", "guide"]
+QUICK_VIEWS = ["today", "fitness", "meals", "shopping", "family"]
 
 
 def js_click(page, selector, wait=350):
@@ -114,7 +114,21 @@ def visit(page, tag, quick, scan):
         go(page, view)
         scan(f"{tag}/son/{view}+data")
 
-    # 4 ─ interaction states
+    # 4 ─ new fitness workspace: settings modal, readiness and post-check-in state
+    go(page, "fitness")
+    if js_click(page, '#view [data-act="fitnessEdit"]', 450):
+        scan(f"{tag}/fitness-settings")
+        close_sheet(page)
+    scan(f"{tag}/fitness-week")
+    if page.query_selector("#fitnessReadinessForm"):
+        page.fill('#fitnessReadinessForm [name="sleepHours"]', "9")
+        page.select_option('#fitnessReadinessForm [name="energy"]', "4")
+        page.select_option('#fitnessReadinessForm [name="soreness"]', "2")
+        page.evaluate("document.querySelector('#fitnessReadinessForm').requestSubmit()")
+        page.wait_for_timeout(500)
+        scan(f"{tag}/fitness-checkin")
+
+    # 5 ─ interaction states
     go(page, "shopping")
     for _ in range(3):
         js_click(page, '#view [data-act="shop"][aria-pressed="false"]', 250)

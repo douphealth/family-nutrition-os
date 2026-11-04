@@ -316,6 +316,7 @@ export function todayView(ctx) {
   ${!onboarded ? onboardingCard() : ''}
 
   ${familyCommand(ctx)}
+  ${ctx.fitnessTeaser || ''}
 
   <div class="today-grid">
   ${nextRecipe ? nextMealCard(ctx, nextSlot, nextRecipe) : `
@@ -517,7 +518,8 @@ function familyCommand(ctx) {
     ['shopping', 'cart', 'Αγορές', remaining ? `${remaining} απομένουν` : 'Έτοιμη λίστα'],
     ['meals', 'utensils', 'Συνταγές', `${recipeCount} επιλογές`],
     ['family', 'users', 'Μέλη', `${members.length} προφίλ`],
-    ['progress', 'chart', 'Πρόοδος', 'Τάσεις & συνέπεια']
+    ['progress', 'chart', 'Πρόοδος', 'Τάσεις & συνέπεια'],
+    ['fitness', 'zap', 'Προπόνηση', 'Πλάνο & αποκατάσταση']
   ];
 
   const now = nextRecipe ? `

@@ -183,7 +183,7 @@ ok(window.document.documentElement.getAttribute('data-theme') !== null
 section('Shell');
 
 const sideNavButtons = window.document.querySelectorAll('#sideNav [data-act="nav"]');
-ok(sideNavButtons.length === 7, `sidebar exposes 7 views (found ${sideNavButtons.length})`);
+ok(sideNavButtons.length === 8, `sidebar exposes 8 views (found ${sideNavButtons.length})`);
 
 const tabButtons = window.document.querySelectorAll('#tabbar [data-act="nav"]');
 ok(tabButtons.length >= 5, `tab bar exposes >=5 tabs (found ${tabButtons.length})`);
@@ -198,7 +198,7 @@ ok(!!window.document.getElementById('paletteBtn'), 'palette button exists');
 
 section('Views');
 
-const VIEWS = ['today', 'plan', 'meals', 'shopping', 'progress', 'family', 'guide'];
+const VIEWS = ['today', 'plan', 'meals', 'fitness', 'shopping', 'progress', 'family', 'guide'];
 
 for (const id of VIEWS) {
   await clickSel(`#sideNav [data-act="nav"][data-view="${id}"]`, window.document, 60);
@@ -207,6 +207,42 @@ for (const id of VIEWS) {
   ok(!hasRenderError(), `view "${id}" renders without an error notice`);
   ok(window.location.search.includes(`view=${id}`), `view "${id}" is reflected in the URL`);
 }
+
+/* ── 3a. Fitness Studio: actual actions and local persistence ─────────── */
+section('Fitness studio');
+
+await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'),90);
+await clickSel('#sideNav [data-act="nav"][data-view="fitness"]',window.document,90);
+ok(!!viewEl().querySelector('.fitness-hero'), 'fitness studio renders for the selected athlete');
+ok(!!viewEl().querySelector('#fitnessReadinessForm'), 'today readiness check-in is available');
+ok(viewEl().querySelectorAll('.fitness-day').length===7,'seven daily training sessions are visible');
+await clickSel('[data-act="fitnessEdit"]',window.document,100);
+const fitnessForm=window.document.getElementById('fitnessSettingsForm');
+ok(!!fitnessForm,'customization opens a working settings form');
+if(fitnessForm){
+  fitnessForm.elements.goal.value='court';
+  fitnessForm.elements.day2.value='rest';
+  fitnessForm.elements.minutes.value='20';
+  fitnessForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+  await tick(150);
+  const fitnessRow=(await readStore('settings')).find(x=>x.id==='fitness:son');
+  ok(fitnessRow?.schedule?.[2]==='rest','custom schedule saved per member');
+  ok(fitnessRow?.minutes===20,'custom workout duration saved');
+}
+const readyForm=viewEl().querySelector('#fitnessReadinessForm');
+if(readyForm){
+  readyForm.elements.sleepHours.value='9';
+  readyForm.elements.energy.value='4';
+  readyForm.elements.soreness.value='2';
+  readyForm.elements.pain.checked=true;
+  readyForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+  await tick(150);
+  const ids=(await readStore('checklists')).filter(x=>x.id?.startsWith('fitness-log:son:'));
+  ok(ids.length>=1 && ids[0].pain===true,'readiness, including pain flag, is persisted');
+  ok(viewText().includes('Διακοπή') || viewText().includes('Stop'),'pain triggers stop-training guidance');
+}
+await clickSel('#sideNav [data-act="nav"][data-view="today"]',window.document,90);
+ok(!!viewEl().querySelector('.fitness-teaser'),'family Today dashboard links to training');
 
 /* ── 3b. Structure & accessibility invariants ─────────────────────────────
  * The browser audits (axe-core, contrast) are the authority, but they need a real
