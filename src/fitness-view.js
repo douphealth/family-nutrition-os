@@ -115,7 +115,6 @@ export function fitnessTodayCard(ctx) {
   }
   const d=ctx.fitnessWeek?.days.find(x=>x.date===ctx.dateKey);
   if(!d)return '';
-  const en=ctx.lang==='en';
   return '<section class="fitness-teaser">'+icon('zap',23)+'<div><span>PERFORMANCE STUDIO</span><strong>'+esc((KIND[d.kind]||KIND.mobility)[en?1:0])+'</strong><small>'+title('Προπόνηση με βάση το πραγματικό πρόγραμμα','Training based on your real schedule',en)+'</small></div>'
     +'<button type="button" class="fitness-btn fitness-primary" data-act="nav" data-view="fitness">'+title('Άνοιγμα','Open',en)+' '+icon('arrowRight',17)+'</button></section>';
 }
