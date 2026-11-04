@@ -60,4 +60,16 @@
 @media(max-width:820px){.fit-cal-head{flex-direction:column;gap:13px}.fit-cal-head>.fitness-btn{width:100%}.fit-cal-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.fit-cal-metric{min-height:124px;padding:12px}.fit-cal-edit-row{grid-template-columns:repeat(2,minmax(0,1fr))}.fit-cal-venue{grid-column:1}.fit-cal-edit-row .fit-cal-remove{grid-column:2;justify-self:end}}
 @media(max-width:460px){.fit-cal{margin-inline:-3px;padding:15px;border-radius:23px}.fit-cal-metric>b{font-size:1.65rem}.fit-cal-metric.is-extra>b{font-size:2rem}.fit-cal-days{margin-right:-4px}.fit-cal-edit-row label{font-size:.69rem}}
 @media(prefers-reduced-motion:reduce){.fit-cal *{scroll-behavior:auto}}
+
+/* Contrast-hardened supporting labels, including text at 390px. */
+.fit-cal-eyebrow{font-size:.79rem}
+.fit-cal-head p,.fit-cal-dayhead,.fit-cal-rest,
+.fit-cal-note,.fit-cal-import p,.fit-cal-metric>small{
+  color:var(--ink-2);font-size:.8rem;font-weight:770
+}
+.fit-cal-event b{font-size:.78rem;font-weight:850;color:var(--ink)}
+.fit-cal-event small{font-size:.76rem;font-weight:790;color:var(--ink-2)}
+.fit-cal-event em{font-size:.75rem;font-weight:820;color:var(--ink)}
+.fit-cal-metric.is-extra>small{color:#e7f9ef;font-size:.79rem;font-weight:790}
+.fit-cal-warning,.fit-cal-turnaround{font-weight:750}
 }
