@@ -943,6 +943,7 @@ document.addEventListener('click', async e => {
             const record=normalizeFitnessSettings({...current,
               supplementFocus:String(fd.get('supplementFocus')||'balanced'),
               supplementEnabled:fd.get('supplementEnabled')==='on',
+              coachSupervised:fd.get('coachSupervised')==='on',
               supplementMondayTime:String(fd.get('supplementMondayTime')||'17:30'),
               supplementThursdayTime:String(fd.get('supplementThursdayTime')||'17:30'),
               updatedAt:new Date().toISOString()},p);
@@ -956,6 +957,13 @@ document.addEventListener('click', async e => {
           });
         }
       });
+      break;
+    }
+    case 'performanceCheckIn': {
+      const form=byId('fitnessReadinessForm');
+      if(!form){toast('Ο έλεγχος είναι διαθέσιμος για την τρέχουσα εβδομάδα.');break;}
+      form.scrollIntoView({behavior:'smooth',block:'center'});
+      form.querySelector('[name="sleepHours"]')?.focus({preventScroll:true});
       break;
     }
     case 'performanceDone': {
