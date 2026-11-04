@@ -38,7 +38,7 @@ export function fitnessSettingsForm(ctx) {
 
 export function fitnessView(ctx) {
   const p=ctx.profile,w=ctx.fitnessWeek,en=ctx.lang==='en';
-  const focus=w.days.find(x=>x.date===ctx.fitnessSelectedDate)||w.days[0];
+  const focus=w.days.find(x=>x.date===ctx.fitnessSelectedDate)||w.days.find(x=>x.date===ctx.dateKey)||w.days[0];
   const today=w.days.find(x=>x.date===ctx.dateKey);
   const done=w.days.filter(x=>x.done).length;
   const mood=today?.readiness.level||'unknown';
