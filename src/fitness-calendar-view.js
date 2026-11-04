@@ -20,6 +20,13 @@ export function fitnessCalendarPanel(ctx) {
     ? tr(en,'Επιβεβαιωμένες ώρες · '+(w.calendar.repeated?'επανάληψη με επιλογή':'συγκεκριμένη εβδομάδα'),
       'Recorded times · '+(w.calendar.repeated?'manually repeated':'dated week'))
     : tr(en,'Η εβδομάδα δεν έχει επιβεβαιωθεί','This week is not verified');
+  const sourceNote=w.calendar.source==='screenshot'
+    ? tr(en,'Πηγή: οικογενειακό στιγμιότυπο 02–08/11/2026.','Source: family screenshot dated 2–8 Nov 2026.')
+    : w.calendar.source==='manual-repeat'
+      ? tr(en,'Επανάληψη από παλαιότερη εβδομάδα — χρειάζεται επιβεβαίωση.','Repeated from a previous week; reconfirm times.')
+      : w.calendarKnown
+        ? tr(en,'Πηγή: χειροκίνητες αλλαγές ή εισαγωγή ημερολογίου.','Source: manual edits or imported calendar.')
+        : tr(en,'Δεν υπάρχουν καταχωρισμένες ώρες για αυτή την εβδομάδα.','No events have been entered for this week.');
   return `<section class="fit-cal" aria-labelledby="fit-cal-title">
     <div class="fit-cal-head">
       <div><span class="fit-cal-eyebrow">`+icon('calendar',15)+` REAL-WORLD SCHEDULE · EUROPE/ATHENS</span>
@@ -61,9 +68,9 @@ export function fitnessCalendarPanel(ctx) {
         <div class="fit-cal-extra">`+tr(en,'Έξτρα','Extra')+` <b>`+d.extraMinutes+`′</b></div>
       </article>`).join('')+`
     </div>
-    <p class="fit-cal-note">`+icon('info',15)+' '+tr(en,
-      'Πηγή: οικογενειακό στιγμιότυπο, 02–08/11/2026. Δεν περιλαμβάνονται μετακινήσεις. Μελλοντικές εβδομάδες δεν αντιγράφονται χωρίς επιλογή. Η εισαγωγή .ics είναι χειροκίνητη, όχι ζωντανός συγχρονισμός.',
-      'Source: family screenshot, 2–8 Nov 2026. Travel time not included. Future weeks do not repeat without approval. ICS import is manual, not live sync.')+`</p>
+    <p class="fit-cal-note">`+icon('info',15)+' '+esc(sourceNote)+' '+tr(en,
+      'Χωρίς υπολογισμό μετακινήσεων. Μελλοντικές εβδομάδες δεν επαναλαμβάνονται χωρίς επιλογή. Το .ics εισάγεται χειροκίνητα, όχι με ζωντανό συγχρονισμό.',
+      'Travel not included. Future weeks do not repeat automatically. ICS import is manual, not live synchronization.')+`</p>
   </section>`;
 }
 
