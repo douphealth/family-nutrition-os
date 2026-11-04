@@ -16,6 +16,8 @@ export function fitnessCalendarPanel(ctx) {
   const w=ctx.fitnessWeek,en=ctx.lang==='en';
   if(ctx.profile.id!=='son'||w.settings.sport!=='basketball')return '';
   const st=w.calendarStats;
+  const supp=ctx.supplementaryProgram;
+  const extraPlanned=supp?.available?supp.plannedMinutes:w.extraMinutes;
   const status=w.calendarKnown
     ? tr(en,'Επιβεβαιωμένες ώρες · '+(w.calendar.repeated?'επανάληψη με επιλογή':'συγκεκριμένη εβδομάδα'),
       'Recorded times · '+(w.calendar.repeated?'manually repeated':'dated week'))
@@ -42,7 +44,7 @@ export function fitnessCalendarPanel(ctx) {
       <div class="fit-cal-metric"><span>`+tr(en,'Σχολείο','School')+`</span><b>`+(w.calendarKnown&&st.schoolDays>0?durationLabel(st.schoolMinutes,en):'—')+`</b>
         <small>`+tr(en,'Σταθερές υποχρεώσεις','Fixed commitments')+`</small></div>
       <div class="fit-cal-metric is-extra"><span>`+tr(en,'ΕΠΙΠΛΕΟΝ ΠΡΟΠΟΝΗΣΗ','ADDITIONAL WORKOUTS')+`</span>
-        <b>`+(w.calendarKnown?w.extraMinutes+'′':'—')+`</b><small>`+tr(en,'Εκτός της ομάδας','Separate from the team')+`</small></div>
+        <b>`+(w.calendarKnown?extraPlanned+'′':'—')+`</b><small>`+tr(en,'Προτεινόμενα · μετά από check-in και επίβλεψη','Proposed; subject to readiness and coaching')+`</small></div>
     </div>
     `+(st.shortestSchoolTurnaround && st.shortestSchoolTurnaround.minutes<600 ?
       `<div class="fit-cal-turnaround">`+icon('clock',18)+`<span><strong>`+
@@ -65,7 +67,7 @@ export function fitnessCalendarPanel(ctx) {
           `+(e.note==='game-status-unconfirmed'?`<em>`+tr(en,'MATCH DAY: ένδειξη τοποθεσίας, όχι επιβεβαίωση αγώνα','MATCH DAY: location label; game not confirmed')+`</em>`:'')+`
           </div></div>`).join(''):`<div class="fit-cal-rest">`+icon('bed',18)+`<span>`+
           (w.calendarKnown?tr(en,'Ανάπαυση','Rest'):tr(en,'Άγνωστο','Unconfirmed'))+`</span></div>`)+`</div>
-        <div class="fit-cal-extra">`+tr(en,'Έξτρα','Extra')+` <b>`+d.extraMinutes+`′</b></div>
+        <div class="fit-cal-extra">`+tr(en,'Έξτρα','Extra')+` <b>`+(supp?.sessions.filter(x=>x.date===d.date).reduce((sum,x)=>sum+x.minutes,0)??d.extraMinutes)+`′</b></div>
       </div>`).join('')+`
     </div>
     <p class="fit-cal-note">`+icon('info',15)+' '+esc(sourceNote)+' '+tr(en,
