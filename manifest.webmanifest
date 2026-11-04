@@ -1,33 +1,124 @@
 {
-  "name": "ZENITH PRO · Οικογενειακό Σύστημα Διατροφής",
+  "name": "ZENITH PRO · Οικογενειακή Διατροφή & Προπόνηση",
   "short_name": "ZENITH PRO",
-  "description": "Ένα μενού για όλη την οικογένεια, μερίδες ανά μέλος. Πλάνο 28 ημερών, λίστα αγορών, καταγραφή και τάσεις — εκτός σύνδεσης, χωρίς λογαριασμό.",
+  "description": "Εξατομικευμένη διατροφή, εβδομαδιαία προπόνηση, πραγματικές καταγραφές ετοιμότητας και ανάπαυση για κάθε μέλος της οικογένειας. Offline-first.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#F3F5F0",
   "theme_color": "#F3F5F0",
   "lang": "el",
   "dir": "ltr",
-  "categories": ["health", "lifestyle", "food", "productivity"],
+  "categories": [
+    "health",
+    "lifestyle",
+    "food",
+    "productivity"
+  ],
   "prefer_related_applications": false,
   "icons": [
-    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ],
   "screenshots": [
-    { "src": "assets/screenshot-wide.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "Σήμερα: το επόμενο γεύμα, η μερίδα σου και η πρόοδος της ημέρας" },
-    { "src": "assets/screenshot-narrow.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Στο κινητό: ό,τι χρειάζεσαι για σήμερα, με ένα άγγιγμα" }
+    {
+      "src": "assets/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Σήμερα: το επόμενο γεύμα, η μερίδα σου και η πρόοδος της ημέρας"
+    },
+    {
+      "src": "assets/screenshot-narrow.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Στο κινητό: ό,τι χρειάζεσαι για σήμερα, με ένα άγγιγμα"
+    }
   ],
   "shortcuts": [
-    { "name": "Σήμερα", "short_name": "Σήμερα", "url": "./?view=today", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Πλάνο εβδομάδας", "short_name": "Πλάνο", "url": "./?view=plan", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Λίστα αγορών", "short_name": "Αγορές", "url": "./?view=shopping", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Συνταγές", "short_name": "Γεύματα", "url": "./?view=meals", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Σήμερα",
+      "short_name": "Σήμερα",
+      "url": "./?view=today",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Πλάνο εβδομάδας",
+      "short_name": "Πλάνο",
+      "url": "./?view=plan",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Λίστα αγορών",
+      "short_name": "Αγορές",
+      "url": "./?view=shopping",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Συνταγές",
+      "short_name": "Γεύματα",
+      "url": "./?view=meals",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Πρόγραμμα προπόνησης",
+      "short_name": "Προπόνηση",
+      "url": "./?view=fitness",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
