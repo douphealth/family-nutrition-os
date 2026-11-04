@@ -213,7 +213,12 @@ section('Fitness studio');
 
 await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'),90);
 await clickSel('#sideNav [data-act="nav"][data-view="fitness"]',window.document,90);
-ok(!!viewEl().querySelector('.fitness-hero'), 'fitness studio renders for the selected athlete');
+ok(!!viewEl().querySelector('.pp-stage'), 'premium athlete lab renders for selected Dimitris');
+ok(viewEl().querySelectorAll('.pp-session').length===2,'two genuine supplementary sessions are visible');
+ok(viewEl().querySelector('.pp-target')?.textContent.includes('35'),'35 additional personal minutes are visible');
+ok(viewEl().querySelector('.pp-indicators')?.textContent.includes('12h 25m'),'actual team workload is shown separately');
+ok([...viewEl().querySelectorAll('.pp-session')].every(el=>el.querySelector('.pp-step')),
+  'every supplementary session shows guided exercise steps');
 ok(!!viewEl().querySelector('#fitnessReadinessForm'), 'today readiness check-in is available');
 ok(viewEl().querySelectorAll('.fitness-day').length===7,'seven daily training sessions are visible');
 ok(!!viewEl().querySelector('.fit-cal'),'real basketball calendar is visible for son');
@@ -236,18 +241,19 @@ if(calForm){
       'calendar edit changes Tuesday end time in persistent profile');
   }
 }
-await clickSel('[data-act="fitnessEdit"]',window.document,100);
-const fitnessForm=window.document.getElementById('fitnessSettingsForm');
-ok(!!fitnessForm,'customization opens a working settings form');
-if(fitnessForm){
-  fitnessForm.elements.goal.value='court';
-  fitnessForm.elements.day2.value='rest';
-  fitnessForm.elements.minutes.value='20';
-  fitnessForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+await clickSel('[data-act="performanceCustomize"]',window.document,100);
+const performanceForm=window.document.getElementById('performanceSettingsForm');
+ok(!!performanceForm,'personal performance customization opens');
+if(performanceForm){
+  performanceForm.elements.supplementFocus.value='durability';
+  performanceForm.elements.coachSupervised.checked=true;
+  performanceForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
   await tick(150);
-  const fitnessRow=(await readStore('settings')).find(x=>x.id==='fitness:son');
-  ok(fitnessRow?.schedule?.[2]==='rest','custom schedule saved per member');
-  ok(fitnessRow?.minutes===20,'custom workout duration saved');
+  const performanceSettings=(await readStore('settings')).find(x=>x.id==='fitness:son');
+  ok(performanceSettings?.supplementFocus==='durability','performance goal persists per member');
+  ok(performanceSettings?.coachSupervised===true,'qualified coach supervision preference persists');
+  ok(performanceSettings?.calendarWeeks?.['2026-11-02']?.some(x=>x.end==='22:00'),
+    'performance settings preserve prior calendar edits');
 }
 const readyForm=viewEl().querySelector('#fitnessReadinessForm');
 if(readyForm){
