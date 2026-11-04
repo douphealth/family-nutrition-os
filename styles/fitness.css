@@ -57,5 +57,14 @@
 @media(max-width:1180px){.fitness-layout{grid-template-columns:1fr}.fitness-session{grid-column:auto}.fitness-day{min-height:148px}}
 @media(max-width:800px){.fitness-hero{grid-template-columns:1fr}.fitness-hero-score{display:none}.fitness-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fitness-panel{padding:18px}.fitness-days{overflow-x:auto;grid-template-columns:repeat(7,minmax(91px,1fr));scrollbar-width:thin;padding-bottom:6px}.fitness-day{min-height:144px}}
 @media(max-width:540px){.fitness-hero{padding:25px 21px;border-radius:25px}.fitness-hero h1{font-size:clamp(2.25rem,12vw,3.5rem)}.fitness-metrics{gap:9px}.fitness-metric{padding:15px}.fitness-metric b{font-size:1.9rem}.fitness-panel-head{align-items:center}.fitness-panel-head h2{font-size:1.25rem}.fitness-panel{border-radius:21px}.fitness-form-grid{grid-template-columns:1fr 1fr}.fitness-day-fields{grid-template-columns:1fr}.fitness-teaser{grid-template-columns:30px minmax(0,1fr);padding:15px}.fitness-teaser>.fitness-btn{grid-column:1/-1;width:100%}.fitness-hero-actions .fitness-btn{flex:1}}
+/* Chromium pixel-contrast hardening for the installed PWA, light and dark.
+   Stronger foregrounds and solid CTA surfaces prevent gradients/anti-aliasing
+   from reducing measured legibility. */
+.fitness-hero-score>strong{color:#ffffff;font-weight:800}
+.fitness-hero-score>small{color:#f0fff7;font-weight:740}
+.family-command-btn-copy small{color:var(--ink)!important;font-size:.81rem!important;font-weight:820!important;line-height:1.45}
+html[data-theme='light'] .btn.btn-primary{background:#075236;border-color:#075236;color:#ffffff;filter:none}
+html[data-theme='light'] .btn.btn-primary:hover{background:#063d2a;border-color:#063d2a;filter:none}
+html[data-theme='light'] .next-card .btn.btn-primary{background:linear-gradient(180deg,#8DE8C5,#5FD4A8);border-color:transparent;color:#051A12}
 @media(prefers-reduced-motion:reduce){.fitness-btn{transition:none}.fitness-btn:hover{transform:none}}
 }
