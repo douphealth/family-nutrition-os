@@ -37,6 +37,8 @@ import {
 import { translateTree } from './i18n.js?v=16.0.0';
 import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId } from './fitness-engine.js';
 import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
+import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js';
+import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -448,6 +450,104 @@ function render() {
 
 function renderAll() { renderShell(); render(); }
 
+/* ── Local calendar editor (the only source of editable basketball hours). ── */
+function mountFitnessCalendarEditor(ctx) {
+  const form=byId('fitnessCalendarForm');
+  if(!form)return;
+  const rows=byId('fitnessCalendarRows'),file=byId('fitnessCalendarIcs'),
+    feedback=byId('fitnessImportFeedback'),confirm=byId('fitnessCalendarConfirmImport');
+  const profileId=form.dataset.member,weekStart=form.dataset.week;
+  let staged=null;
+
+  async function persistCalendar(changes,source) {
+    const profile=cache.profiles.find(p=>p.id===profileId);
+    if(!profile)throw new Error('Unknown family member');
+    const previous=cache.fitnessSettings.find(s=>s.memberId===profileId)||defaultFitnessSettings(profile);
+    const next=normalizeFitnessSettings({...previous,...changes,calendarSource:source,
+      updatedAt:new Date().toISOString()},profile);
+    await put('settings',next);
+    cache.fitnessSettings=cache.fitnessSettings.filter(s=>s.memberId!==profileId).concat(next);
+    broadcastChange('fitness-calendar',{id:profileId});
+    closeSheet();renderAll();toast('Το εβδομαδιαίο πρόγραμμα ενημερώθηκε.');
+  }
+
+  form.addEventListener('click',event=>{
+    const add=event.target.closest('[data-act="fitnessCalendarAdd"]');
+    const remove=event.target.closest('[data-act="fitnessCalendarRemove"]');
+    if(add){
+      event.preventDefault();
+      if(rows.children.length>=28){toast('Μέγιστο 28 εγγραφές την εβδομάδα.',{tone:'danger'});return;}
+      rows.insertAdjacentHTML('beforeend',fitnessCalendarEventRow(null,rows.children.length,weekStart,state.lang));
+      rows.lastElementChild?.querySelector('[name="calDate"]')?.focus();
+    }
+    if(remove){event.preventDefault();remove.closest('.fit-cal-edit-row')?.remove();}
+  });
+
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const entries=Array.from(rows.querySelectorAll('.fit-cal-edit-row')).map((row,i)=>{
+      const id=row.dataset.eventId||'custom-'+weekStart+'-'+i;
+      const original=ctx.fitnessWeek.calendar.events.find(x=>x.id===id);
+      const date=row.querySelector('[name="calDate"]')?.value||'';
+      const type=row.querySelector('[name="calType"]')?.value||'';
+      const start=row.querySelector('[name="calStart"]')?.value||'';
+      const end=row.querySelector('[name="calEnd"]')?.value||'';
+      const venue=row.querySelector('[name="calVenue"]')?.value||'';
+      return {id,date,type,start,end,venue,
+        note:original?.date===date&&original?.type===type&&original?.start===start&&original?.end===end?original.note:''};
+    });
+    const cleaned=cleanCalendarEvents(entries,weekStart);
+    if(cleaned.length!==entries.length){
+      toast('Έλεγξε τις ώρες (τέλος μετά την αρχή, χωρίς διπλότυπα).',{tone:'danger'});
+      return;
+    }
+    try {
+      const old=cache.fitnessSettings.find(s=>s.memberId===profileId)||defaultFitnessSettings(ctx.profile);
+      const calendarWeeks={...old.calendarWeeks,[weekStart]:cleaned};
+      await persistCalendar({calendarWeeks,repeatWeekly:form.elements.repeatWeekly.checked,
+        repeatFromWeek:weekStart},'manual');
+    }catch(error){
+      console.error('[ZENITH] calendar edit failed',error);
+      toast('Η αποθήκευση απέτυχε. Δεν χάθηκαν οι προηγούμενες ώρες.',{tone:'danger'});
+    }
+  });
+
+  file?.addEventListener('change',async ()=>{
+    staged=null;confirm.hidden=true;
+    const item=file.files?.[0];
+    if(!item)return;
+    if(item.size>1024*1024){
+      feedback.textContent='Το αρχείο υπερβαίνει το όριο 1 MiB.';return;
+    }
+    try{
+      staged=parseFitnessIcs(await item.text());
+      feedback.textContent=staged.imported+' γεγονότα, '+Object.keys(staged.weeks).length+
+        ' εβδομάδες, '+staged.skipped+' παραλείψεις. Επιβεβαίωσε την αντικατάσταση των αντίστοιχων ημερών ανά τύπο δραστηριότητας.';
+      confirm.hidden=false;
+    }catch(error){
+      feedback.textContent='Μη συμβατό αρχείο .ics: '+String(error.message||error);
+    }
+  });
+
+  confirm?.addEventListener('click',async ()=>{
+    if(!staged)return;
+    const old=cache.fitnessSettings.find(s=>s.memberId===profileId)||defaultFitnessSettings(ctx.profile);
+    const combined={...old.calendarWeeks};
+    for(const [week,events] of Object.entries(staged.weeks)){
+      const sport=events.some(e=>e.type==='team'||e.type==='game');
+      const school=events.some(e=>e.type==='school');
+      const preserved=(combined[week]||[]).filter(e=>
+        !(sport&&(e.type==='team'||e.type==='game'))&&!(school&&e.type==='school'));
+      combined[week]=cleanCalendarEvents(preserved.concat(events),week);
+    }
+    try{await persistCalendar({calendarWeeks:combined},'ics');}
+    catch(error){
+      console.error('[ZENITH] calendar import failed',error);
+      toast('Η εισαγωγή απέτυχε. Τα προηγούμενα δεδομένα διατηρήθηκαν.',{tone:'danger'});
+    }
+  });
+}
+
 /* ── View-local input bindings (not delegated) ─────────────────────────── */
 
 function bindViewInputs() {
@@ -467,7 +567,8 @@ function bindViewInputs() {
     const form=e.currentTarget, fd=new FormData(form), id=form.dataset.member;
     const p=cache.profiles.find(x=>x.id===id);
     if(!p)return;
-    const record=normalizeFitnessSettings({
+    const prior=cache.fitnessSettings.find(s=>s.memberId===id)||defaultFitnessSettings(p);
+    const record=normalizeFitnessSettings({...prior,
       goal:String(fd.get('goal')||''), sport:String(fd.get('sport')||''),
       experience:String(fd.get('experience')||''),equipment:String(fd.get('equipment')||''),
       minutes:fd.get('minutes'), strengthSessions:fd.get('strengthSessions'),
@@ -809,7 +910,8 @@ document.addEventListener('click', async e => {
     case 'fitnessEdit': {
       const ctx=buildCtx();
       openSheet({title:state.lang==='en'?'Customize training':'Προσαρμογή προπόνησης',size:'lg',body:fitnessSettingsForm(ctx),
-        footer:'',onMount:()=>{ const form=byId('fitnessSettingsForm');if(!form)return;const handler=async e=>{e.preventDefault();const fd=new FormData(form), p=currentProfile();const rec=normalizeFitnessSettings({
+        footer:'',onMount:()=>{ const form=byId('fitnessSettingsForm');if(!form)return;const handler=async e=>{e.preventDefault();const fd=new FormData(form), p=currentProfile();const prev=cache.fitnessSettings.find(s=>s.memberId===p.id)||defaultFitnessSettings(p);
+        const rec=normalizeFitnessSettings({...prev,
           goal:String(fd.get('goal')),sport:String(fd.get('sport')),experience:String(fd.get('experience')),
           equipment:String(fd.get('equipment')),minutes:fd.get('minutes'),strengthSessions:fd.get('strengthSessions'),
           coachSupervised:fd.get('coachSupervised')==='on',schedule:Array.from({length:7},(_,i)=>String(fd.get('day'+i))),
@@ -819,6 +921,14 @@ document.addEventListener('click', async e => {
         catch(err){console.error('[ZENITH] fitness save failed',err);toast('Αποτυχία αποθήκευσης.',{tone:'danger'});}};
         form.addEventListener('submit',handler);}}
       );
+      break;
+    }
+    case 'fitnessCalendarEdit': {
+      if(profile.id!=='son')break;
+      const ctx=buildCtx();
+      openSheet({title:state.lang==='en'?'Real team calendar':'Πραγματικό πρόγραμμα ομάδας',
+        size:'lg',body:fitnessCalendarForm(ctx),footer:'',
+        onMount:()=>mountFitnessCalendarEditor(ctx)});
       break;
     }
     case 'fitnessWeek': {
@@ -836,7 +946,10 @@ document.addEventListener('click', async e => {
       const date=target.dataset.date,done=target.dataset.done==='true';
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date))break;
       const id=fitnessLogId(profile.id,date), prior=cache.checklists.find(x=>x.id===id);
-      if(done && buildCtx().fitnessWeek.days.find(x=>x.date===date)?.kind==='stop'){toast('Πρώτα αξιολόγηση του πόνου.',{tone:'danger'});break;}
+      const day=buildCtx().fitnessWeek.days.find(x=>x.date===date);
+      if(done && (!day||['stop','unconfirmed'].includes(day.kind))){
+        toast('Δεν έχει επιβεβαιωθεί ασφαλής συνεδρία.',{tone:'danger'});break;
+      }
       const record={...prior,id,memberId:profile.id,date,done,updatedAt:new Date().toISOString()};
       try{await put('checklists',record);cache.checklists=cache.checklists.filter(x=>x.id!==id).concat(record);
         broadcastChange('fitness-done',{id});render();toast(done?'Η ημέρα καταγράφηκε.':'Η καταγραφή αναιρέθηκε.');}
