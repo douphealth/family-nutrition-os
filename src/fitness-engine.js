@@ -59,7 +59,7 @@ export function normalizeFitnessSettings(input = {}, profile = {}) {
     strengthSessions: clamp(input.strengthSessions, 0, youth ? 2 : 3, defaults.strengthSessions),
     coachSupervised: input.coachSupervised === true || input.coachSupervised === 'on',
     schedule: FITNESS_DAYS.map((_, i) => choose(FITNESS_MODES, input.schedule?.[i], defaults.schedule[i])),
-    source: 'custom',
+    source: input.source === 'starter-preset' ? 'starter-preset' : 'custom',
     updatedAt: typeof input.updatedAt === 'string' ? input.updatedAt : null
   };
 }
@@ -88,6 +88,7 @@ export function fitnessLogId(memberId, dateKey) {
 
 /** Avoid default "ready" scores when the user has supplied no observation. */
 export function assessReadiness(log, profile) {
+  if (log?.pain === true) return { level: 'stop', reason: 'pain' };
   if (!log || !log.checkedAt) return { level: 'unknown', reason: 'unrecorded' };
   if (log.pain === true) return { level: 'stop', reason: 'pain' };
   const sleep = Number(log.sleepHours);
