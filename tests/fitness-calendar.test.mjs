@@ -94,6 +94,18 @@ test('ICS imports events locally including correct Athens UTC conversion',()=>{
  const events=Object.values(imported.weeks).flat();
  assert.ok(events.some(x=>x.date==='2026-11-04'&&x.start==='20:00'&&x.end==='21:30'));
 });
+test('Greek accented basketball and school event titles are recognised',()=>{
+ const ics=[
+  'BEGIN:VCALENDAR','BEGIN:VEVENT','DTSTART;TZID=Europe/Athens:20261103T080000',
+  'DTEND;TZID=Europe/Athens:20261103T153000','SUMMARY:Σχολείο',
+  'END:VEVENT','BEGIN:VEVENT','DTSTART;TZID=Europe/Athens:20261103T203000',
+  'DTEND;TZID=Europe/Athens:20261103T220000','SUMMARY:Προπόνηση μπάσκετ',
+  'END:VEVENT','END:VCALENDAR'
+ ].join('\n');
+ const parsed=parseFitnessIcs(ics);
+ assert.equal(parsed.imported,2);
+ assert.deepEqual(new Set(parsed.weeks['2026-11-02'].map(x=>x.type)),new Set(['school','team']));
+});
 test('ICS weekly recurrence expands only bounded repeated occurrences',()=>{
  const text=[
  'BEGIN:VCALENDAR','BEGIN:VEVENT','UID:repeat-demo',
