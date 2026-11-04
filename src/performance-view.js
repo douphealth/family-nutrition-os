@@ -42,6 +42,9 @@ export function performanceSettingsForm(ctx) {
     +'</select></label>'
     +'<label class="pp-check"><input type="checkbox" name="supplementEnabled" '+yn(s.supplementEnabled!==false)+'>'
     +tr(en,'Ενεργοποίηση προαιρετικών προπονήσεων','Enable optional workouts')+'</label>'
+    +'<label class="pp-check"><input type="checkbox" name="coachSupervised" '+yn(s.coachSupervised===true)+'>'
+    +tr(en,'Η άσκηση δύναμης γίνεται υπό επίβλεψη κατάλληλα καταρτισμένου προπονητή',
+      'Strength work is supervised by a qualified coach')+'</label>'
     +'<div class="pp-settings-grid"><label><span>'+tr(en,'Δευτέρα · προτεινόμενη ώρα','Monday · proposed time')+'</span>'
     +'<input type="time" name="supplementMondayTime" min="16:00" max="19:00" value="'+esc(s.supplementMondayTime||'17:30')+'"></label>'
     +'<label><span>'+tr(en,'Πέμπτη · προτεινόμενη ώρα','Thursday · proposed time')+'</span>'
@@ -70,6 +73,8 @@ export function performanceView(ctx) {
       'Dimitris · 15 years · 181 cm · 65 kg. Team-calendar-aware supplemental program. Measurements provide context, not a weight target.')+'</p>'
     +'<div class="pp-stage-actions"><button class="fitness-btn fitness-primary" data-act="performanceCustomize">'+icon('sliders',17)
     +' '+tr(en,'Προσαρμογή','Customize')+'</button>'
+    +'<button class="fitness-btn pp-stage-outline" data-act="performanceCheckIn">'+icon('heart',17)+' '
+    +tr(en,'Έλεγχος ετοιμότητας','Readiness check-in')+'</button>'
     +'<button class="fitness-btn pp-stage-outline" data-act="fitnessCalendarEdit">'+icon('calendar',17)+' '
     +tr(en,'Ώρες ομάδας','Team calendar')+'</button></div></div>'
     +'<div class="pp-target">'
