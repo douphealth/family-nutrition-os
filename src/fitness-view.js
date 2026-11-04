@@ -70,8 +70,8 @@ export function fitnessView(ctx) {
   const readiness='<section class="fitness-panel fitness-readiness"><div class="fitness-panel-head"><div><span>'+title('Ετοιμότητα','Readiness',en)+'</span><h2>'+title('Πώς είσαι σήμερα;','How do you feel today?',en)+'</h2></div><span class="fitness-mood">'+esc(moodText)+'</span></div>'
     +(today?'<form class="fitness-form" id="fitnessReadinessForm" data-date="'+esc(ctx.dateKey)+'">'
       +'<label><span>'+title('Ώρες ύπνου','Sleep hours',en)+'</span><input name="sleepHours" type="number" min="0" max="16" step=".5" placeholder="8.5" value="'+(today.sleepHours??'')+'" required></label>'
-      +'<div class="fitness-form-grid"><label><span>'+title('Ενέργεια','Energy',en)+' 1–5</span><select name="energy">'+[1,2,3,4,5].map(v=>opt(v,v,today.energy)).join('')+'</select></label>'
-      +'<label><span>'+title('Μυϊκή κόπωση','Soreness',en)+' 1–5</span><select name="soreness">'+[1,2,3,4,5].map(v=>opt(v,v,today.soreness)).join('')+'</select></label></div>'
+      +'<div class="fitness-form-grid"><label><span>'+title('Ενέργεια','Energy',en)+' 1–5</span><select name="energy" required><option value="" disabled'+(today.energy==null?' selected':'')+'>'+title('Επίλεξε','Choose',en)+'</option>'+[1,2,3,4,5].map(v=>opt(v,v,today.energy)).join('')+'</select></label>'
+      +'<label><span>'+title('Μυϊκή κόπωση','Soreness',en)+' 1–5</span><select name="soreness" required><option value="" disabled'+(today.soreness==null?' selected':'')+'>'+title('Επίλεξε','Choose',en)+'</option>'+[1,2,3,4,5].map(v=>opt(v,v,today.soreness)).join('')+'</select></label></div>'
       +'<label class="fitness-checkbox"><input name="pain" type="checkbox"'+checked(today.pain)+'><span>'+title('Πόνος ή τραυματισμός','Pain or injury',en)+'</span></label>'
       +'<button class="fitness-btn fitness-primary" type="submit">'+icon('check',17)+' '+title('Αποθήκευση ελέγχου','Save check-in',en)+'</button></form>'
       :'<p class="fitness-note">'+title('Άνοιξε την τρέχουσα εβδομάδα για έλεγχο.','Open this week to check in.',en)+'</p>')+'</section>';
@@ -79,7 +79,7 @@ export function fitnessView(ctx) {
     +'<div class="fitness-steps">'+focus.steps.map((x,i)=>'<div><b>'+String(i+1).padStart(2,'0')+'</b><p>'+esc(en?x.en:x.el)+'</p></div>').join('')+'</div>'
     +'<div class="fitness-session-actions">'+button('fitnessDone',icon(focus.done?'undo':'checkCircle',17)+' '+title(focus.done?'Αναίρεση ολοκλήρωσης':'Ολοκληρώθηκε',focus.done?'Undo completion':'Mark complete',en),'fitness-primary').replace('data-act="fitnessDone"','data-act="fitnessDone" data-date="'+esc(focus.date)+'" data-done="'+(!focus.done)+'"')+'</div></section>';
   const evidence='<div class="fitness-evidence">'+icon('shield',18)+'<p>'+title('Εκπαιδευτικό εργαλείο, όχι ιατρική διάγνωση. Αν υπάρχει πόνος, σταμάτα και ενημέρωσε γονέα/προπονητή και ειδικό υγείας.','Educational tool, not medical advice. Stop activity with pain and tell a parent, coach and qualified clinician.',en)+'</p>'
-    +'<a href="https://www.healthychildren.org/English/healthy-living/fitness/Pages/Strength-Training-and-Weightlifting-for-Children.aspx" target="_blank" rel="noopener noreferrer">AAP</a><a href="https://www.cdc.gov/sleep/about/index.html" target="_blank" rel="noopener noreferrer">CDC</a></div>';
+    +'<a href="https://publications.aap.org/pediatrics/article/145/6/e20201011/76942/Resistance-Training-for-Children-and-Adolescents" target="_blank" rel="noopener noreferrer">AAP</a><a href="https://www.cdc.gov/sleep/about/index.html" target="_blank" rel="noopener noreferrer">CDC</a></div>';
   return shell+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
 }
 
