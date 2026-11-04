@@ -23,18 +23,23 @@ test('youth with six sport commitments gets zero extra strength',()=>{
  const w=buildFitnessWeek(son,{...defaultFitnessSettings(son),coachSupervised:true},[],today);
  assert.equal(w.sportDays,6);assert.equal(w.strengthDays.length,0);
  assert.ok(w.warnings.includes('high-team-load'));
- assert.equal(w.days[5].kind,'game');assert.equal(w.days[6].kind,'rest');
+ assert.equal(w.days[5].kind,'team');assert.equal(w.days[6].kind,'team');
+ assert.equal(w.days[2].kind,'rest'); assert.equal(w.extraMinutes,0);
 });
 test('no rest triggers warning',()=>{
- const s={...defaultFitnessSettings(son),schedule:Array(7).fill('team')};
+ const s={...defaultFitnessSettings(son),sport:'general',schedule:Array(7).fill('team')};
  const w=buildFitnessWeek(son,s,[],today);
  assert.equal(w.restDays,0);assert.ok(w.warnings.includes('no-rest'));
 });
 test('optional strength only with supervision and free days',()=>{
- const s={...defaultFitnessSettings(son),schedule:['free','team','free','light','free','rest','rest'],strengthSessions:2};
+ const s={...defaultFitnessSettings(son),sport:'general',schedule:['free','team','free','light','free','rest','rest'],strengthSessions:2};
  assert.deepEqual(buildFitnessWeek(son,s,[],today).strengthDays,[]);
  const supervised={...s,coachSupervised:true};
- const w=buildFitnessWeek(son,supervised,[],today);
+ const logs=['2026-11-02','2026-11-04'].map(date=>({
+   id:fitnessLogId('son',date),memberId:'son',date,checkedAt:date+'T08:00:00Z',
+   sleepHours:9,energy:5,soreness:1
+ }));
+ const w=buildFitnessWeek(son,supervised,logs,today);
  assert.equal(w.strengthDays.length,2);
  assert.ok(w.strengthDays.every(i=>s.schedule[i]==='free'));
 });
