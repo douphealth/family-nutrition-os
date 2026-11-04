@@ -1,0 +1,62 @@
+/* ZENITH PRO · athlete performance visual system.
+   Designed with an editorial emerald/ivory identity, not generic dashboard cards.
+   Screen only; print stylesheet remains untouched. */
+@media screen{
+.pp-stage{position:relative;overflow:hidden;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(160px,.48fr);gap:24px;align-items:center;padding:clamp(23px,3vw,44px);margin:18px 0 17px;border-radius:29px;color:#f6fff8;background:radial-gradient(circle at 85% 80%,#1b694c99,transparent 39%),radial-gradient(circle at 11% 10%,#2b72563b,transparent 54%),linear-gradient(130deg,#081e19,#123c2d 70%,#09251d);border:1px solid #286348;box-shadow:0 30px 62px -40px #08231c99}
+.pp-stage:before{content:"";position:absolute;z-index:-1;right:-115px;bottom:-205px;width:380px;height:380px;border:1px solid #a5f5c536;border-radius:50%;box-shadow:0 0 0 48px #a5f5c511,0 0 0 98px #a5f5c50a}
+.pp-stage-heading{max-width:740px}.pp-stage-heading .pp-kicker{display:flex;gap:8px;align-items:center;color:#aef1cd;font-size:.77rem;letter-spacing:.12em;font-weight:850}
+.pp-stage-heading h2{margin:13px 0 14px;color:#fff;font-size:clamp(2rem,4.2vw,4.25rem);font-weight:850;line-height:1.02;max-width:13ch;letter-spacing:-.065em}
+.pp-stage-heading p{max-width:62ch;color:#e1f2e8;font-size:.93rem;line-height:1.65;margin:0}
+.pp-stage-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:23px}
+.pp-stage-outline{background:#194b39;color:#fff;border-color:#68a786}
+.pp-target{display:grid;align-content:center;justify-items:center;gap:8px;padding:19px 11px;min-height:172px;border-radius:21px;background:#ebfff40c;border:1px solid #b5f5d131;text-align:center}
+.pp-target>span{color:#b9f3d2;font-weight:810;font-size:.7rem;line-height:1.5;letter-spacing:.1em}
+.pp-target strong{font-size:clamp(3.1rem,5vw,5.4rem);font-weight:850;line-height:1;color:#fff;letter-spacing:-.08em}
+.pp-target small{font-size:1.1rem;letter-spacing:0;font-weight:650;color:#c8f5df}
+.pp-target p{font-size:.72rem;font-weight:740;color:#ddf7e8;margin:0}
+.pp-indicators{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0 24px}
+.pp-indicators>div{display:grid;gap:8px;padding:20px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.pp-indicators span{font-size:.76rem;font-weight:790;color:var(--ink-2)}.pp-indicators b{font-size:clamp(1.8rem,2.9vw,2.55rem);line-height:1.1;letter-spacing:-.055em;color:var(--ink)}
+.pp-indicators small{font-size:.73rem;color:var(--ink-2);font-weight:730;line-height:1.35}
+.pp-indicators>div:nth-child(2){background:var(--brand-soft);border-color:var(--brand-line)}
+.pp-workouts{margin:14px 0 27px}.pp-section-title{margin:0 0 18px}.pp-section-title>span{font-size:.75rem;letter-spacing:.14em;color:var(--brand-text);font-weight:850}
+.pp-section-title h2{margin:8px 0 6px;color:var(--ink);font-size:clamp(1.45rem,2.5vw,2.25rem);line-height:1.1;letter-spacing:-.045em}
+.pp-section-title p{color:var(--ink-2);font-size:.89rem;margin:0;line-height:1.55}
+.pp-session{padding:clamp(17px,2.6vw,30px);margin:0 0 13px;border:1px solid var(--line);border-radius:26px;background:var(--surface);box-shadow:0 20px 40px -35px #10281b70}
+.pp-session.pp-first{border-color:var(--brand-line)}
+.pp-session-head{display:grid;grid-template-columns:53px minmax(0,1fr) auto;align-items:start;gap:13px}
+.pp-session-mark{display:grid;place-items:center;width:50px;height:50px;border-radius:15px;background:var(--brand-soft);color:var(--brand-text)}
+.pp-session-label{display:block;color:var(--ink-2);font-size:.8rem;font-weight:810;text-transform:capitalize}
+.pp-session-head h3{font-size:clamp(1.25rem,2.1vw,1.75rem);color:var(--ink);margin:5px 0 9px;letter-spacing:-.035em;line-height:1.18}
+.pp-goals{display:flex;flex-wrap:wrap;gap:7px}.pp-goals small{padding:5px 9px;border-radius:100px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font-size:.73rem;font-weight:740}
+.pp-session-duration{display:grid;text-align:right;gap:5px}.pp-session-duration b{font-size:2.2rem;line-height:1;color:var(--ink);font-weight:850;letter-spacing:-.04em}.pp-session-duration small{white-space:nowrap;color:var(--ink-2);font-size:.76rem;font-weight:770}
+.pp-state{display:flex;gap:10px;align-items:flex-start;padding:13px 14px;margin:18px 0 12px;border-radius:15px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font-size:.83rem;line-height:1.5}
+.pp-state strong{color:var(--ink);font-weight:830}
+.pp-state svg{flex:none;color:var(--brand-text);margin-top:1px}
+.pp-state.blocked{background:var(--danger-soft);border-color:var(--danger-line)}
+.pp-state.blocked svg{color:var(--danger)}
+.pp-state.ready{background:var(--brand-soft);border-color:var(--brand-line)}
+.pp-steps{display:grid;gap:7px}.pp-step{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;align-items:start;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2)}
+.pp-step>div{font-size:.73rem;font-weight:850;color:var(--brand-text);padding-top:3px}.pp-step p{margin:0;font-size:.87rem;line-height:1.5;color:var(--ink)}.pp-step b{font-size:.79rem;color:var(--ink-2);font-weight:850;text-align:right}
+.pp-session-bottom{display:flex;gap:13px;align-items:center;justify-content:space-between;margin-top:17px}
+.pp-session-bottom>span{font-size:.79rem;color:var(--ink-2);max-width:43ch;font-weight:680}
+.pp-session-bottom button:disabled{cursor:not-allowed;opacity:.75;background:var(--surface-2);border-color:var(--line);color:var(--ink-2)}
+.pp-undo{background:var(--surface-2)}
+.pp-recovery{display:grid;grid-template-columns:31px minmax(0,1fr);gap:12px;padding:22px;border:1px solid var(--brand-line);border-radius:21px;background:var(--brand-soft);margin-top:16px;color:var(--ink)}
+.pp-recovery svg{color:var(--brand-text)}.pp-recovery strong{font-size:1rem;font-weight:850}.pp-recovery p{margin:6px 0 0;font-size:.84rem;line-height:1.6;color:var(--ink-2)}
+.pp-science{display:grid;gap:15px;grid-template-columns:minmax(0,1fr) minmax(170px,.55fr);margin:15px 0 20px;padding:21px;border:1px solid var(--line);border-radius:22px;background:var(--surface)}
+.pp-science strong{display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:830}.pp-science strong svg{color:var(--brand-text)}
+.pp-science p{margin:9px 0 0;color:var(--ink-2);font-size:.8rem;line-height:1.6}.pp-citations{display:grid;gap:10px;align-content:center}
+.pp-citations a{color:var(--brand-text);font-size:.8rem;text-decoration:underline;font-weight:760}
+.pp-empty{display:flex;gap:10px;align-items:center;margin:16px 0;padding:18px;color:var(--ink-2);border:1px solid var(--line);border-radius:17px;background:var(--surface)}
+.pp-settings{display:grid;gap:15px}.pp-settings>p{color:var(--ink-2);line-height:1.5;margin:0;font-size:.86rem}
+.pp-settings label:not(.pp-check){display:grid;gap:6px;color:var(--ink-2);font-size:.83rem;font-weight:790}
+.pp-settings select,.pp-settings input[type=time]{min-height:44px;width:100%;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:10px 12px;font:inherit}
+.pp-check{display:flex;align-items:center;gap:9px;color:var(--ink);font-size:.83rem;font-weight:750}
+.pp-check input{width:19px;height:19px;accent-color:var(--brand)}.pp-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pp-settings .pp-hint{font-size:.79rem;color:var(--ink-2)}
+.pp-workouts button:focus-visible,.pp-stage button:focus-visible,.pp-settings button:focus-visible{outline:3px solid #ebb25f;outline-offset:3px}
+@media(max-width:1020px){.pp-stage{grid-template-columns:1fr}.pp-target{display:flex;min-height:auto;gap:16px;justify-content:space-between;text-align:left}.pp-target strong{font-size:3rem}.pp-target p{display:none}.pp-indicators{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.pp-stage{border-radius:23px;padding:22px 19px}.pp-stage-heading h2{font-size:2.35rem}.pp-stage-actions{display:grid}.pp-stage-actions button{width:100%}.pp-stage-outline{background:#194b39}.pp-indicators{gap:9px}.pp-indicators>div{padding:14px}.pp-indicators b{font-size:1.7rem}.pp-session{border-radius:19px;padding:17px 13px}.pp-session-head{grid-template-columns:43px minmax(0,1fr);gap:10px}.pp-session-mark{width:42px;height:42px}.pp-session-duration{grid-column:1/-1;display:flex;align-items:center;gap:10px;text-align:left}.pp-session-duration b{font-size:1.55rem}.pp-session-bottom{flex-direction:column;align-items:stretch}.pp-session-bottom button{width:100%}.pp-science{grid-template-columns:1fr}.pp-settings-grid{grid-template-columns:1fr}.pp-step{grid-template-columns:23px minmax(0,1fr) 24px;gap:7px;padding:12px 9px}.pp-step p{font-size:.83rem}}
+@media(prefers-reduced-motion:reduce){.pp-stage *, .pp-workouts *{scroll-behavior:auto;transition:none}}
+}

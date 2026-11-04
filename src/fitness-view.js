@@ -1,6 +1,7 @@
 import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=16.0.0';
 import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js';
 import { fitnessCalendarPanel } from './fitness-calendar-view.js';
+import { performanceView } from './performance-view.js';
 
 const NAMES = {free:['Διαθέσιμος','Available'],team:['Ομάδα','Team practice'],game:['Αγώνας','Game'],light:['Ήπια','Easy day'],rest:['Ρεπό','Rest']};
 const KIND = {rest:['Ανάπαυση','Rest'],game:['Αγώνας','Game day'],team:['Ομαδική προπόνηση','Team practice'],strength:['Ενδυνάμωση','Strength'],skills:['Τεχνική','Skills'],mobility:['Κινητικότητα','Mobility'],recovery:['Αποκατάσταση','Recovery'],stop:['Διακοπή','Stop training'],easy:['Ήπια αντοχή','Easy endurance'],unconfirmed:['Χωρίς επιβεβαιωμένο πρόγραμμα','Schedule unconfirmed']};
@@ -47,13 +48,13 @@ export function fitnessView(ctx) {
   const warnings={
     'one-rest':['Μόνο ένα ρεπό· ελέγξτε την εβδομαδιαία αποφόρτιση με τον προπονητή.','Only one rest day; review recovery with your coach.'],
     'no-rest':['Δεν υπάρχει ρεπό. Προγραμματίστε ημέρα χωρίς οργανωμένη άθληση.','No rest day. Schedule time off organized sport.'],
-    'high-team-load':['6+ ημέρες ομάδας/αγώνα. Δεν προστίθεται ενδυνάμωση.','6+ team/game days. Extra strength is withheld.'],
+    'high-team-load':['Υψηλό φορτίο ομάδας: επιτρέπονται μόνο σύντομες, ελεγχόμενες και χαμηλής κόπωσης προσωπικές συνεδρίες, εφόσον εγκριθούν.','High team load: only brief, low-fatigue supplemental work after clearance.'],
     'supervision':['Η έξτρα δύναμη εφήβων απαιτεί επίβλεψη.','Youth resistance training requires qualified supervision.'],
-    'avoid-stacking':['Απόφυγε πρόσθετα σπριντ ή βαριά βάρη μετά την ομάδα.','Avoid stacking hard sprints or weights on team training.'],
+    'avoid-stacking':['Όχι πρόσθετα σπριντ ή βαριά βάρη. Δες το προσωπικό πλάνο 35 λεπτών, με ελέγχους ετοιμότητας.','No added sprints or heavy weights. Review the conditional 35-minute personal plan.'],
     'calendar-unconfirmed':['Χρειάζεται ενημέρωση πραγματικού προγράμματος.','Actual team calendar needs confirmation.'],
     'calendar-repeated':['Εβδομάδα επαναλαμβανόμενη με επιλογή, όχι επιβεβαιωμένες ώρες αγώνα.','Manually repeated week; game hours may change.'],
     'late-finishes':['Οι βραδινές προπονήσεις χρειάζονται προσοχή στον ύπνο.','Late practices may reduce sleep opportunity.'],
-    'high-hours':['Υψηλός συνολικός εβδομαδιαίος χρόνος μπάσκετ.','High weekly basketball hours.'],
+    'high-hours':['Υψηλός χρόνος μπάσκετ: μηδέν πρόσθετη έντονη προπόνηση, μόνο εξατομικευμένες τεχνικές μικροσυνεδρίες με επίβλεψη.','High basketball hours: no extra hard conditioning; only supervised low-intensity micro-sessions.'],
     'match-unconfirmed':['Τρίτη: το MATCH DAY ήταν τοποθεσία στο στιγμιότυπο, όχι επιβεβαιωμένος αγώνας.','Tuesday: MATCH DAY was the location label, not a confirmed match.']
   };
   const shell='<div class="page fitness-page"><section class="fitness-hero"><div><span class="fitness-tag">'+icon('zap',16)+' ZENITH / PERFORMANCE STUDIO</span>'
@@ -87,13 +88,33 @@ export function fitnessView(ctx) {
   const evidence='<div class="fitness-evidence">'+icon('shield',18)+'<p>'+title('Εκπαιδευτικό εργαλείο, όχι ιατρική διάγνωση. Αν υπάρχει πόνος, σταμάτα και ενημέρωσε γονέα/προπονητή και ειδικό υγείας.','Educational tool, not medical advice. Stop activity with pain and tell a parent, coach and qualified clinician.',en)+'</p>'
     +'<a href="https://publications.aap.org/pediatrics/article/145/6/e20201011/76942/Resistance-Training-for-Children-and-Adolescents" target="_blank" rel="noopener noreferrer">AAP</a><a href="https://www.cdc.gov/sleep/about/index.html" target="_blank" rel="noopener noreferrer">CDC</a><a href="https://www.usab.com/play/youth-basketball-guidelines" target="_blank" rel="noopener noreferrer">USA Basketball · Youth Guidelines</a></div>';
   const verifiedTimetable=fitnessCalendarPanel(ctx);
-  return shell+verifiedTimetable+warningsHtml+(ctx.profile.id==='son'? '':metrics)+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
+  if(ctx.profile.id==='son'){
+    return '<div class="page fitness-page pp-page">'+performanceView(ctx)
+      +'<div class="pp-section-title"><span>THE REAL CALENDAR</span><h2>'
+      +title('Η ομάδα και το πραγματικό εβδομαδιαίο φορτίο','Your team and weekly workload',en)
+      +'</h2></div>'+verifiedTimetable+warningsHtml
+      +'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
+  }
+  return shell+verifiedTimetable+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
 }
 
 export function fitnessTodayCard(ctx) {
+  const en=ctx.lang==='en',program=ctx.supplementaryProgram;
+  if(ctx.profile.id==='son' && program?.available){
+    const next=program.sessions.find(x=>x.date>=ctx.dateKey&&!x.done)||program.sessions.find(x=>!x.done);
+    const sessionName=next?(next.type==='strength'?
+      title('Δύναμη & κορμός','Strength & core',en):
+      title('Κίνηση & σταθερότητα','Movement & stability',en)):
+      title('Ανάπαυση & αποκατάσταση','Rest & recovery',en);
+    const sessionTime=next?next.date.slice(8,10)+'/'+next.date.slice(5,7)+' · '+next.start+'–'+next.end+' · '+next.minutes+'′':
+      title('Χωρίς έξτρα προπόνηση','No additional session',en);
+    return '<section class="fitness-teaser">'+icon('zap',23)+'<div><span>ATHLETE DEVELOPMENT · '
+      +esc(ctx.profile.name)+'</span><strong>'+esc(sessionName)+'</strong><small>'+esc(sessionTime)+'</small></div>'
+      +'<button type="button" class="fitness-btn fitness-primary" data-act="nav" data-view="fitness">'
+      +title('Δες το πλάνο','Open the plan',en)+' '+icon('arrowRight',17)+'</button></section>';
+  }
   const d=ctx.fitnessWeek?.days.find(x=>x.date===ctx.dateKey);
   if(!d)return '';
-  const en=ctx.lang==='en';
   return '<section class="fitness-teaser">'+icon('zap',23)+'<div><span>PERFORMANCE STUDIO</span><strong>'+esc((KIND[d.kind]||KIND.mobility)[en?1:0])+'</strong><small>'+title('Προπόνηση με βάση το πραγματικό πρόγραμμα','Training based on your real schedule',en)+'</small></div>'
     +'<button type="button" class="fitness-btn fitness-primary" data-act="nav" data-view="fitness">'+title('Άνοιγμα','Open',en)+' '+icon('arrowRight',17)+'</button></section>';
 }

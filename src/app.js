@@ -39,6 +39,8 @@ import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fit
 import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
 import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js';
 import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js';
+import { buildSupplementaryProgram, supplementLogId } from './performance-program.js';
+import { performanceSettingsForm } from './performance-view.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -279,6 +281,8 @@ function buildCtx() {
   const fitnessSettings = cache.fitnessSettings.find(s => s.memberId === profile.id) || defaultFitnessSettings(profile);
   const fitnessAnchor = addDays(mondayOf(), Math.max(-52, Math.min(52, Number(state.fitnessWeekOffset) || 0)) * 7);
   const fitnessWeek = buildFitnessWeek(profile, fitnessSettings, cache.checklists.filter(x => x.id?.startsWith('fitness-log:')), fitnessAnchor);
+  const supplementaryProgram = buildSupplementaryProgram(profile,fitnessWeek,
+    cache.checklists.filter(x=>String(x.id).startsWith('supplement-log:')));
   const heatCells = heatCellsFor(profile.id);
   const checked = shopList.filter(i => shopChecked[i.key]).length;
   const now = new Date();
@@ -328,7 +332,7 @@ function buildCtx() {
       total: shopList.length, checked, remaining: shopList.length - checked,
       pct: shopList.length ? checked / shopList.length : 0
     },
-    measurements, trend, heatCells, familyNow, fitnessWeek, fitnessSelectedDate: state.fitnessSelectedDate,
+    measurements, trend, heatCells, familyNow, fitnessWeek, supplementaryProgram, fitnessSelectedDate: state.fitnessSelectedDate,
     loggedDays: loggedDateKeys(profile.id).length,
     loggedDays28: heatCells.filter(c => c.logged).length,
     weekAdherence: weekDays.map(d => {
@@ -923,6 +927,70 @@ document.addEventListener('click', async e => {
       );
       break;
     }
+    case 'performanceCustomize': {
+      if(profile.id!=='son') break;
+      const ctx=buildCtx();
+      openSheet({
+        title:state.lang==='en'?'Personal performance plan':'Προσωπικό πλάνο απόδοσης',
+        size:'md',body:performanceSettingsForm(ctx),footer:'',
+        onMount:()=>{
+          const form=byId('performanceSettingsForm');
+          form?.addEventListener('submit',async e=>{
+            e.preventDefault();
+            const fd=new FormData(form),p=currentProfile();
+            if(p.id!=='son')return;
+            const current=cache.fitnessSettings.find(x=>x.memberId===p.id)||defaultFitnessSettings(p);
+            const record=normalizeFitnessSettings({...current,
+              supplementFocus:String(fd.get('supplementFocus')||'balanced'),
+              supplementEnabled:fd.get('supplementEnabled')==='on',
+              coachSupervised:fd.get('coachSupervised')==='on',
+              supplementMondayTime:String(fd.get('supplementMondayTime')||'17:30'),
+              supplementThursdayTime:String(fd.get('supplementThursdayTime')||'17:30'),
+              updatedAt:new Date().toISOString()},p);
+            try{
+              await put('settings',record);
+              cache.fitnessSettings=cache.fitnessSettings.filter(x=>x.memberId!==p.id).concat(record);
+              broadcastChange('performance-settings',{id:p.id});
+              closeSheet();renderAll();toast('Το ατομικό πρόγραμμα ενημερώθηκε.');
+            }catch(err){console.error('[ZENITH] performance settings',err);
+              toast('Δεν αποθηκεύτηκαν οι αλλαγές.',{tone:'danger'});}
+          });
+        }
+      });
+      break;
+    }
+    case 'performanceCheckIn': {
+      const form=byId('fitnessReadinessForm');
+      if(!form){toast('Ο έλεγχος είναι διαθέσιμος για την τρέχουσα εβδομάδα.');break;}
+      form.scrollIntoView({behavior:'smooth',block:'center'});
+      form.querySelector('[name="sleepHours"]')?.focus({preventScroll:true});
+      break;
+    }
+    case 'performanceDone': {
+      if(profile.id!=='son')break;
+      const date=target.dataset.date,done=target.dataset.done==='true';
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date))break;
+      const plan=buildCtx().supplementaryProgram;
+      const session=plan.sessions.find(x=>x.date===date);
+      if(!session||done&&session.state!=='ready'){
+        toast('Πρώτα έλεγχος ετοιμότητας και επίβλεψη προπονητή.',{tone:'danger'});
+        break;
+      }
+      const id=supplementLogId(profile.id,date);
+      const previous=cache.checklists.find(x=>x.id===id);
+      const record={...previous,id,memberId:profile.id,date,done,
+        type:session.type,scheduledMinutes:session.minutes,
+        updatedAt:new Date().toISOString()};
+      try{
+        await put('checklists',record);
+        cache.checklists=cache.checklists.filter(x=>x.id!==id).concat(record);
+        broadcastChange('performance-done',{id});
+        render();
+        toast(done?'Η προσωπική συνεδρία καταγράφηκε.':'Η καταγραφή αναιρέθηκε.');
+      }catch(err){console.error('[ZENITH] performance log',err);
+        toast('Αποτυχία αποθήκευσης.',{tone:'danger'});}
+      break;
+    }
     case 'fitnessCalendarEdit': {
       if(profile.id!=='son')break;
       const ctx=buildCtx();
@@ -1371,12 +1439,12 @@ document.addEventListener('click', async e => {
       const id = target.dataset.id;
       for (const l of cache.logs.filter(l => l.memberId === id)) { await del('logs', l.id); }
       for (const m of cache.measurements.filter(m => m.memberId === id)) { await del('measurements', m.id); }
-      for (const row of cache.checklists.filter(x => x.memberId === id && String(x.id).startsWith('fitness-log:'))) await del('checklists',row.id);
+      for (const row of cache.checklists.filter(x => x.memberId === id && (String(x.id).startsWith('fitness-log:')||String(x.id).startsWith('supplement-log:')))) await del('checklists',row.id);
       for (const row of cache.fitnessSettings.filter(x => x.memberId === id)) await del('settings',row.id);
       await del('profiles', id);
       cache.logs = cache.logs.filter(l => l.memberId !== id);
       cache.measurements = cache.measurements.filter(m => m.memberId !== id);
-      cache.checklists = cache.checklists.filter(x => !(x.memberId === id && String(x.id).startsWith('fitness-log:')));
+      cache.checklists = cache.checklists.filter(x => !(x.memberId === id && (String(x.id).startsWith('fitness-log:')||String(x.id).startsWith('supplement-log:'))));
       cache.fitnessSettings=cache.fitnessSettings.filter(x=>x.memberId!==id);
       cache.profiles = cache.profiles.filter(p => p.id !== id);
       if (state.member === id) state.member = cache.profiles[0].id;

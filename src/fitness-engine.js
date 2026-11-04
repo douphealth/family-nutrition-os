@@ -39,6 +39,10 @@ export function defaultFitnessSettings(profile = {}) {
     minutes: basket ? 20 : 25,
     strengthSessions: basket ? 1 : 2,
     coachSupervised: false,
+    supplementEnabled: true,
+    supplementFocus: 'balanced',
+    supplementMondayTime: '17:30',
+    supplementThursdayTime: '17:30',
     // Screenshot fixtures are dated and never silently become recurring events.
     calendarWeeks: profile.id === 'son' ? defaultDimitrisCalendar() : {},
     calendarSource: profile.id === 'son' ? 'family-screenshot' : 'unconfirmed',
@@ -65,6 +69,13 @@ export function normalizeFitnessSettings(input = {}, profile = {}) {
     minutes: clamp(input.minutes, 10, youth ? 40 : 60, defaults.minutes),
     strengthSessions: clamp(input.strengthSessions, 0, youth ? 2 : 3, defaults.strengthSessions),
     coachSupervised: input.coachSupervised === true || input.coachSupervised === 'on',
+    supplementEnabled: input.supplementEnabled !== false,
+    supplementFocus: ['balanced','strength','movement','durability'].includes(input.supplementFocus) ?
+      input.supplementFocus : defaults.supplementFocus,
+    supplementMondayTime: /^(?:1[6-9]):[0-5]\d$/.test(String(input.supplementMondayTime||'')) ?
+      input.supplementMondayTime : defaults.supplementMondayTime,
+    supplementThursdayTime: /^(?:1[6-9]):[0-5]\d$/.test(String(input.supplementThursdayTime||'')) ?
+      input.supplementThursdayTime : defaults.supplementThursdayTime,
     schedule: FITNESS_DAYS.map((_, i) => choose(FITNESS_MODES, input.schedule?.[i], defaults.schedule[i])),
     calendarWeeks: cleanCalendarWeeks(input.calendarWeeks === undefined ? defaults.calendarWeeks : input.calendarWeeks),
     calendarSource: typeof input.calendarSource === 'string' ? input.calendarSource.slice(0,36) : defaults.calendarSource,
