@@ -154,7 +154,7 @@ function parseProperty(line){
   return {name,params:field.slice(name.length),value:line.slice(idx+1)};
 }
 function classifyEvent(summary){
-  const txt=summary.toLocaleLowerCase('el');
+  const txt=summary.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el');
   if(/σχολε|school|classes|μαθηματα/.test(txt))return 'school';
   if(/μπασκετ|basket|basketball|καλαθοσφαιρ/.test(txt)){
     return /αγων|match|game|ματς/.test(txt)?'game':'team';
