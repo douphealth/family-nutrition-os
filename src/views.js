@@ -316,6 +316,7 @@ export function todayView(ctx) {
   ${!onboarded ? onboardingCard() : ''}
 
   ${familyCommand(ctx)}
+  ${ctx.fitnessTeaser || ''}
 
   <div class="today-grid">
   ${nextRecipe ? nextMealCard(ctx, nextSlot, nextRecipe) : `
