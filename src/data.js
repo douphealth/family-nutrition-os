@@ -20,7 +20,7 @@ export const APP = {
   name: 'ZENITH PRO',
   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
   version: '16.0.0',
-  updated: '2026-10-05',
+  updated: '2026-11-04',
   schema: 2
 };
 
@@ -37,7 +37,7 @@ export const FAMILY = [
   { id:'mother',   name:'Αναστασία',  relation:'Μητέρα',  role:'Υγεία & σταδιακή απώλεια λίπους', sex:'f', age:51, height:167, weight:87, activityFactor:1.40, goal:'gradual_fat_loss', athlete:false, accent:'#0E9F6E', notes:'Στόχος ρυθμού, όχι ταχύτητας.' },
   { id:'father',   name:'Αλέξης',     relation:'Πατέρας', role:'Συντήρηση & καρδιομεταβολική υγεία', sex:'m', age:54, height:178, weight:78, activityFactor:1.40, goal:'maintain',         athlete:false, accent:'#2F6FED', notes:'Προσοχή στο αλάτι.' },
   { id:'daughter', name:'Αλεξάνδρα',  relation:'Κόρη',    role:'Ανάπτυξη & ενέργεια',              sex:'f', age:17, height:165, weight:52, activityFactor:1.60, goal:'growth',            athlete:false, accent:'#D9457A', notes:'Ποικιλία & σίδηρος.' },
-  { id:'son',      name:'Δημήτρης',   relation:'Γιος',    role:'Basketball · απόδοση & αποκατάσταση', sex:'m', age:15, height:179, weight:67, activityFactor:1.80, goal:'performance', athlete:true,  accent:'#D98A16', notes:'Διπλές προπονήσεις Τρ/Πε.' }
+  { id:'son',      name:'Δημήτρης',   relation:'Γιος',    role:'Basketball · απόδοση & αποκατάσταση', sex:'m', age:15, height:181, weight:65, activityFactor:1.80, goal:'performance', athlete:true,  accent:'#D98A16', notes:'Διπλές προπονήσεις Τρ/Πε.' }
 ];
 
 /* Activity levels shipped before v13 that sat below EFSA/FAO's lowest free-living
