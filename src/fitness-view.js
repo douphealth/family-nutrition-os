@@ -1,8 +1,9 @@
 import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=16.0.0';
 import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js';
+import { fitnessCalendarPanel } from './fitness-calendar-view.js';
 
 const NAMES = {free:['Διαθέσιμος','Available'],team:['Ομάδα','Team practice'],game:['Αγώνας','Game'],light:['Ήπια','Easy day'],rest:['Ρεπό','Rest']};
-const KIND = {rest:['Ανάπαυση','Rest'],game:['Αγώνας','Game day'],team:['Ομαδική προπόνηση','Team practice'],strength:['Ενδυνάμωση','Strength'],skills:['Τεχνική','Skills'],mobility:['Κινητικότητα','Mobility'],recovery:['Αποκατάσταση','Recovery'],stop:['Διακοπή','Stop training'],easy:['Ήπια αντοχή','Easy endurance']};
+const KIND = {rest:['Ανάπαυση','Rest'],game:['Αγώνας','Game day'],team:['Ομαδική προπόνηση','Team practice'],strength:['Ενδυνάμωση','Strength'],skills:['Τεχνική','Skills'],mobility:['Κινητικότητα','Mobility'],recovery:['Αποκατάσταση','Recovery'],stop:['Διακοπή','Stop training'],easy:['Ήπια αντοχή','Easy endurance'],unconfirmed:['Χωρίς επιβεβαιωμένο πρόγραμμα','Schedule unconfirmed']};
 const GOALS = {wellbeing:['Ευεξία','Wellbeing'],court:['Μπάσκετ','Basketball'],strength:['Δύναμη','Strength'],endurance:['Αντοχή','Endurance'],mobility:['Ευκινησία','Mobility']};
 const title = (el,en,english)=>english?en:el;
 const daysEn=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -48,7 +49,12 @@ export function fitnessView(ctx) {
     'no-rest':['Δεν υπάρχει ρεπό. Προγραμματίστε ημέρα χωρίς οργανωμένη άθληση.','No rest day. Schedule time off organized sport.'],
     'high-team-load':['6+ ημέρες ομάδας/αγώνα. Δεν προστίθεται ενδυνάμωση.','6+ team/game days. Extra strength is withheld.'],
     'supervision':['Η έξτρα δύναμη εφήβων απαιτεί επίβλεψη.','Youth resistance training requires qualified supervision.'],
-    'avoid-stacking':['Απόφυγε πρόσθετα σπριντ ή βαριά βάρη μετά την ομάδα.','Avoid stacking hard sprints or weights on team training.']
+    'avoid-stacking':['Απόφυγε πρόσθετα σπριντ ή βαριά βάρη μετά την ομάδα.','Avoid stacking hard sprints or weights on team training.'],
+    'calendar-unconfirmed':['Χρειάζεται ενημέρωση πραγματικού προγράμματος.','Actual team calendar needs confirmation.'],
+    'calendar-repeated':['Εβδομάδα επαναλαμβανόμενη με επιλογή, όχι επιβεβαιωμένες ώρες αγώνα.','Manually repeated week; game hours may change.'],
+    'late-finishes':['Οι βραδινές προπονήσεις χρειάζονται προσοχή στον ύπνο.','Late practices may reduce sleep opportunity.'],
+    'high-hours':['Υψηλός συνολικός εβδομαδιαίος χρόνος μπάσκετ.','High weekly basketball hours.'],
+    'match-unconfirmed':['Τρίτη: το MATCH DAY ήταν τοποθεσία στο στιγμιότυπο, όχι επιβεβαιωμένος αγώνας.','Tuesday: MATCH DAY was the location label, not a confirmed match.']
   };
   const shell='<div class="page fitness-page"><section class="fitness-hero"><div><span class="fitness-tag">'+icon('zap',16)+' ZENITH / PERFORMANCE STUDIO</span>'
     +'<h1>'+title('Ο δικός σου ρυθμός','Your training, your pace',en)+'</h1><p>'+title('Δυναμικό πρόγραμμα που σέβεται την ομάδα, την ανάπαυση και τους στόχους σου.','An adaptive week built around your team, recovery and goals.',en)+'</p>'
@@ -80,7 +86,8 @@ export function fitnessView(ctx) {
     +'<div class="fitness-session-actions">'+button('fitnessDone',icon(focus.done?'undo':'checkCircle',17)+' '+title(focus.done?'Αναίρεση ολοκλήρωσης':'Ολοκληρώθηκε',focus.done?'Undo completion':'Mark complete',en),'fitness-primary').replace('data-act="fitnessDone"','data-act="fitnessDone" data-date="'+esc(focus.date)+'" data-done="'+(!focus.done)+'"')+'</div></section>';
   const evidence='<div class="fitness-evidence">'+icon('shield',18)+'<p>'+title('Εκπαιδευτικό εργαλείο, όχι ιατρική διάγνωση. Αν υπάρχει πόνος, σταμάτα και ενημέρωσε γονέα/προπονητή και ειδικό υγείας.','Educational tool, not medical advice. Stop activity with pain and tell a parent, coach and qualified clinician.',en)+'</p>'
     +'<a href="https://publications.aap.org/pediatrics/article/145/6/e20201011/76942/Resistance-Training-for-Children-and-Adolescents" target="_blank" rel="noopener noreferrer">AAP</a><a href="https://www.cdc.gov/sleep/about/index.html" target="_blank" rel="noopener noreferrer">CDC</a></div>';
-  return shell+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
+  const verifiedTimetable=fitnessCalendarPanel(ctx);
+  return shell+verifiedTimetable+warningsHtml+(ctx.profile.id==='son'? '':metrics)+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
 }
 
 export function fitnessTodayCard(ctx) {
