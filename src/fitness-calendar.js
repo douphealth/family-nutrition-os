@@ -114,7 +114,21 @@ export function summarizeCalendarEvents(events) {
       if(timeMinutes(ev.end)>=22*60)lateNights++;
     }
   }
-  return {teamMinutes,schoolMinutes,teamDays:sportDates.size,schoolDays:schoolDates.size,lateNights};
+  const school=events.filter(e=>e.type==='school');
+  const practices=events.filter(e=>e.type==='team'||e.type==='game');
+  const turnarounds=[];
+  for(const event of practices){
+    const d=new Date(event.date+'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate()+1);
+    const nextDate=d.toISOString().slice(0,10);
+    for(const next of school.filter(x=>x.date===nextDate)){
+      const gap=1440-timeMinutes(event.end)+timeMinutes(next.start);
+      turnarounds.push({from:event.date,to:next.date,minutes:gap});
+    }
+  }
+  turnarounds.sort((a,b)=>a.minutes-b.minutes);
+  return {teamMinutes,schoolMinutes,teamDays:sportDates.size,schoolDays:schoolDates.size,
+    lateNights,shortestSchoolTurnaround:turnarounds[0]||null};
 }
 export const clockLabel = mins => Math.floor(mins/60)+'h '+String(mins%60).padStart(2,'0')+'m';
 
