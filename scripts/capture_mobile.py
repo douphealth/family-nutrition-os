@@ -165,6 +165,16 @@ with sync_playwright() as p:
         f"today/son: the active member chip is scrolled into view ({strip_state})",
     )
 
+    # ── Youth fitness planner: phone training calendar and editable settings ──
+    go(page, "fitness")
+    shot(page, "mobile-fitness-son.png")
+    audit(page, "fitness/son")
+    page.evaluate("""() => document.querySelector('[data-act="fitnessEdit"]')?.click()""")
+    settle(page, 450)
+    shot(page, "mobile-fitness-settings.png")
+    audit(page, "fitness/settings")
+    dismiss_overlays(page)
+
     # ── Planner v15: the family's weekly planning surface ────────────────
     go(page, "plan")
     shot(page, "mobile-plan-week.png")
