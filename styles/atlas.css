@@ -103,6 +103,7 @@
   .atlas-metric.warning{border-color:var(--gold-line);background:color-mix(in oklab,var(--gold-soft) 50%,var(--surface))}
   /* Seven-day digest */
   .atlas-week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px;margin-bottom:19px}
+  .atlas-week-strip:focus-visible{outline:3px solid #e8ac4e;outline-offset:3px;border-radius:18px}
   .atlas-week-day{min-width:0;min-height:112px;padding:14px 10px;display:grid;align-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:18px}
   .atlas-week-day>span{font-size:.74rem;font-weight:830;color:var(--ink-2);letter-spacing:.05em}
   .atlas-week-day>strong{font-size:clamp(1.12rem,1.5vw,1.65rem);font-weight:850;color:var(--ink);line-height:1}
