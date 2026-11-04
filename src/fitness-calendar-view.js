@@ -39,7 +39,7 @@ export function fitnessCalendarPanel(ctx) {
         <small>`+tr(en,'Ακριβές άθροισμα των καταχωρισμένων ωρών','Sum of entered basketball time')+`</small></div>
       <div class="fit-cal-metric"><span>`+tr(en,'Ημέρες μπάσκετ','Basketball days')+`</span><b>`+(w.calendarKnown?st.teamDays:'—')+`<small>`+(w.calendarKnown?'/7':'')+`</small></b>
         <small>`+tr(en,'Οι αγώνες μετρούν στον φόρτο','Games count toward workload')+`</small></div>
-      <div class="fit-cal-metric"><span>`+tr(en,'Σχολείο','School')+`</span><b>`+(w.calendarKnown?durationLabel(st.schoolMinutes,en):'—')+`</b>
+      <div class="fit-cal-metric"><span>`+tr(en,'Σχολείο','School')+`</span><b>`+(w.calendarKnown&&st.schoolDays>0?durationLabel(st.schoolMinutes,en):'—')+`</b>
         <small>`+tr(en,'Σταθερές υποχρεώσεις','Fixed commitments')+`</small></div>
       <div class="fit-cal-metric is-extra"><span>`+tr(en,'ΕΠΙΠΛΕΟΝ ΠΡΟΠΟΝΗΣΗ','ADDITIONAL WORKOUTS')+`</span>
         <b>`+(w.calendarKnown?w.extraMinutes+'′':'—')+`</b><small>`+tr(en,'Εκτός της ομάδας','Separate from the team')+`</small></div>
