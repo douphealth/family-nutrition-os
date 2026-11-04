@@ -607,6 +607,7 @@ async function boot() {
     if (profiles.length) cache.profiles = profiles;
     await applyMemberNameUpgrade();
     await applyActivityUpgrade();
+    await updateUneditedSonMeasurements();
     cache.logs = (await all('logs')).map(migrateLog);
     cache.measurements = await all('measurements');
     cache.plans = await all('plans');
@@ -650,6 +651,16 @@ async function applyMemberNameUpgrade() {
   for (const p of cache.profiles) {
     try { await put('profiles', p); } catch (err) { console.error('[ZENITH] member rename save failed', err); }
   }
+}
+
+/** Update only an untouched shipped son profile to the user-provided measurements.
+ * All other stored measurements/customizations take precedence. */
+async function updateUneditedSonMeasurements() {
+  const p=cache.profiles.find(x=>x.id==='son');
+  if (!p || p.age!==15 || Number(p.height)!==179 || Number(p.weight)!==67) return;
+  p.height=181;p.weight=65;
+  try {await put('profiles',p);broadcastChange('profiles',{id:'son'});}
+  catch (err){console.error('[ZENITH] son profile default update failed',err);}
 }
 
 /** v13: move activity levels that sat below EFSA/FAO's lowest free-living level onto the EFSA ladder. */
