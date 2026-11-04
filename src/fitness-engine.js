@@ -172,10 +172,22 @@ function sessionForMode(mode, strength, goal, settings, youth, index) {
       ...(goal === 'court' ? courtPrep : prep)]
   };
   if (mode === 'light') return { kind: 'recovery', duration: 10, steps: restore };
-  if (strength) return {
-    kind: 'strength', duration: Math.min(settings.minutes, youth ? 25 : 35),
-    steps: index % 2 === 0 ? strengthA : strengthB
-  };
+  if (strength) {
+    const strengthSteps = index % 2 === 0 ? strengthA : strengthB;
+    const equipmentTip = settings.equipment === 'bands'
+      ? step('Ελαφριές έλξεις με λάστιχο 1–2 × 8, χωρίς πόνο και χωρίς εξάντληση.', 'Easy band rows 1–2 × 8, pain-free, without fatigue.')
+      : settings.equipment === 'gym'
+        ? step('Χρησιμοποίησε εξοπλισμό μόνο με έλεγχο τεχνικής από προπονητή· όχι μέγιστες προσπάθειες.', 'Use gym equipment only after technique review by a coach; no maximal efforts.')
+        : step('Δεν απαιτείται εξοπλισμός· σταμάτα αν χαθεί η τεχνική.', 'No equipment is required; stop when technique deteriorates.');
+    const experienceTip = settings.experience === 'beginner'
+      ? step('Ξεκίνα με 1 σετ και μάθε την κίνηση με επίβλεψη.', 'Start with 1 set and learn the movement under supervision.')
+      : step('Έως 2 ήπια σετ μόνο αν η τεχνική παραμένει σωστή.', 'Up to 2 easy sets only while technique stays controlled.');
+    return {
+      kind: 'strength',
+      duration: Math.min(settings.minutes, youth ? 25 : 35),
+      steps: [...strengthSteps, equipmentTip, experienceTip]
+    };
+  }
   if (goal === 'endurance' && !youth) return { kind: 'easy', duration: settings.minutes, steps: prep };
   if (goal === 'court') return {
     kind: 'skills', duration: Math.min(settings.minutes, youth ? 15 : 25), steps: courtPrep
