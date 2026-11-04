@@ -99,6 +99,20 @@ export function fitnessView(ctx) {
 }
 
 export function fitnessTodayCard(ctx) {
+  const en=ctx.lang==='en',program=ctx.supplementaryProgram;
+  if(ctx.profile.id==='son' && program?.available){
+    const next=program.sessions.find(x=>x.date>=ctx.dateKey&&!x.done)||program.sessions.find(x=>!x.done);
+    const sessionName=next?(next.type==='strength'?
+      title('Δύναμη & κορμός','Strength & core',en):
+      title('Κίνηση & σταθερότητα','Movement & stability',en)):
+      title('Ανάπαυση & αποκατάσταση','Rest & recovery',en);
+    const sessionTime=next?next.date.slice(8,10)+'/'+next.date.slice(5,7)+' · '+next.start+'–'+next.end+' · '+next.minutes+'′':
+      title('Χωρίς έξτρα προπόνηση','No additional session',en);
+    return '<section class="fitness-teaser">'+icon('zap',23)+'<div><span>ATHLETE DEVELOPMENT · '
+      +esc(ctx.profile.name)+'</span><strong>'+esc(sessionName)+'</strong><small>'+esc(sessionTime)+'</small></div>'
+      +'<button type="button" class="fitness-btn fitness-primary" data-act="nav" data-view="fitness">'
+      +title('Δες το πλάνο','Open the plan',en)+' '+icon('arrowRight',17)+'</button></section>';
+  }
   const d=ctx.fitnessWeek?.days.find(x=>x.date===ctx.dateKey);
   if(!d)return '';
   const en=ctx.lang==='en';
