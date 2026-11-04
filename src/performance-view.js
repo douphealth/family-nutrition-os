@@ -58,14 +58,14 @@ export function performanceView(ctx) {
   if(!program.available){
     return '<section class="pp-stage"><div class="pp-stage-heading"><span>ZENITH / ATHLETE LAB</span><h2>'
       +tr(en,'Ατομική βελτίωση από πραγματικά δεδομένα','Personal development from real data')
-      +'</h2><p>'+tr(en,'Συμπλήρωσε το πραγματικό πρόγραμμα ομάδας ώστε να δημιουργηθεί ασφαλές πρόσθετο πλάνο.',
+      +'</h1><p>'+tr(en,'Συμπλήρωσε το πραγματικό πρόγραμμα ομάδας ώστε να δημιουργηθεί ασφαλές πρόσθετο πλάνο.',
         'Confirm the team calendar first. No extra sessions are generated from unknown schedules.')+'</p></div></section>';
   }
   const year=ctx.fitnessWeek.weekStart;
   const next=program.sessions.find(x=>!x.done)||program.sessions[0];
   const hero='<section class="pp-stage" aria-labelledby="pp-title">'
     +'<div class="pp-stage-heading"><span class="pp-kicker">'+icon('zap',15)+' ATHLETE DEVELOPMENT / '+year+'</span>'
-    +'<h2 id="pp-title">'+tr(en,'Γίνε καλύτερος. Όχι απλώς πιο κουρασμένος.','Build the athlete. Not the fatigue.')+'</h2>'
+    +'<h1 id="pp-title">'+tr(en,'Γίνε καλύτερος. Όχι απλώς πιο κουρασμένος.','Build the athlete. Not the fatigue.')+'</h2>'
     +'<p>'+tr(en,'Προσωπικό πλάνο για τον Δημήτρη, 15 ετών · 181 cm · 65 kg, βασισμένο στις πραγματικές ώρες ομάδας. Τα σωματομετρικά είναι πλαίσιο, όχι συνταγή κιλών.',
       'Dimitris · 15 years · 181 cm · 65 kg. Team-calendar-aware supplemental program. Measurements provide context, not a weight target.')+'</p>'
     +'<div class="pp-stage-actions"><button class="fitness-btn fitness-primary" data-act="performanceCustomize">'+icon('sliders',17)
