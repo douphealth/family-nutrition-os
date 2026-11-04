@@ -7,6 +7,8 @@
  * training), AOSSM 2025 (youth strength), CDC adolescent sleep recommendations.
  */
 
+import { defaultDimitrisCalendar, resolveCalendarWeek, cleanCalendarWeeks, summarizeCalendarEvents, eventDuration, timeMinutes } from './fitness-calendar.js';
+
 export const FITNESS_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 export const FITNESS_MODES = ['free', 'team', 'game', 'light', 'rest'];
 export const FITNESS_GOALS = ['wellbeing', 'court', 'strength', 'endurance', 'mobility'];
@@ -37,6 +39,11 @@ export function defaultFitnessSettings(profile = {}) {
     minutes: basket ? 20 : 25,
     strengthSessions: basket ? 1 : 2,
     coachSupervised: false,
+    // Screenshot fixtures are dated and never silently become recurring events.
+    calendarWeeks: profile.id === 'son' ? defaultDimitrisCalendar() : {},
+    calendarSource: profile.id === 'son' ? 'family-screenshot' : 'unconfirmed',
+    repeatWeekly: false,
+    repeatFromWeek: '2026-11-02',
     // Presets are starting assumptions and are always editable.
     schedule: basket
       ? ['team', 'team', 'team', 'team', 'team', 'game', 'rest']
@@ -59,6 +66,10 @@ export function normalizeFitnessSettings(input = {}, profile = {}) {
     strengthSessions: clamp(input.strengthSessions, 0, youth ? 2 : 3, defaults.strengthSessions),
     coachSupervised: input.coachSupervised === true || input.coachSupervised === 'on',
     schedule: FITNESS_DAYS.map((_, i) => choose(FITNESS_MODES, input.schedule?.[i], defaults.schedule[i])),
+    calendarWeeks: cleanCalendarWeeks(input.calendarWeeks === undefined ? defaults.calendarWeeks : input.calendarWeeks),
+    calendarSource: typeof input.calendarSource === 'string' ? input.calendarSource.slice(0,36) : defaults.calendarSource,
+    repeatWeekly: input.repeatWeekly === true,
+    repeatFromWeek: typeof input.repeatFromWeek === 'string' ? input.repeatFromWeek : defaults.repeatFromWeek,
     source: input.source === 'starter-preset' ? 'starter-preset' : 'custom',
     updatedAt: typeof input.updatedAt === 'string' ? input.updatedAt : null
   };
@@ -90,7 +101,6 @@ export function fitnessLogId(memberId, dateKey) {
 export function assessReadiness(log, profile) {
   if (log?.pain === true) return { level: 'stop', reason: 'pain' };
   if (!log || !log.checkedAt) return { level: 'unknown', reason: 'unrecorded' };
-  if (log.pain === true) return { level: 'stop', reason: 'pain' };
   const sleep = Number(log.sleepHours);
   const energy = Number(log.energy);
   const soreness = Number(log.soreness);
@@ -143,7 +153,7 @@ function selectStrengthDays(schedule, settings, youth) {
   const sportDays = schedule.filter(v => v === 'team' || v === 'game').length;
   const restDays = schedule.filter(v => v === 'rest').length;
   // No additional loading for highly committed adolescent athletes.
-  if (youth && (sportDays >= 6 || restDays === 0)) return [];
+  if (youth && (sportDays >= 5 || restDays === 0)) return [];
   const max = Math.min(settings.strengthSessions, youth ? 2 : 3);
   const picks = [];
   const candidates = FITNESS_DAYS.map((_, i) => i).filter(i => schedule[i] === 'free');
@@ -161,15 +171,15 @@ function selectStrengthDays(schedule, settings, youth) {
 function sessionForMode(mode, strength, goal, settings, youth, index) {
   if (mode === 'rest') return { kind: 'rest', duration: 0, steps: restore };
   if (mode === 'game') return {
-    kind: 'game', duration: 8,
+    kind: 'game', duration: 0,
     steps: [step('Ομαδικός αγώνας: ακολούθησε την προθέρμανση του προπονητή.', 'Game day: follow your coach’s warm-up.'),
       step('Μην προσθέτεις έντονη ενδυνάμωση ή σπριντ μετά τον αγώνα.', 'Do not add hard strength or sprints after the game.'),
       ...restore]
   };
   if (mode === 'team') return {
-    kind: 'team', duration: 8,
-    steps: [step('Ομαδική προπόνηση: ο βασικός φόρτος της ημέρας.', 'Team practice is today’s main training load.'),
-      ...(goal === 'court' ? courtPrep : prep)]
+    kind: 'team', duration: 0,
+    steps: [step('Η ομαδική προπόνηση είναι ο κύριος φόρτος. Επιπλέον ενδυνάμωση: 0′.', 'Team practice is the main load. Extra strength: 0 minutes.'),
+      step('Ακολούθησε την προθέρμανση και τις οδηγίες του προπονητή· μην προσθέτεις σπριντ.', 'Follow the coach’s warm-up and instructions; do not add sprints.')]
   };
   if (mode === 'light') return { kind: 'recovery', duration: 10, steps: restore };
   if (strength) {
@@ -189,9 +199,9 @@ function sessionForMode(mode, strength, goal, settings, youth, index) {
     };
   }
   if (goal === 'endurance' && !youth) return { kind: 'easy', duration: settings.minutes, steps: prep };
-  if (goal === 'court') return {
-    kind: 'skills', duration: Math.min(settings.minutes, youth ? 15 : 25), steps: courtPrep
-  };
+  if (goal === 'court') return youth
+    ? {kind: 'rest', duration: 0, steps: restore}
+    : {kind: 'skills', duration: Math.min(settings.minutes, 25), steps: courtPrep};
   return { kind: 'mobility', duration: Math.min(settings.minutes, youth ? 15 : 25), steps: restore };
 }
 
@@ -207,30 +217,72 @@ function adjustSession(session, readiness) {
   return session;
 }
 
+/**
+ * Build the week from actual dated calendar events where available.
+ * For Dimitris, an unknown future week never inherits screenshot fixture
+ * commitments or produces imaginary extra workouts.
+ */
 export function buildFitnessWeek(profile, savedSettings, logs = [], anchorDate) {
   const settings = normalizeFitnessSettings(savedSettings || defaultFitnessSettings(profile), profile);
   const start = weekStartOf(anchorDate);
   const youth = isYouthAthlete(profile);
-  const modes = settings.schedule;
-  const restDays = modes.filter(x => x === 'rest').length;
-  const sportDays = modes.filter(x => x === 'team' || x === 'game').length;
-  const strengthDays = selectStrengthDays(modes, settings, youth);
-  const warnings = [];
-  if (youth && restDays < 1) warnings.push('no-rest');
-  if (youth && restDays === 1) warnings.push('one-rest');
-  if (youth && sportDays >= 6) warnings.push('high-team-load');
-  if (youth && settings.strengthSessions > 0 && !settings.coachSupervised) warnings.push('supervision');
-  if (youth && sportDays >= 5 && settings.goal === 'court') warnings.push('avoid-stacking');
-  const days = FITNESS_DAYS.map((dayKey, i) => {
-    const date = shiftDate(start, i);
-    const log = logs.find(l => l?.memberId === profile.id && l?.date === date) || null;
-    const readiness = assessReadiness(log, profile);
-    const template = sessionForMode(modes[i], strengthDays.includes(i), settings.goal, settings, youth, i);
-    const session = adjustSession(template, readiness);
-    return { ...session, dayKey, date, mode: modes[i], readiness, done: !!log?.done,
-      // Logged values remain observations, not AI-created metrics.
-      sleepHours: log?.sleepHours ?? null, energy: log?.energy ?? null, soreness: log?.soreness ?? null,
-      pain: log?.pain === true };
+  const athleteCalendar = profile.id === 'son' && settings.sport === 'basketball';
+  const resolved = athleteCalendar ? resolveCalendarWeek(settings, start) :
+    {known:false,events:[],source:'manual',repeated:false};
+  const calendarKnown = athleteCalendar && resolved.known;
+  const calendarMissing = athleteCalendar && !resolved.known;
+  const calendarStats = summarizeCalendarEvents(resolved.events);
+
+  const modes = calendarKnown
+    ? FITNESS_DAYS.map((_,i) => {
+        const date=shiftDate(start,i);
+        const events=resolved.events.filter(e=>e.date===date);
+        if(events.some(e=>e.type==='game'))return 'game';
+        if(events.some(e=>e.type==='team'))return 'team';
+        return 'rest'; // a genuine free day is recovery, not an extra workout
+      })
+    : calendarMissing ? FITNESS_DAYS.map(()=>'unconfirmed') : settings.schedule;
+  const sportDays = calendarKnown ? calendarStats.teamDays : modes.filter(v=>v==='team'||v==='game').length;
+  const restDays = modes.filter(v=>v==='rest').length;
+  const highYouthLoad = youth && (sportDays>=5 || (calendarKnown && (calendarStats.teamMinutes>=600 || calendarStats.lateNights>=2)));
+  const selected = calendarMissing || highYouthLoad ? [] : selectStrengthDays(modes,settings,youth);
+  const warnings=[];
+  if(calendarMissing)warnings.push('calendar-unconfirmed');
+  if(calendarKnown && resolved.repeated)warnings.push('calendar-repeated');
+  if(youth && !calendarMissing && restDays<1) warnings.push('no-rest');
+  if(youth && !calendarMissing && restDays===1) warnings.push('one-rest');
+  if(youth && sportDays>=5) warnings.push('high-team-load');
+  if(youth && calendarStats.lateNights>=2) warnings.push('late-finishes');
+  if(youth && calendarStats.teamMinutes>=600) warnings.push('high-hours');
+  if(youth && settings.strengthSessions>0 && !settings.coachSupervised && !highYouthLoad && !calendarMissing) warnings.push('supervision');
+  if(youth && sportDays>=5 && settings.goal==='court') warnings.push('avoid-stacking');
+  if(resolved.events.some(e=>e.note==='game-status-unconfirmed'))warnings.push('match-unconfirmed');
+  const days=FITNESS_DAYS.map((dayKey,i)=>{
+    const date=shiftDate(start,i),events=resolved.events.filter(e=>e.date===date);
+    const log=logs.find(l=>l?.memberId===profile.id&&l?.date===date)||null;
+    const readiness=assessReadiness(log,profile);
+    const base=calendarMissing
+      ? {kind:'unconfirmed',duration:0,steps:[step('Δεν έχει επιβεβαιωθεί πρόγραμμα ομάδας για αυτή την εβδομάδα. Εισήγαγε ημερολόγιο ή ενημέρωσε τις ώρες.', 'No team schedule is confirmed for this week. Import or update the calendar.')]}
+      : sessionForMode(modes[i],selected.includes(i),settings.goal,settings,youth,i);
+    let session=adjustSession(base,readiness);
+    const sportMinutes=events.filter(x=>x.type==='team'||x.type==='game').reduce((sum,x)=>sum+eventDuration(x),0);
+    const schoolMinutes=events.filter(x=>x.type==='school').reduce((sum,x)=>sum+eventDuration(x),0);
+    // Never count guided team practice as extra workout time.
+    if(calendarKnown && sportMinutes>0)session={...session,duration:0};
+    // Youth resistance needs same-day observed readiness; otherwise no permission
+    // to schedule additional independent training.
+    if(youth&&session.kind==='strength'&&readiness.level!=='normal'){
+      session={...session,kind:'recovery',duration:0,steps:restore};
+    }
+    return {...session,dayKey,date,mode:modes[i],events,sportMinutes,schoolMinutes,
+      extraMinutes: Math.max(0,session.duration||0),readiness,done:!!log?.done,
+      sleepHours:log?.sleepHours??null,energy:log?.energy??null,soreness:log?.soreness??null,
+      pain:log?.pain===true};
   });
-  return { settings, days, weekStart: start, youth, restDays, sportDays, strengthDays, warnings };
+  const extraMinutes=days.reduce((sum,x)=>sum+x.extraMinutes,0);
+  const scheduledBasketballMinutes=calendarKnown?calendarStats.teamMinutes:null;
+  return {settings,days,weekStart:start,youth,restDays,sportDays,
+    strengthDays: days.reduce((a,d,i)=>(d.kind==='strength'?a.concat(i):a),[]),
+    warnings,calendar:resolved,calendarStats,calendarKnown,calendarMissing,
+    extraMinutes,scheduledBasketballMinutes,highYouthLoad};
 }
