@@ -55,8 +55,8 @@ export function fitnessCalendarPanel(ctx) {
     `+(w.calendarKnown&&w.highYouthLoad?`<div class="fit-cal-warning">`+icon('shield',19)+`<span>`+
       tr(en,'Με αυτό το φορτίο ομάδας, επιπλέον ενδυνάμωση και σπριντ: 0 λεπτά. Ύπνος και αποκατάσταση έχουν προτεραιότητα.',
        'With this team workload, extra strength and sprints: zero minutes. Sleep and recovery take priority.')+`</span></div>`:'')+`
-    <div class="fit-cal-days" role="list">
-      `+w.days.map((d,i)=>`<article class="fit-cal-day `+(d.date===ctx.dateKey?'is-current':'')+`" role="listitem">
+    <div class="fit-cal-days" role="list" tabindex="0" aria-label="Dimitris weekly school and basketball calendar">
+      `+w.days.map((d,i)=>`<div class="fit-cal-day `+(d.date===ctx.dateKey?'is-current':'')+`" role="listitem">
         <div class="fit-cal-dayhead"><span>`+(en?daysEn[i]:daysEl[i])+`</span><b>`+d.date.slice(8)+`</b></div>
         <div class="fit-cal-dayevents">`+(d.events.length?d.events.map(e=>`<div class="fit-cal-event is-`+e.type+`">
           <span class="fit-cal-event-icon">`+icon(iconNames[e.type]||'calendar',16)+`</span><div>
@@ -66,7 +66,7 @@ export function fitnessCalendarPanel(ctx) {
           </div></div>`).join(''):`<div class="fit-cal-rest">`+icon('bed',18)+`<span>`+
           (w.calendarKnown?tr(en,'Ανάπαυση','Rest'):tr(en,'Άγνωστο','Unconfirmed'))+`</span></div>`)+`</div>
         <div class="fit-cal-extra">`+tr(en,'Έξτρα','Extra')+` <b>`+d.extraMinutes+`′</b></div>
-      </article>`).join('')+`
+      </div>`).join('')+`
     </div>
     <p class="fit-cal-note">`+icon('info',15)+' '+esc(sourceNote)+' '+tr(en,
       'Χωρίς υπολογισμό μετακινήσεων. Μελλοντικές εβδομάδες δεν επαναλαμβάνονται χωρίς επιλογή. Το .ics εισάγεται χειροκίνητα, όχι με ζωντανό συγχρονισμό.',
