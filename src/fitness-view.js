@@ -101,10 +101,12 @@ export function fitnessView(ctx) {
 export function fitnessTodayCard(ctx) {
   const en=ctx.lang==='en',program=ctx.supplementaryProgram;
   if(ctx.profile.id==='son' && program?.available){
-    const next=program.sessions.find(x=>x.date>=ctx.dateKey&&!x.done)||program.sessions.find(x=>!x.done);
+    const next=program.sessions.find(x=>x.date>=ctx.dateKey&&!x.done&&x.state!=='blocked')
+      ||program.sessions.find(x=>!x.done&&x.state!=='blocked');
     const sessionName=next?(next.type==='strength'?
-      title('Δύναμη & κορμός','Strength & core',en):
-      title('Κίνηση & σταθερότητα','Movement & stability',en)):
+      title('Δύναμη & κορμός','Strength & core',en):next.type==='recovery'?
+      title('Ήπια αποκατάσταση','Gentle recovery',en):
+      title('Πρωινή προετοιμασία — έλεγχος ύπνου','Morning primer — sleep check',en)):
       title('Ανάπαυση & αποκατάσταση','Rest & recovery',en);
     const sessionTime=next?next.date.slice(8,10)+'/'+next.date.slice(5,7)+' · '+next.start+'–'+next.end+' · '+next.minutes+'′':
       title('Χωρίς έξτρα προπόνηση','No additional session',en);
