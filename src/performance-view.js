@@ -57,7 +57,7 @@ export function performanceSettingsForm(ctx) {
 export function performanceView(ctx) {
   const program=ctx.supplementaryProgram;
   if(!program?.available && ctx.profile.id!=='son')return '';
-  const en=ctx.lang==='en';
+  const en=ctx.lang==='en',athlete=ctx.profile;
   if(!program.available){
     return '<section class="pp-stage"><div class="pp-stage-heading"><span>ZENITH / ATHLETE LAB</span><h1>'
       +tr(en,'Ατομική βελτίωση από πραγματικά δεδομένα','Personal development from real data')
@@ -69,8 +69,10 @@ export function performanceView(ctx) {
   const hero='<section class="pp-stage" aria-labelledby="pp-title">'
     +'<div class="pp-stage-heading"><span class="pp-kicker">'+icon('zap',15)+' ATHLETE DEVELOPMENT / '+year+'</span>'
     +'<h1 id="pp-title">'+tr(en,'Γίνε καλύτερος. Όχι απλώς πιο κουρασμένος.','Build the athlete. Not the fatigue.')+'</h1>'
-    +'<p>'+tr(en,'Προσωπικό πλάνο για τον Δημήτρη, 15 ετών · 181 cm · 65 kg, βασισμένο στις πραγματικές ώρες ομάδας. Τα σωματομετρικά είναι πλαίσιο, όχι συνταγή κιλών.',
-      'Dimitris · 15 years · 181 cm · 65 kg. Team-calendar-aware supplemental program. Measurements provide context, not a weight target.')+'</p>'
+    +'<p>'+esc(athlete.name)+' · '+esc(athlete.age)+' '+tr(en,'ετών','years')+' · '
+    +esc(athlete.height)+' cm · '+esc(athlete.weight)+' kg. '
+    +tr(en,'Πλάνο που προσαρμόζεται στις πραγματικές ώρες ομάδας. Το ύψος και το βάρος είναι πληροφορίες, όχι στόχοι.',
+      'A personal plan fitted around actual team times. Height and weight are context, not targets.')+'</p>'
     +'<div class="pp-stage-actions"><button class="fitness-btn fitness-primary" data-act="performanceCustomize">'+icon('sliders',17)
     +' '+tr(en,'Προσαρμογή','Customize')+'</button>'
     +'<button class="fitness-btn pp-stage-outline" data-act="performanceCheckIn">'+icon('heart',17)+' '
