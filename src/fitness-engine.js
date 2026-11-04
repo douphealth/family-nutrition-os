@@ -41,8 +41,12 @@ export function defaultFitnessSettings(profile = {}) {
     coachSupervised: false,
     supplementEnabled: true,
     supplementFocus: 'balanced',
-    supplementMondayTime: '17:30',
-    supplementThursdayTime: '17:30',
+    supplementmonTime: '17:30',
+    supplementwedTime: '19:00',
+    supplementfriTime: '06:00',
+    supplementmonMinutes: 45,
+    supplementwedMinutes: 45,
+    supplementfriMinutes: 45,
     // Screenshot fixtures are dated and never silently become recurring events.
     calendarWeeks: profile.id === 'son' ? defaultDimitrisCalendar() : {},
     calendarSource: profile.id === 'son' ? 'family-screenshot' : 'unconfirmed',
@@ -70,12 +74,17 @@ export function normalizeFitnessSettings(input = {}, profile = {}) {
     strengthSessions: clamp(input.strengthSessions, 0, youth ? 2 : 3, defaults.strengthSessions),
     coachSupervised: input.coachSupervised === true || input.coachSupervised === 'on',
     supplementEnabled: input.supplementEnabled !== false,
-    supplementFocus: ['balanced','strength','movement','durability'].includes(input.supplementFocus) ?
+    supplementFocus: ['balanced','strength','speed','stamina','movement','durability'].includes(input.supplementFocus) ?
       input.supplementFocus : defaults.supplementFocus,
-    supplementMondayTime: /^(?:1[6-9]):[0-5]\d$/.test(String(input.supplementMondayTime||'')) ?
-      input.supplementMondayTime : defaults.supplementMondayTime,
-    supplementThursdayTime: /^(?:1[6-9]):[0-5]\d$/.test(String(input.supplementThursdayTime||'')) ?
-      input.supplementThursdayTime : defaults.supplementThursdayTime,
+    supplementmonTime: /^(?:1[6-9]):[0-5]\d$/.test(String(input.supplementmonTime||input.supplementMondayTime||'')) ?
+      (input.supplementmonTime||input.supplementMondayTime) : defaults.supplementmonTime,
+    supplementwedTime: /^(?:1[7-9]|20|21):[0-5]\d$/.test(String(input.supplementwedTime||'')) ?
+      input.supplementwedTime : defaults.supplementwedTime,
+    supplementfriTime: /^(?:0[5-7]):[0-5]\d$/.test(String(input.supplementfriTime||'')) ?
+      input.supplementfriTime : defaults.supplementfriTime,
+    supplementmonMinutes: clamp(input.supplementmonMinutes,40,60,defaults.supplementmonMinutes),
+    supplementwedMinutes: clamp(input.supplementwedMinutes,40,60,defaults.supplementwedMinutes),
+    supplementfriMinutes: clamp(input.supplementfriMinutes,40,60,defaults.supplementfriMinutes),
     schedule: FITNESS_DAYS.map((_, i) => choose(FITNESS_MODES, input.schedule?.[i], defaults.schedule[i])),
     calendarWeeks: cleanCalendarWeeks(input.calendarWeeks === undefined ? defaults.calendarWeeks : input.calendarWeeks),
     calendarSource: typeof input.calendarSource === 'string' ? input.calendarSource.slice(0,36) : defaults.calendarSource,
