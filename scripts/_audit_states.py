@@ -116,8 +116,8 @@ def visit(page, tag, quick, scan):
 
     # 4 ─ new fitness workspace: settings modal, readiness and post-check-in state
     go(page, "fitness")
-    if js_click(page, '#view [data-act="fitnessEdit"]', 450):
-        scan(f"{tag}/fitness-settings")
+    if js_click(page, '#view [data-act="performanceCustomize"]', 450):
+        scan(f"{tag}/performance-settings")
         close_sheet(page)
     scan(f"{tag}/fitness-week")
     if js_click(page, '#view [data-act="fitnessCalendarEdit"]', 400):
