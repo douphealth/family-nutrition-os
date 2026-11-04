@@ -66,7 +66,7 @@ export function fitnessCalendarEventRow(event,index,weekStart,lang='el') {
   const en=lang==='en',last=shiftDate(weekStart,6);
   const x=event||{date:weekStart,type:'team',start:'18:00',end:'19:00',venue:''};
   const options=Object.entries(types).map(([key,names])=>`<option value="`+key+`" `+(x.type===key?'selected':'')+`>`+names[en?1:0]+`</option>`).join('');
-  return `<div class="fit-cal-edit-row">
+  return `<div class="fit-cal-edit-row" data-event-id="§+esc(x.id||'')+§">
     <label>`+tr(en,'Ημέρα','Date')+`<input type="date" name="calDate" min="`+weekStart+`" max="`+last+`" value="`+esc(x.date)+`" required></label>
     <label>`+tr(en,'Τύπος','Type')+`<select name="calType">`+options+`</select></label>
     <label>`+tr(en,'Αρχή','Start')+`<input type="time" name="calStart" value="`+esc(x.start)+`" required></label>
