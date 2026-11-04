@@ -55,8 +55,8 @@ export function fitnessCalendarPanel(ctx) {
       tr(en,'Χωρίς επιβεβαιωμένη εβδομάδα. Δεν δημιουργούνται αυθαίρετες προπονήσεις. Ενημέρωσε τις ώρες ή εισήγαγε ημερολόγιο.',
        'Week not confirmed. No workouts are invented. Enter times or import a calendar.')+`</span></div>`:'')+`
     `+(w.calendarKnown&&w.highYouthLoad?`<div class="fit-cal-warning">`+icon('shield',19)+`<span>`+
-      tr(en,'Με αυτό το φορτίο ομάδας, επιπλέον ενδυνάμωση και σπριντ: 0 λεπτά. Ύπνος και αποκατάσταση έχουν προτεραιότητα.',
-       'With this team workload, extra strength and sprints: zero minutes. Sleep and recovery take priority.')+`</span></div>`:'')+`
+      tr(en,'Με το υπάρχον φορτίο, το προσωπικό πλάνο είναι προαιρετικό και υπό όρους· όχι σπριντ ή βαριά βάρη χωρίς επίβλεψη. Ύπνος και αποκατάσταση έχουν προτεραιότητα.',
+       'Personal sessions are optional and conditional; no sprints or heavy weights without coaching. Sleep and recovery take priority.')+`</span></div>`:'')+`
     <div class="fit-cal-days" role="list" tabindex="0" aria-label="Dimitris weekly school and basketball calendar">
       `+w.days.map((d,i)=>`<div class="fit-cal-day `+(d.date===ctx.dateKey?'is-current':'')+`" role="listitem">
         <div class="fit-cal-dayhead"><span>`+(en?daysEn[i]:daysEl[i])+`</span><b>`+d.date.slice(8)+`</b></div>

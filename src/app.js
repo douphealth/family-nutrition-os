@@ -944,8 +944,12 @@ document.addEventListener('click', async e => {
               supplementFocus:String(fd.get('supplementFocus')||'balanced'),
               supplementEnabled:fd.get('supplementEnabled')==='on',
               coachSupervised:fd.get('coachSupervised')==='on',
-              supplementMondayTime:String(fd.get('supplementMondayTime')||'17:30'),
-              supplementThursdayTime:String(fd.get('supplementThursdayTime')||'17:30'),
+              supplementmonTime:String(fd.get('supplementmonTime')||'17:30'),
+              supplementwedTime:String(fd.get('supplementwedTime')||'19:00'),
+              supplementfriTime:String(fd.get('supplementfriTime')||'06:00'),
+              supplementmonMinutes:Number(fd.get('supplementmonMinutes')||45),
+              supplementwedMinutes:Number(fd.get('supplementwedMinutes')||45),
+              supplementfriMinutes:Number(fd.get('supplementfriMinutes')||45),
               updatedAt:new Date().toISOString()},p);
             try{
               await put('settings',record);
@@ -972,8 +976,8 @@ document.addEventListener('click', async e => {
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date))break;
       const plan=buildCtx().supplementaryProgram;
       const session=plan.sessions.find(x=>x.date===date);
-      if(!session||done&&session.state!=='ready'){
-        toast('Πρώτα έλεγχος ετοιμότητας και επίβλεψη προπονητή.',{tone:'danger'});
+      if(!session||(done&&!['ready','recovery-only'].includes(session.state))){
+        toast('Η συνεδρία δεν επιτρέπεται χωρίς επαρκή ανάπαυση και έλεγχο ετοιμότητας.',{tone:'danger'});
         break;
       }
       const id=supplementLogId(profile.id,date);
