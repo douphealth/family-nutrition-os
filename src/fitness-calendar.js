@@ -88,11 +88,11 @@ export function defaultDimitrisCalendar() {
  */
 export function resolveCalendarWeek(settings, start) {
   const weeks=cleanCalendarWeeks(settings?.calendarWeeks);
-  if(Object.hasOwn(weeks,start)) return {events:weeks[start],known:true,source:start===DIMITRIS_CALENDAR_WEEK && settings?.calendarSource!=='ics'?'screenshot':'saved',repeated:false};
+  if(Object.hasOwn(weeks,start)) return {events:weeks[start],known:true,source:start===DIMITRIS_CALENDAR_WEEK && settings?.calendarSource==='family-screenshot'?'screenshot':'saved',repeated:false};
   if(settings?.repeatWeekly===true){
     const base=weekOf(String(settings?.repeatFromWeek||''))===settings.repeatFromWeek?
       settings.repeatFromWeek:Object.keys(weeks).sort().at(-1);
-    if(base && weeks[base]){
+    if(base && start>=base && weeks[base]){
       const events=weeks[base].map(x=>{
         const offset=Math.round((Date.parse(x.date+'T12:00:00Z')-Date.parse(base+'T12:00:00Z'))/86400000);
         const date=addDays(start,offset);
