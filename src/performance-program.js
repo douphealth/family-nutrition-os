@@ -153,17 +153,29 @@ export function buildSupplementaryProgram(profile,week,logs=[]) {
   if(!week.calendarKnown)return {...empty,reason:'unconfirmed-calendar'};
   const settings=week.settings;
   const focus=FOCUS.includes(settings.supplementFocus)?settings.supplementFocus:'balanced';
-  const dates=[0,3]; // Mon and Thu; protect Wed's rest, Tue's late match and busy weekend.
   const kinds=['strength','movement'];
   const target=targetMinutes(focus);
   const tooMuchBasketball=week.calendarStats.teamMinutes>=14*60||week.sportDays===7||week.restDays<1;
   const sessions=[];
+  const used=new Set();
+  // Preferred order is Mon/Thu, but real dates decide. Never move sessions onto
+  // Wed's recovery day or stack two extras on the same/adjacent days.
+  const candidateOrders=[[0,3,4,1,5,6],[3,0,4,1,5,6]];
   for(let i=0;i<2;i++){
-    const day=week.days[dates[i]];
-    if(!day)continue;
     const intended=target[i],preferred=i===0?settings.supplementMondayTime:settings.supplementThursdayTime;
-    const window=findSafeWindow(day,preferred||'17:30',intended);
-    if(!window)continue;
+    let chosen=null;
+    for(const index of candidateOrders[i]){
+      if(index===2 || used.has(index) || [...used].some(previous=>Math.abs(previous-index)<2))continue;
+      const day=week.days[index];
+      if(!day || day.mode==='game'||!day.sportMinutes)continue;
+      const team=day.events.filter(x=>x.type==='team');
+      if(team.some(x=>timeMinutes(x.end)>22*60+30))continue;
+      const freeWindow=findSafeWindow(day,preferred||'17:30',intended);
+      if(freeWindow){chosen={day,index,window:freeWindow};break;}
+    }
+    if(!chosen)continue;
+    const {day,index,window}=chosen;
+    used.add(index);
     const kind=kinds[i],check=readinessStatus(day,settings,kind);
     let state=check.state,reason=check.reason;
     if(settings.supplementEnabled===false){state='disabled';reason='disabled';}
@@ -172,7 +184,7 @@ export function buildSupplementaryProgram(profile,week,logs=[]) {
     const done=doneLog?.done===true;
     const steps=adaptSteps(SERIES[kind],intended);
     sessions.push({
-      id:supplementLogId(profile.id,day.date),date:day.date,dayIndex:dates[i],
+      id:supplementLogId(profile.id,day.date),date:day.date,dayIndex:index,
       type:kind,start:window.start,end:window.end,minutes:intended,
       intensity:kind==='strength'?'RPE 4–5/10':'RPE 3–4/10',state,reason,
       steps,done,requiresQualifiedCoach:kind==='strength',
