@@ -35,7 +35,7 @@ import {
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
 } from './views.js?v=16.0.0';
 import { translateTree } from './i18n.js?v=16.0.0';
-import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf, shiftDate } from './fitness-engine.js';
+import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId } from './fitness-engine.js';
 import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
@@ -812,6 +812,7 @@ document.addEventListener('click', async e => {
     }
     case 'fitnessWeek': {
       const offset=Number(target.dataset.offset);
+      if(!Number.isFinite(offset))break;
       state.fitnessWeekOffset=offset===0?0:Math.max(-52,Math.min(52,state.fitnessWeekOffset+Math.sign(offset)));
       state.fitnessSelectedDate=null;await persistSettings();render();break;
     }
@@ -824,6 +825,7 @@ document.addEventListener('click', async e => {
       const date=target.dataset.date,done=target.dataset.done==='true';
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date))break;
       const id=fitnessLogId(profile.id,date), prior=cache.checklists.find(x=>x.id===id);
+      if(done && buildCtx().fitnessWeek.days.find(x=>x.date===date)?.kind==='stop'){toast('Πρώτα αξιολόγηση του πόνου.',{tone:'danger'});break;}
       const record={...prior,id,memberId:profile.id,date,done,updatedAt:new Date().toISOString()};
       try{await put('checklists',record);cache.checklists=cache.checklists.filter(x=>x.id!==id).concat(record);
         broadcastChange('fitness-done',{id});render();toast(done?'Η ημέρα καταγράφηκε.':'Η καταγραφή αναιρέθηκε.');}
