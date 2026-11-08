@@ -215,6 +215,16 @@ await click(window.document.querySelector('#memberStrip [data-act="member"][data
 await clickSel('#sideNav [data-act="nav"][data-view="fitness"]',window.document,90);
 ok(!!viewEl().querySelector('.atlas-intro'), 'premium Athlete Atlas dashboard renders for selected Dimitris');
 ok(viewEl().querySelectorAll('.atlas-workout').length===3,'all three requested personal workout blocks are visible');
+ok(viewEl().querySelectorAll('.coach-quicknav-item').length===3,'three working session-jump links are visible');
+ok(viewEl().querySelectorAll('.coach-drill-expand').length>=15,
+  'each training interval contains a technique drill guide');
+ok(viewEl().querySelectorAll('.coach-video-link').length>=12,
+  'multiple direct YouTube technique links are available, no mock buttons');
+ok([...viewEl().querySelectorAll('.coach-video-link')].every(a=>
+  a.hostname==='www.youtube.com'&&a.pathname==='/watch'&&a.target==='_blank'
+  &&a.rel.includes('noopener')&&a.rel.includes('noreferrer')),
+  'all demonstration links have safe direct YouTube URLs and external-link protection');
+ok(!viewEl().querySelector('iframe'),'YouTube players are not loaded automatically');
 ok(viewEl().querySelector('.atlas-scoreboard')?.textContent.includes('135'),'three 45-minute blocks total 135 requested minutes');
 ok(viewEl().querySelector('.atlas-metrics')?.textContent.includes('12h 25m'),'12h25m actual basketball is shown separately');
 ok([...viewEl().querySelectorAll('.atlas-workout')].every(el=>el.querySelectorAll('.atlas-drill').length>=5),
