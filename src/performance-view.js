@@ -93,7 +93,7 @@ function exerciseCard(s,en,index) {
      const video=e.video&&isVerifiedYouTube(e.video.url)
        ?'<a class="coach-video-link" href="'+esc(e.video.url)+'" target="_blank" rel="noopener noreferrer"'
        +' aria-label="'+esc(T(en,'Βίντεο τεχνικής','Technique video')+' · '+(en?e.title.en:e.title.el))+'">'
-       +icon('play',16)+' '+T(en,'Δες βίντεο','Watch video')+' · '+esc(e.video.channel)
+       +icon('arrowUpRight',16)+' '+T(en,'Δες βίντεο','Watch video')+' · '+esc(e.video.channel)
        +icon('arrowUpRight',13)+'</a>':'';
      return '<div class="coach-exercise"><div class="coach-exercise-head"><span class="coach-exercise-index">'
        +String(j+1).padStart(2,'0')+'</span><div><strong>'+esc(en?e.title.en:e.title.el)
