@@ -1,7 +1,7 @@
 /**
  * ZENITH PRO · curated technique library for 15-year-old basketball athlete.
- * Every YouTube URL was resolved to an identifiable video title and creator
- * on 2026-11-08. An example video is for MOVEMENT TECHNIQUE, not a prescription
+ * Video titles were checked against YouTube pages on 2026-11-08; some
+ * educational links are to longer demonstrations with relevant timestamps. An example video is for MOVEMENT TECHNIQUE, not a prescription
  * for exercise intensity, loads, repetitions or injury treatment.
  *
  * NO autoplay, third-party scripts, YouTube API or embedded tracking.
@@ -9,7 +9,7 @@
  */
 const v=(id,channel,topic,start=0)=>Object.freeze({
   url:'https://www.youtube.com/watch?v='+id+(start?'&t='+start+'s':''),
-  channel,topic,verifiedAt:'2026-11-08'
+  channel,topic,reviewedAt:'2026-11-08'
 });
 export const TECHNIQUE_VIDEOS=Object.freeze({
   hip:v('fPaF3oro6hE','E3 Rehab','Hip mobility and controlled range',314),
@@ -25,7 +25,7 @@ export const TECHNIQUE_VIDEOS=Object.freeze({
   balance:v('nLHy38nxMmY','E3 Rehab Exercise Library','Single leg balance'),
   stepup:v('wfhXnLILqdk','Cornerstone Physiotherapy','Low step-up technique'),
   march:v('hsO_dSeRBFY','Jr. NBA / Jr. WNBA','Forward/backward/lateral marching'),
-  breathe:v('ewYg7iyayE8','Cleveland Clinic','Diaphragmatic breathing basics',35)
+  breathe:v('WUumD29uvmq','NewYork-Presbyterian Rehabilitation Medicine','Diaphragmatic breathing demonstration')
 });
 const copy=(el,en)=>Object.freeze({el,en});
 const exercise=(title,dose,cue,avoid,easier,equipment,goal,video)=>Object.freeze({
@@ -171,7 +171,7 @@ export const EXERCISE_LIBRARY=Object.freeze({
     null)
 });
 export function exerciseFor(id){return EXERCISE_LIBRARY[id]||null;}
-export function isVerifiedYouTube(url){
+export function isSafeYouTubeWatchUrl(url){
   if(typeof url!=='string')return false;
   try{
     const u=new URL(url);
