@@ -118,7 +118,7 @@ function exerciseCard(s,en,index) {
     +icon('undo',17)+' '+T(en,'Αναίρεση','Undo completion')+'</button>'
   :'<button class="fitness-btn fitness-primary" data-act="performanceDone" data-date="'+esc(s.date)+'" data-done="true" '
     +(allowed?'':'disabled')+'>'+icon('checkCircle',17)+' '+T(en,'Καταγραφή ολοκλήρωσης','Mark complete')+'</button>';
- return '<article class="atlas-workout '+(s.state==='blocked'?'is-blocked':'')+'">'
+ return '<article id="coach-session-'+index+'" class="atlas-workout '+(s.state==='blocked'?'is-blocked':'')+'">'
   +'<div class="atlas-workout-header"><div class="atlas-day-number">'+String(index+1).padStart(2,'0')+'</div>'
   +'<div class="atlas-workout-title"><small>'+esc(dateName(s.date,en))+' / '
   +esc(s.start)+'–'+esc(s.end)+'</small><h3>'+esc(label)+'</h3>'
@@ -195,6 +195,10 @@ export function performanceView(ctx){
   +T(en,'Η Παρασκευή 06:00 παραμένει μη διαθέσιμη μετά από Πέμπτη 21:00–22:15 μπάσκετ. Η Τετάρτη είναι προαιρετική ήπια αποκατάσταση — όχι επιπλέον σπριντ ή εξαντλητική αντοχή. Η ενδυνάμωση απαιτεί επιβλέποντα προπονητή.',
     'Friday at 06:00 is blocked after Thursday 21:00–22:15 basketball. Wednesday is optional gentle recovery — not extra sprints or conditioning. Strength work needs qualified supervision.')
    +'</p></div></div>';
+ const quickNav='<div class="coach-quicknav" role="group" aria-label="'+T(en,'Γρήγορη πλοήγηση στις τρεις προπονήσεις','Jump to the three training sessions')+'">'
+  +program.sessions.map((session,i)=>'<a href="#coach-session-'+i+'" class="coach-quicknav-item">'
+    +'<span>'+(['01','02','03'][i])+'</span><strong>'+T(en,['Δευτέρα','Τετάρτη','Παρασκευή'][i],['Monday','Wednesday','Friday'][i])+'</strong>'
+    +'<small>'+session.minutes+'′ · '+session.start+'</small></a>').join('')+'</div>';
  const exercises='<section class="atlas-sessions"><div class="atlas-section-heading"><span>TRAIN SMARTER / RECOVER BETTER</span>'
   +'<h2>'+T(en,'Τρία μπλοκ, πλήρης διαφάνεια.','Three blocks. No false clearance.')+'</h2><p>'
   +T(en,'Κάθε προπόνηση δείχνει ακριβή ώρα, ασκήσεις, διάρκειες και γιατί εγκρίνεται ή αποκλείεται.',
@@ -206,5 +210,5 @@ export function performanceView(ctx){
     'Height and weight alone do not determine lifting loads, maximal intensity or safe training volume. Coaches must review real workloads and recovery.')
   +'</p></div><div>'+SUPPLEMENTARY_SOURCES.map(s=>'<a href="'+esc(s.url)
    +'" rel="noopener noreferrer" target="_blank">'+esc(s.name)+' '+icon('arrowUpRight',14)+'</a>').join('')+'</div></section>';
- return headings+metrics+weekStrip(program,ctx,en)+caveat+exercises+evidence;
+ return headings+metrics+weekStrip(program,ctx,en)+caveat+quickNav+exercises+evidence;
 }
