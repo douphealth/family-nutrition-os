@@ -2,6 +2,27 @@
  * No external font, JS, autoplay, trackers, iframes or embedded media.
  */
 @media screen {
+  .coach-quicknav{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;
+    margin:5px 0 24px
+  }
+  .coach-quicknav-item{
+    display:grid;grid-template-columns:35px minmax(0,1fr);
+    grid-template-rows:auto auto;align-items:center;column-gap:10px;
+    min-height:68px;padding:13px 14px;border:1px solid var(--brand-line);
+    border-radius:16px;background:var(--surface);
+    text-decoration:none;color:var(--ink);box-shadow:var(--atlas-shadow)
+  }
+  .coach-quicknav-item>span{
+    grid-row:1/3;display:grid;place-items:center;width:34px;height:34px;
+    border-radius:11px;background:var(--brand-soft);color:var(--brand-text);
+    font-weight:850;font-size:.77rem
+  }
+  .coach-quicknav-item>strong{font-size:.9rem;color:var(--ink);font-weight:840}
+  .coach-quicknav-item>small{font-size:.76rem;color:var(--ink-2);font-weight:730}
+  .coach-quicknav-item:hover{background:var(--brand-soft)}
+  .coach-quicknav-item:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  [id^="coach-session-"]{scroll-margin-top:95px}
   .atlas-sessions {gap:20px}
   .atlas-workout{border-radius:27px;overflow:hidden}
   .atlas-workout-header{padding-bottom:7px}
@@ -90,6 +111,12 @@
     .coach-cues p:first-child{grid-column:1/-1}
   }
   @media(max-width:720px){
+    .coach-quicknav{gap:6px}
+    .coach-quicknav-item{display:grid;grid-template-columns:1fr;grid-template-rows:auto;gap:5px;min-height:92px;padding:11px 8px}
+    .coach-quicknav-item>span{grid-row:auto;width:27px;height:27px;font-size:.71rem}
+    .coach-quicknav-item>strong{font-size:.79rem}
+    .coach-quicknav-item>small{font-size:.7rem}
+
     .atlas-drill.coach-drill{grid-template-columns:29px minmax(0,1fr) 30px;gap:7px;padding:12px 10px}
     .coach-drill-num{width:27px;height:27px;border-radius:8px;font-size:.73rem!important}
     .coach-drill-main>p{font-size:.83rem;line-height:1.55}
