@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {buildFitnessWeek,defaultFitnessSettings,normalizeFitnessSettings,fitnessLogId} from '../src/fitness-engine.js';
 import {buildSupplementaryProgram,inspectTrainingWindow,normalizePersonalSlotPreferences,supplementLogId} from '../src/performance-program.js';
+import {EXERCISE_LIBRARY, TECHNIQUE_VIDEOS, exerciseFor, isSafeYouTubeWatchUrl} from '../src/exercise-library.js';
 const athlete={id:'son',name:'Δημήτρης',age:15,height:181,weight:65,athlete:true,role:'Basketball · απόδοση'};
 const parent={id:'father',age:54,height:174,weight:82};
 const baseline=defaultFitnessSettings(athlete);
@@ -130,5 +131,41 @@ test('disabled schedule retains visible requested times but clears no sessions',
  assert.equal(p.sessions.length,3);
  assert.equal(p.clearedMinutes,0);
  assert.ok(p.sessions.every(s=>s.state==='disabled'));
+});
+test('all scheduled training stages have curated individual technique cards',()=>{
+  const p=buildSupplementaryProgram(athlete,build());
+  for(const session of p.sessions){
+    for(const block of session.steps){
+      assert.ok(block.exerciseIds.length>0,'no stage can be empty of exercise drills');
+      for(const id of block.exerciseIds){
+        const e=exerciseFor(id);
+        assert.ok(e,'unknown exercise '+id);
+        assert.ok(e.title.el&&e.title.en);
+        assert.ok(e.dose.el&&e.dose.en&&e.cue.el&&e.cue.en);
+        assert.ok(e.avoid.el&&e.easier.en);
+        assert.ok(e.video===null||isSafeYouTubeWatchUrl(e.video.url));
+      }
+    }
+  }
+});
+test('exercise videos are limited to safe explicit YouTube watch links',()=>{
+  assert.ok(Object.keys(TECHNIQUE_VIDEOS).length>=12);
+  for(const video of Object.values(TECHNIQUE_VIDEOS)){
+    assert.equal(isSafeYouTubeWatchUrl(video.url),true);
+    assert.ok(video.channel&&video.topic);
+  }
+  assert.equal(isSafeYouTubeWatchUrl('https://youtube.com.evil.example/watch?v=yzL1543i1-o'),false);
+  assert.equal(isSafeYouTubeWatchUrl('javascript:alert(1)'),false);
+  assert.equal(isSafeYouTubeWatchUrl('https://www.youtube.com/redirect?q=foo'),false);
+  assert.equal(isSafeYouTubeWatchUrl('http://www.youtube.com/watch?v=yzL1543i1-o'),false);
+});
+test('loaded drills are specific to age-appropriate, conservative practice',()=>{
+  const keys=['squat','split','hinge','push','deadbug','sideplank','balance','calf','stepup','march'];
+  for(const key of keys){
+    const e=EXERCISE_LIBRARY[key];
+    assert.ok(e?.title?.el&&e?.title?.en);
+    assert.ok(/\d/.test(e.dose.en),'explicit dosage missing '+key);
+    assert.ok(e.video?.url.startsWith('https://www.youtube.com/watch?v='));
+  }
 });
 console.log('Athlete Atlas training tests: PASS ('+passed+' checks)');
