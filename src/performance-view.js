@@ -4,7 +4,7 @@
  */
 import {esc,icon} from './ui.js?v=16.0.0';
 import {SUPPLEMENTARY_SOURCES} from './performance-program.js';
-import {exerciseFor,isVerifiedYouTube} from './exercise-library.js';
+import {exerciseFor,isSafeYouTubeWatchUrl} from './exercise-library.js';
 
 const T=(en,el,english)=>en?english:el;
 const kinds={
@@ -90,7 +90,7 @@ function exerciseCard(s,en,index) {
  const steps=s.steps.map((x,i)=>{
    const demos=(x.exerciseIds||[]).map(id=>exerciseFor(id)).filter(Boolean);
    const detail=demos.map((e,j)=>{
-     const video=e.video&&isVerifiedYouTube(e.video.url)
+     const video=e.video&&isSafeYouTubeWatchUrl(e.video.url)
        ?'<a class="coach-video-link" href="'+esc(e.video.url)+'" target="_blank" rel="noopener noreferrer"'
        +' aria-label="'+esc(T(en,'Βίντεο τεχνικής','Technique video')+' · '+(en?e.title.en:e.title.el))+'">'
        +icon('arrowUpRight',16)+' '+T(en,'Δες βίντεο','Watch video')+' · '+esc(e.video.channel)
