@@ -60,6 +60,15 @@ const DRILLS = Object.freeze({
     seq(10,'Αργό περπάτημα, χαλάρωση, νερό και πρωινό. Όχι εξαντλητική αντοχή.','Slow walking, relaxation, fluids and breakfast; no exhaustive conditioning.')
   ]
 });
+
+const DRILL_VIDEO_KEYS=Object.freeze({
+  strength:[['hip-mobility','ankle-mobility','balance'],['squat','split'],
+    ['hinge','calf'],['push','row'],['deadbug','sideplank'],['march'],['breathing']],
+  recovery:[['walk','breathing'],['hip-mobility','ankle-mobility'],
+    ['balance','calf'],['breathing','deadbug'],['hip-mobility','ankle-mobility'],['breathing']],
+  primer:[['hip-mobility','ankle-mobility'],['balance','stepup'],['march'],
+    ['hip-mobility','deadbug'],['walk','breathing']]
+});
 const CLOCK=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const clock=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 const validInt=(x,a,b,fallback)=>Number.isInteger(Number(x))&&Number(x)>=a&&Number(x)<=b?Number(x):fallback;
@@ -173,7 +182,7 @@ export function buildSupplementaryProgram(profile,week,logs=[]){
       minutes:slot.duration,goals:slot.type==='strength'?['strength','power','health']:
         slot.type==='recovery'?['mobility','health']:['speed','health'],
       intensity:slot.type==='recovery'?'RPE 1–2/10':'RPE 3–4/10',
-      steps:adaptSteps(DRILLS[slot.type],slot.duration),
+      steps:adaptSteps(DRILLS[slot.type],slot.duration).map((step,index)=>({...step,exerciseIds:DRILL_VIDEO_KEYS[slot.type][index]||[]})),
       requiresQualifiedCoach:slot.type==='strength',state,reason,done,
       conflict:window.valid?null:window.reason,
       overnightMinutes:window.overnightMinutes??null,
