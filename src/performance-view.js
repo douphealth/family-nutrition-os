@@ -4,6 +4,7 @@
  */
 import {esc,icon} from './ui.js?v=16.0.0';
 import {SUPPLEMENTARY_SOURCES} from './performance-program.js';
+import {exerciseFor,isVerifiedYouTube} from './exercise-library.js';
 
 const T=(en,el,english)=>en?english:el;
 const kinds={
@@ -86,8 +87,32 @@ function exerciseCard(s,en,index) {
  const allowed=['ready','recovery-only'].includes(s.state);
  const name=statuses[s.state]?.[en?1:0]||s.state;
  const reason=reasons[s.reason]?.[en?1:0]||reasons.checked[en?1:0];
- const steps=s.steps.map((x,i)=>'<div class="atlas-drill"><span>'+String(i+1).padStart(2,'0')+'</span>'
-  +'<p>'+esc(en?x.en:x.el)+'</p><b>'+x.minutes+'′</b></div>').join('');
+ const steps=s.steps.map((x,i)=>{
+   const demos=(x.exerciseIds||[]).map(id=>exerciseFor(id)).filter(Boolean);
+   const detail=demos.map((e,j)=>{
+     const video=e.video&&isVerifiedYouTube(e.video.url)
+       ?'<a class="coach-video-link" href="'+esc(e.video.url)+'" target="_blank" rel="noopener noreferrer"'
+       +' aria-label="'+esc(T(en,'Βίντεο τεχνικής','Technique video')+' · '+(en?e.title.en:e.title.el))+'">'
+       +icon('play',16)+' '+T(en,'Δες βίντεο','Watch video')+' · '+esc(e.video.channel)
+       +icon('arrowUpRight',13)+'</a>':'';
+     return '<div class="coach-exercise"><div class="coach-exercise-head"><span class="coach-exercise-index">'
+       +String(j+1).padStart(2,'0')+'</span><div><strong>'+esc(en?e.title.en:e.title.el)
+       +'</strong><p>'+esc(en?e.dose.en:e.dose.el)+'</p></div></div>'
+       +'<div class="coach-cues"><p><b>'+T(en,'Τεχνική','Technique')+':</b> '
+       +esc(en?e.cue.en:e.cue.el)+'</p><p><b>'+T(en,'Απόφυγε','Avoid')+':</b> '
+       +esc(en?e.avoid.en:e.avoid.el)+'</p><p><b>'+T(en,'Ευκολότερα','Easier')+':</b> '
+       +esc(en?e.easier.en:e.easier.el)+'</p></div>'
+       +'<div class="coach-exercise-footer"><small>'+icon('target',14)+' '
+       +esc(en?e.goal.en:e.goal.el)+'</small>'+video+'</div></div>';
+   }).join('');
+   return '<div class="atlas-drill coach-drill"><span class="coach-drill-num">'+String(i+1).padStart(2,'0')
+     +'</span><div class="coach-drill-main"><p>'+esc(en?x.en:x.el)+'</p>'
+     +'<details class="coach-drill-expand"><summary>'+icon('book',16)+' '
+     +T(en,'Ασκήσεις, ακριβής τεχνική & YouTube','Exercises, technique & YouTube')+' '
+     +'<span class="coach-drill-count">'+demos.length+'</span>'+icon('chevronDown',16)+'</summary>'
+     +'<div class="coach-drill-details">'+detail+'</div></details></div><b class="coach-drill-duration">'
+     +x.minutes+'′</b></div>';
+ }).join('');
  const completeButton=s.done
   ?'<button class="fitness-btn atlas-undo" data-act="performanceDone" data-date="'+esc(s.date)+'" data-done="false">'
     +icon('undo',17)+' '+T(en,'Αναίρεση','Undo completion')+'</button>'
@@ -101,7 +126,10 @@ function exerciseCard(s,en,index) {
   +'<strong class="atlas-duration">'+s.minutes+'<small>MIN</small></strong></div>'
   +'<div class="atlas-session-status '+esc(s.state)+'">'+icon(s.state==='blocked'?'alert':'shield',18)
   +'<span><b>'+esc(name)+'</b> — '+esc(reason)+'</span></div>'
-  +'<div class="atlas-drill-list">'+steps+'</div>'
+  +'<div class="coach-session-hint">'+icon('info',17)+' '
+  +T(en,'Άνοιξε «Ασκήσεις, ακριβής τεχνική & YouTube» σε κάθε στάδιο. Τα βίντεο δείχνουν την κίνηση, όχι το ιδανικό φορτίο για τον Δημήτρη.',
+    'Expand each interval for exact technique and YouTube demonstrations. Videos explain movements, not personalized load prescriptions.')
+  +'</div><div class="atlas-drill-list">'+steps+'</div>'
   +'<div class="atlas-workout-footer"><span>'+icon('zap',17)+' '
   +T(en,s.type==='recovery'?'Χωρίς έντονη άσκηση':'Τεχνική χωρίς εξάντληση',
     s.type==='recovery'?'No intense training':'Technique, no exhaustion')+'</span>'+completeButton+'</div></article>';
