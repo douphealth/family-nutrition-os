@@ -19,8 +19,8 @@ import { FOODS } from './foods.js?v=16.0.0';
 export const APP = {
   name: 'ZENITH PRO',
   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
-  version: '16.0.0',
-  updated: '2026-11-04',
+  version: '16.1.0',
+  updated: '2026-11-09',
   schema: 2
 };
 
