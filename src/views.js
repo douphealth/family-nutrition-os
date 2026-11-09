@@ -315,7 +315,7 @@ export function todayView(ctx) {
 
   ${!onboarded ? onboardingCard() : ''}
 
-  <section class="zn-day-brief" aria-label="${ctx.lang === 'en' ? 'Your day at a glance' : 'Η ημέρα με μια ματιά'}">
+  <section class="zn-day-brief" aria-label="${ctx.lang === 'en' ? 'Daily priorities and quick actions' : 'Καθημερινές προτεραιότητες και γρήγορες ενέργειες'}">
     <div class="zn-day-brief-intro">
       <span class="zn-brief-overline">${icon('sparkles', 15)} ${ctx.lang === 'en' ? 'YOUR DAILY FOCUS' : 'ΗΜΕΡΗΣΙΑ ΕΙΚΟΝΑ'}</span>
       <strong>${ctx.lang === 'en' ? 'One good choice at a time.' : 'Μικρά βήματα, καθαρό πλάνο.'}</strong>
