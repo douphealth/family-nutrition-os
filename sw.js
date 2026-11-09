@@ -10,7 +10,7 @@
  * Bump CACHE whenever any precached file changes.
  */
 
-const CACHE = 'zenith-v16-2026-11-08-1';
+const CACHE = 'zenith-v16-2026-11-09-1';
 
 const CORE = [
   './',
@@ -25,11 +25,13 @@ const CORE = [
   './styles/performance.css',
   './styles/atlas.css',
   './styles/exercise-coach.css',
+  './styles/workspace.css',
   './styles/print.css',
   './assets/fonts/inter-greek-wght-normal.woff2',
   './assets/fonts/inter-latin-wght-normal.woff2',
   './src/theme-boot.js',
   './src/app.js',
+  './src/experience.js',
   './src/views.js',
   './src/fitness-engine.js',
   './src/fitness-view.js',
