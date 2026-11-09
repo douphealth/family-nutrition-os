@@ -55,7 +55,7 @@ const NAV = [
   ['family', 'Οικογένεια', 'users'],
   ['guide', 'Γνώση', 'book']
 ];
-const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'fitness'];
+const PRIMARY_TABS = ['today', 'plan', 'shopping', 'fitness'];
 const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_COLOR = { light: '#F3F5F0', dark: '#070C09' };
@@ -66,6 +66,7 @@ let state = {
   view: 'today',
   member: 'mother',
   theme: 'auto',            // 'auto' follows the device; 'light' / 'dark' are a family choice
+  density: 'roomy',         // spacious by default; compact for high-volume daily logging
   lang: 'el',
   planScope: 'family',
   planMode: 'week',
@@ -376,10 +377,19 @@ function renderShell() {
   const profile = currentProfile();
   registerMembers(cache.profiles);
   applyTheme();
+  document.documentElement.dataset.density = state.density === 'compact' ? 'compact' : 'roomy';
+  document.documentElement.lang = state.lang;
   document.documentElement.style.setProperty('--member', profile?.accent || '#0E9F6E');
 
   byId('brandMark').innerHTML = logo(42);
   byId('paletteBtn').innerHTML = `${icon('search', 17)}<span class="palette-label">${state.lang === 'en' ? 'Commands' : 'Εντολές'}</span><kbd>Ctrl K</kbd>`;
+  const densityBtn = byId('densityBtn');
+  if (densityBtn) {
+    densityBtn.innerHTML = icon(state.density === 'compact' ? 'monitor' : 'menu', 18);
+    densityBtn.setAttribute('aria-label', state.density === 'compact' ? (state.lang === 'en' ? 'Use comfortable spacing' : 'Άνετη προβολή') : (state.lang === 'en' ? 'Use compact spacing' : 'Συμπαγής προβολή'));
+    densityBtn.setAttribute('aria-pressed', String(state.density === 'compact'));
+    densityBtn.title = densityBtn.getAttribute('aria-label');
+  }
   byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · ${state.lang === 'en' ? 'local data' : 'τοπικά δεδομένα'}</span>`;
 
   const en = state.lang === 'en';
@@ -417,7 +427,7 @@ function renderShell() {
     return `<button type="button" class="tab-btn ${current?'active':''}" data-act="nav" data-view="${id}"
       aria-label="${esc(en?info.en:info.el)}" ${current?'aria-current="page"':''}>
       ${icon(info.ic,21)}<span>${esc(en?info.en:info.el)}</span></button>`;
-  }).join('') + `<button type="button" class="tab-btn ${['family','guide','progress'].includes(state.view)?'active':''}"
+  }).join('') + `<button type="button" class="tab-btn ${['family','guide','progress','meals'].includes(state.view)?'active':''}"
      data-act="more" aria-label="${en?'More sections':'Περισσότερες ενότητες'}">${icon('more',21)}
      <span>${en?'More':'Άλλα'}</span></button>`;
 
@@ -694,7 +704,7 @@ function debounce(fn, ms) {
 async function persistSettings() {
   try {
     await put('settings', {
-      id: 'app', view: state.view, member: state.member, theme: state.theme, lang: state.lang, planScope: state.planScope, planMode: state.planMode, planDate: state.planDate,
+      id: 'app', view: state.view, member: state.member, theme: state.theme, density: state.density, lang: state.lang, planScope: state.planScope, planMode: state.planMode, planDate: state.planDate,
       trainingLoad: state.trainingLoad, onboarded: state.onboarded, fitnessWeekOffset: state.fitnessWeekOffset, fitnessSelectedDate: state.fitnessSelectedDate,
       filters: state.filters, shopChecked: state.shopChecked,
       shopFilter: state.shopFilter, version: APP.version
@@ -766,6 +776,7 @@ async function boot() {
     if (!NAV.some(n => n[0] === state.view)) state.view = 'today';
     if (!THEMES.includes(state.theme)) state.theme = 'auto';
     if (!['el','en'].includes(state.lang)) state.lang = 'el';
+    if (!['roomy', 'compact'].includes(state.density)) state.density = 'roomy';
     if (!['family', ...cache.profiles.map(p => p.id)].includes(state.planScope)) state.planScope = 'family';
     if (!['day','week','month'].includes(state.planMode)) state.planMode = 'week';
     if (!state.planDate || !/^\d{4}-\d{2}-\d{2}$/.test(state.planDate)) state.planDate = localDateKey();
@@ -1564,6 +1575,13 @@ document.addEventListener('click', async e => {
       closeSheet();
       toast('Τα δεδομένα διαγράφηκαν. Επαναφόρτωση…');
       setTimeout(() => location.reload(), 900);
+      break;
+    }
+    case 'density': {
+      state.density = state.density === 'compact' ? 'roomy' : 'compact';
+      if (isSheetOpen()) closeSheet();
+      await persistSettings();
+      renderAll();
       break;
     }
     case 'print': window.print(); break;
