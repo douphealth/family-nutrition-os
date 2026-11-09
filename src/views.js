@@ -315,7 +315,6 @@ export function todayView(ctx) {
 
   ${!onboarded ? onboardingCard() : ''}
 
-  ${familyCommand(ctx)}
   ${ctx.fitnessTeaser || ''}
 
   <div class="today-grid">
@@ -331,6 +330,8 @@ export function todayView(ctx) {
     </div>
     <div class="next-art next-art-done">${icon('sparkles', 84)}</div>
   </section>`}
+
+  ${familyCommand(ctx)}
 
   ${familyPulse(ctx)}
 
@@ -500,83 +501,41 @@ function nextMealCard(ctx, slot, recipe) {
 
 /** Family command center: contextual household actions, not just navigation. */
 function familyCommand(ctx) {
-  const members = ctx.familyNow || [];
-  const complete = members.filter(m => m.mealsDone >= m.mealsTotal).length;
-  const mealDone = members.reduce((sum, m) => sum + (m.mealsDone || 0), 0);
-  const mealTotal = members.reduce((sum, m) => sum + (m.mealsTotal || 0), 0);
-  const hydration = members.length
-    ? Math.round(members.reduce((sum, m) => sum + Math.max(0, Math.min(1, m.waterPct || 0)), 0) / members.length * 100)
-    : 0;
-  const nextCount = members.filter(m => m.nextSlot).length;
-  const nextSlot = ctx.nudge?.slot || null;
-  const nextRecipe = nextSlot ? ctx.recipeById(ctx.planDay?.[nextSlot]) : null;
-  const remaining = Number(ctx.shopStats?.remaining) || 0;
-  const recipeCount = Array.isArray(ctx.recipes) ? ctx.recipes.length : 0;
-
-  const actions = [
-    ['plan', 'calendar', 'Πλάνο', '7 ημέρες'],
-    ['shopping', 'cart', 'Αγορές', remaining ? `${remaining} απομένουν` : 'Έτοιμη λίστα'],
-    ['meals', 'utensils', 'Συνταγές', `${recipeCount} επιλογές`],
-    ['family', 'users', 'Μέλη', `${members.length} προφίλ`],
-    ['progress', 'chart', 'Πρόοδος', 'Τάσεις & συνέπεια'],
-    ['fitness', 'zap', 'Προπόνηση', 'Πλάνο & αποκατάσταση']
+  const members=ctx.familyNow||[];
+  const done=members.reduce((total,m)=>total+(m.mealsDone||0),0);
+  const total=members.reduce((n,m)=>n+(m.mealsTotal||0),0);
+  const complete=members.filter(m=>m.mealsTotal>0&&m.mealsDone>=m.mealsTotal).length;
+  const hydration=members.length?
+    Math.round(members.reduce((n,m)=>n+Math.min(1,Math.max(0,m.waterPct||0)),0)/members.length*100):0;
+  const remaining=ctx.shopStats?.remaining??0;
+  const en=ctx.lang==='en';
+  const copy=(el,english)=>en?english:el;
+  const actions=[
+    {id:'plan',ic:'calendar',title:copy('Εβδομαδιαίο πλάνο','Weekly planner'),sub:copy('Αλλαγή γευμάτων','Edit family meals')},
+    {id:'meals',ic:'utensils',title:copy('Συνταγές','Recipes'),sub:copy('Βρες το επόμενο γεύμα','Find the next meal')},
+    {id:'shopping',ic:'cart',title:copy('Αγορές','Shopping'),sub:remaining?copy(remaining+' απομένουν',remaining+' remaining'):copy('Λίστα έτοιμη','List ready')},
+    {id:'fitness',ic:'zap',title:copy('Προπόνηση','Training'),sub:copy('Ομάδα & προσωπικό πλάνο','Team & personal plan')}
   ];
-
-  const now = nextRecipe ? `
-    <div class="family-command-now">
-      <div class="family-command-now-copy">
-        <div class="family-command-now-kicker">${icon('zap', 15)} Τώρα για ${esc(ctx.profile.name)}</div>
-        <strong>${esc(nextRecipe.name)}</strong>
-        <span>${esc(SLOT_LABEL[nextSlot])} · ${esc(SLOT_TIME[nextSlot])} · ${nextRecipe.time}′</span>
-      </div>
-      <div class="family-command-now-actions">
-        <button type="button" class="family-now-btn is-person" data-act="meal" data-slot="${nextSlot}" data-portion="1" data-recipe="${esc(nextRecipe.id)}">
-          ${icon('check', 17)} <span>Το έφαγα</span>
-        </button>
-        <button type="button" class="family-now-btn is-family" data-act="familyMealPrompt" data-slot="${nextSlot}" data-recipe="${esc(nextRecipe.id)}">
-          ${icon('users', 17)} <span>Καταγραφή οικογένειας</span>
-        </button>
-      </div>
-    </div>` : `
-    <button type="button" class="family-command-now is-complete" data-act="nav" data-view="plan">
-      <span class="family-command-now-icon">${icon('checkCircle', 22)}</span>
-      <span class="family-command-now-copy">
-        <span class="family-command-now-kicker">Η σημερινή μέρα ολοκληρώθηκε</span>
-        <strong>Δες τι ακολουθεί αύριο</strong>
-        <span>Άνοιξε το οικογενειακό πλάνο</span>
-      </span>
-      ${icon('arrowRight', 20)}
-    </button>`;
-
-  return `<section class="family-command" aria-labelledby="family-command-title">
-    <div class="family-command-summary">
-      <div class="family-command-heading">
-        <div class="eyebrow">${icon('sparkles', 14)} Κέντρο οικογένειας</div>
-        <strong id="family-command-title">${complete === members.length && members.length ? 'Όλοι είναι τακτοποιημένοι σήμερα' : 'Η οικογένεια σήμερα, χωρίς ψάξιμο'}</strong>
-        <p>
-          <span>${members.length} μέλη</span>
-          <span>${nextCount} με επόμενο γεύμα</span>
-          <span>${complete} ολοκλήρωσαν τη μέρα</span>
-        </p>
-      </div>
-      <div class="family-command-metrics" aria-label="Σύνοψη οικογένειας">
-        <span class="family-command-metric"><b>${mealDone}/${mealTotal}</b><small>Γεύματα</small></span>
-        <span class="family-command-metric"><b>${hydration}%</b><small>Ενυδάτωση</small></span>
-        <span class="family-command-metric"><b>${complete}/${members.length}</b><small>Ολοκλήρωσαν</small></span>
-      </div>
-    </div>
-
-    ${now}
-
-    <div class="family-command-actions" aria-label="Γρήγορες ενέργειες οικογένειας">
-      ${actions.map(([view, iconName, label, meta]) => `
-        <button type="button" class="family-command-btn" data-act="nav" data-view="${view}">
-          <span class="family-command-btn-icon">${icon(iconName, 20)}</span>
-          <span class="family-command-btn-copy"><b>${label}</b><small>${meta}</small></span>
-          ${icon('arrowRight', 14)}
-        </button>`).join('')}
-    </div>
-  </section>`;
+  return '<section class="family-command zn-family-hub" aria-labelledby="family-command-title">'
+    +'<div class="zn-family-hub-top"><div><div class="eyebrow">'+icon('users',15)+' '
+    +copy('ΟΙΚΟΓΕΝΕΙΑΚΟ ΚΕΝΤΡΟ','FAMILY HUB')+'</div>'
+    +'<h2 id="family-command-title">'+copy('Μια οικογένεια. Όλα σε σειρά.','One family. Everything connected.')+'</h2>'
+    +'<p>'+copy('Πρόγραμμα, διατροφή και κίνηση, χωρίς να ψάχνεις σε μενού.',
+      'Meals, planning and movement without digging through menus.')+'</p></div>'
+    +'<button type="button" class="zn-family-open" data-act="nav" data-view="family">'
+    +icon('users',17)+' '+copy('Τα μέλη','Family members')+' '+icon('arrowRight',15)+'</button></div>'
+    +'<div class="zn-hub-metrics" aria-label="'+copy('Σημερινή κατάσταση οικογένειας','Family status today')+'">'
+    +'<div><small>'+copy('ΓΕΥΜΑΤΑ','MEALS LOGGED')+'</small><strong>'+done+'<span>/'+total+'</span></strong>'
+    +'<p>'+copy('Επιβεβαιωμένα σήμερα','Confirmed today')+'</p></div>'
+    +'<div><small>'+copy('ΕΝΥΔΑΤΩΣΗ','HYDRATION')+'</small><strong>'+hydration+'<span>%</span></strong>'
+    +'<p>'+copy('Μέσος όρος καταγραφών','Average logged progress')+'</p></div>'
+    +'<div><small>'+copy('ΟΛΟΚΛΗΡΩΣΑΝ','FINISHED')+'</small><strong>'+complete+'<span>/'+members.length+'</span></strong>'
+    +'<p>'+copy('Μέλη με όλα τα γεύματα','Members with meals logged')+'</p></div></div>'
+    +'<div class="zn-hub-actions" aria-label="'+copy('Γρήγορες ενότητες','Quick sections')+'">'
+    +actions.map(a=>'<button type="button" class="zn-hub-action" data-act="nav" data-view="'+a.id+'">'
+      +'<span class="zn-hub-action-icon">'+icon(a.ic,20)+'</span>'
+      +'<span class="zn-hub-action-copy"><b>'+a.title+'</b><small>'+a.sub+'</small></span>'
+      +icon('arrowUpRight',17)+'</button>').join('')+'</div></section>';
 }
 
 /** Household-wide live status: one glance before drilling into one profile. */
