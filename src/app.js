@@ -456,7 +456,7 @@ function render() {
     // Contextual shortcuts are real actions, never placeholder widgets.
     // Insert after the view H1 so heading order and existing screen structure remain intact.
     if(state.view!=='today'){
-      const header=view.querySelector('.page-head,.atlas-intro');
+      const header=view.querySelector('.page-head,.atlas-intro,.fitness-hero');
       if(header)header.insertAdjacentHTML('afterend',workspaceDock(ctx,state.view));
     }
     translateTree(view, state.lang);
