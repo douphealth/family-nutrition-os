@@ -55,7 +55,7 @@ const NAV = [
   ['family', 'Οικογένεια', 'users'],
   ['guide', 'Γνώση', 'book']
 ];
-const PRIMARY_TABS = ['today', 'plan', 'shopping', 'fitness'];
+const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'fitness'];
 const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_COLOR = { light: '#F3F5F0', dark: '#070C09' };
