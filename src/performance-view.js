@@ -153,12 +153,25 @@ export function performanceView(ctx){
  const program=ctx.supplementaryProgram,en=ctx.lang==='en',p=ctx.profile;
  if(p.id!=='son')return '';
  if(!program?.available){
+  // Never hide a real historical program behind an empty *current* week.
+  // Give a prominent one-tap view of the most recent recorded calendar without
+  // assuming that the old team timetable repeats on future dates.
+  const knownWeeks=Object.entries(ctx.fitnessWeek.settings.calendarWeeks||{})
+    .filter(([date,events])=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&Array.isArray(events)&&events.length)
+    .map(([date])=>date).filter(date=>date<=ctx.fitnessWeek.weekStart).sort();
+  const latest=knownWeeks.at(-1)||null;
+  const action=latest
+    ?'<button class="fitness-btn fitness-primary" data-act="fitnessKnownWeek" data-week="'+esc(latest)+'">'
+      +icon('calendar',18)+' '+T(en,'ΔΕΣ ΤΟ ΠΡΟΓΡΑΜΜΑ ΔΗΜΗΤΡΗ · '+latest.slice(8)+'/'+latest.slice(5,7),
+        'VIEW DIMITRIS TRAINING PLAN · '+latest)+'</button>'
+    :'';
   return '<section class="atlas-intro" aria-labelledby="atlas-title"><span class="atlas-eyebrow">ZENITH / ATHLETE ATLAS</span>'
-   +'<h1 id="atlas-title">'+T(en,'Ατομική απόδοση, με πραγματικά δεδομένα.','Train from your real schedule.')+'</h1>'
-   +'<p>'+T(en,'Χρειάζεται επιβεβαιωμένο πρόγραμμα ομάδας για αυτή την εβδομάδα. Δεν δημιουργούμε ψευδή ώρα ή φορτίο.',
-   'Confirm the team calendar for this specific week. No fabricated time or training loads.')+'</p>'
-   +'<button class="fitness-btn fitness-primary" data-act="fitnessCalendarEdit">'+icon('calendar',18)+' '
-   +T(en,'Ενημέρωση ημερολογίου','Update calendar')+'</button></section>';
+   +'<h1 id="atlas-title">'+T(en,'Το πρόγραμμα του Δημήτρη είναι εδώ.','Dimitris’ personal program lives here.')+'</h1>'
+   +'<p>'+T(en,'Δεν έχουμε επιβεβαιωμένες ώρες ομάδας για την τρέχουσα εβδομάδα. Μπορείς να δεις αμέσως το τελευταίο καταγεγραμμένο πρόγραμμα, με τις τρεις προσωπικές προπονήσεις, όλες τις ασκήσεις και τα βίντεο. Δεν το θεωρούμε αυτόματα πρόγραμμα αυτής της εβδομάδας.',
+    'This week’s team schedule is not confirmed. Open the last recorded week for the three personal sessions, detailed drills and videos. It is not assumed to repeat this week.')+'</p>'
+   +'<div class="atlas-intro-actions">'+action
+   +'<button class="fitness-btn atlas-ghost-button" data-act="fitnessCalendarEdit">'+icon('calendar',18)+' '
+   +T(en,'Ενημέρωση ωρών ομάδας','Update actual team schedule')+'</button></div></section>';
  }
  const week=ctx.fitnessWeek;
  const headings='<section class="atlas-intro" aria-labelledby="atlas-title"><div class="atlas-intro-grid"><div>'

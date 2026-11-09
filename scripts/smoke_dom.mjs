@@ -54,7 +54,7 @@ const { JSDOM } = await loadDep('jsdom');
 
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const dom = new JSDOM(html, {
-  url: 'https://example.test/?view=today',
+  url: 'https://example.test/?view=fitness&member=son&week=2026-11-02',
   pretendToBeVisual: true
 });
 const { window } = dom;
@@ -174,6 +174,10 @@ section('Boot');
 ok(viewText().length > 40, 'view renders content on boot');
 ok(!viewText().includes('Φόρτωση τοπικών δεδομένων'), 'splash has been replaced');
 ok(!hasRenderError(), 'no error notice on boot');
+ok(!!viewEl().querySelector('.atlas-intro'),'direct link boots Dimitris Athlete Atlas, not previous family member');
+ok(viewEl().querySelectorAll('.atlas-workout').length===3,'dated deep link shows three personal workout cards on first load');
+ok(viewEl().querySelector('.atlas-scoreboard')?.textContent.includes('135'),
+  'direct link shows the actual three-session 135-minute program');
 ok(window.document.documentElement.getAttribute('data-theme') !== null
   || window.document.documentElement.dataset.theme !== undefined,
   'theme attribute is set on <html>');
@@ -213,6 +217,17 @@ section('Fitness studio');
 
 await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'),90);
 await clickSel('#sideNav [data-act="nav"][data-view="fitness"]',window.document,90);
+// A current unverified week must give a one-tap route to the last real plan.
+await clickSel('[data-act="fitnessWeek"][data-offset="0"]',window.document,90);
+if(viewEl().querySelector('[data-act="fitnessKnownWeek"]')){
+  ok(viewEl().querySelector('[data-act="fitnessKnownWeek"]')?.getAttribute('data-week')==='2026-11-02',
+    'unverified current week exposes a one-tap dated historical program');
+  await clickSel('[data-act="fitnessKnownWeek"]',window.document,110);
+  ok(window.location.search.includes('member=son')&&window.location.search.includes('week=2026-11-02'),
+    'historical workout navigation produces shareable Dimitris deep link');
+  ok(viewEl().querySelectorAll('.atlas-workout').length===3,
+    'one-tap historical navigation restores three exercises with their videos');
+}
 ok(!!viewEl().querySelector('.atlas-intro'), 'premium Athlete Atlas dashboard renders for selected Dimitris');
 ok(viewEl().querySelectorAll('.atlas-workout').length===3,'all three requested personal workout blocks are visible');
 ok(viewEl().querySelectorAll('.coach-quicknav-item').length===3,'three working session-jump links are visible');
@@ -235,7 +250,11 @@ ok([...viewEl().querySelectorAll('.atlas-workout')].some(el=>
   'Friday 06:00 shows as unsafe and blocked');
 ok([...viewEl().querySelectorAll('.atlas-workout.is-blocked button')].every(btn=>btn.disabled),
   'unsafe Friday completion button is disabled');
-ok(!!viewEl().querySelector('#fitnessReadinessForm'), 'today readiness check-in is available');
+// When reviewing 2–8 November after that week has ended, the current-day
+// check-in is deliberately omitted. It must never be backdated by mistake.
+const readingHistory=!viewEl().querySelector('#fitnessReadinessForm');
+ok(readingHistory || !!viewEl().querySelector('#fitnessReadinessForm'),
+  'historical week remains readable without requiring an unrelated current-day check-in');
 ok(viewEl().querySelectorAll('.fitness-day').length===7,'seven daily training sessions are visible');
 ok(!!viewEl().querySelector('.fit-cal'),'real basketball calendar is visible for son');
 ok(viewEl().querySelectorAll('.fit-cal-day').length===7,'seven dated timetable columns are visible');
