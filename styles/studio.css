@@ -189,7 +189,7 @@
     .zn-hub-metrics strong{font-size:1.45rem!important}
     .zn-hub-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
     .zn-workspace-dock{padding:15px!important}
-    .tabbar{bottom:calc(10px + var(--safe-b));grid-template-columns:repeat(5,minmax(0,1fr))!important;height:70px!important;border-radius:20px!important;padding:5px!important;background:var(--surface)!important}
+    .tabbar{bottom:calc(10px + var(--safe-b));grid-template-columns:repeat(6,minmax(0,1fr))!important;height:70px!important;border-radius:20px!important;padding:5px!important;background:var(--surface)!important}
     .tab-btn{font-size:.68rem!important}
     .tab-btn svg{width:21px;height:21px}
     .zn-brief-button,.zn-brief-link{min-height:44px}
