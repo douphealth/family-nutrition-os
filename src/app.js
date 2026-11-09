@@ -41,6 +41,7 @@ import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar
 import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js';
 import { buildSupplementaryProgram, supplementLogId } from './performance-program.js';
 import { performanceSettingsForm } from './performance-view.js';
+import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu } from './experience.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -54,7 +55,7 @@ const NAV = [
   ['family', 'Οικογένεια', 'users'],
   ['guide', 'Γνώση', 'book']
 ];
-const PRIMARY_TABS = ['today', 'plan', 'fitness', 'shopping', 'progress'];
+const PRIMARY_TABS = ['today', 'plan', 'meals', 'shopping', 'fitness'];
 const ACCENTS = ['#0E9F6E', '#2F6FED', '#D9457A', '#D98A16', '#7C5CD6', '#0E8F9F'];
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_COLOR = { light: '#F3F5F0', dark: '#070C09' };
@@ -381,12 +382,20 @@ function renderShell() {
   byId('paletteBtn').innerHTML = `${icon('search', 17)}<span class="palette-label">${state.lang === 'en' ? 'Commands' : 'Εντολές'}</span><kbd>Ctrl K</kbd>`;
   byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · ${state.lang === 'en' ? 'local data' : 'τοπικά δεδομένα'}</span>`;
 
-  const NAV_EN = { today:'Today', plan:'Plan', meals:'Meals', fitness:'Training', shopping:'Shopping', progress:'Progress', family:'Family', guide:'Guide' };
-  byId('sideNav').innerHTML = NAV.map(([id, label, ic]) => {
-    const shown = state.lang === 'en' ? NAV_EN[id] : label;
-    return `<button type="button" class="nav-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" aria-label="${esc(shown)}" ${state.view === id ? 'aria-current="page"' : ''}>
-      <span class="nav-ic">${icon(ic, 19)}</span><span class="nav-label">${esc(shown)}</span></button>`;
-  }).join('');
+  const en = state.lang === 'en';
+  byId('sideNav').innerHTML = WORKSPACE_GROUPS.map(group =>
+    `<div class="zn-nav-section" role="group" aria-label="${esc(en ? group.en : group.el)}">
+      <span class="zn-nav-heading" aria-hidden="true">${esc(en ? group.en : group.el)}</span>
+      ${group.views.map(id => {
+        const info=WORKSPACE_SECTIONS[id];
+        const current=state.view===id;
+        return `<button type="button" class="nav-btn ${current?'active':''}" data-act="nav" data-view="${id}"
+          aria-label="${esc(en?info.en:info.el)}" ${current?'aria-current="page"':''}>
+          <span class="nav-ic">${icon(info.ic,19)}</span><span class="nav-label">${esc(en?info.en:info.el)}</span>
+          ${current?icon('arrowRight',15,'zn-nav-indicator'):''}</button>`;
+      }).join('')}
+    </div>`
+  ).join('');
 
   const strip = byId('memberStrip');
   strip.innerHTML = cache.profiles.map(p =>
@@ -403,10 +412,14 @@ function renderShell() {
   }
 
   byId('tabbar').innerHTML = PRIMARY_TABS.map(id => {
-    const entry = NAV.find(n => n[0] === id);
-    return `<button type="button" class="tab-btn ${state.view === id ? 'active' : ''}" data-act="nav" data-view="${id}" ${state.view === id ? 'aria-current="page"' : ''}>
-      ${icon(entry[2], 22)}<span>${esc(entry[1])}</span></button>`;
-  }).join('') + `<button type="button" class="tab-btn ${['family', 'guide', 'meals'].includes(state.view) ? 'active' : ''}" data-act="more">${icon('more', 22)}<span>Άλλα</span></button>`;
+    const info=WORKSPACE_SECTIONS[id];
+    const current=state.view===id;
+    return `<button type="button" class="tab-btn ${current?'active':''}" data-act="nav" data-view="${id}"
+      aria-label="${esc(en?info.en:info.el)}" ${current?'aria-current="page"':''}>
+      ${icon(info.ic,21)}<span>${esc(en?info.en:info.el)}</span></button>`;
+  }).join('') + `<button type="button" class="tab-btn ${['family','guide','progress'].includes(state.view)?'active':''}"
+     data-act="more" aria-label="${en?'More sections':'Περισσότερες ενότητες'}">${icon('more',21)}
+     <span>${en?'More':'Άλλα'}</span></button>`;
 
   const dark = resolvedTheme() === 'dark';
   const langBtn = byId('langBtn');
@@ -440,6 +453,12 @@ function render() {
     else html = todayView(ctx);
 
     view.innerHTML = html;
+    // Contextual shortcuts are real actions, never placeholder widgets.
+    // Insert after the view H1 so heading order and existing screen structure remain intact.
+    if(state.view!=='today'){
+      const header=view.querySelector('.page-head,.atlas-intro,.fitness-hero');
+      if(header)header.insertAdjacentHTML('afterend',workspaceDock(ctx,state.view));
+    }
     translateTree(view, state.lang);
     view.classList.remove('view-enter');
     void view.offsetWidth;
@@ -908,22 +927,20 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'more': {
+      const ctx=buildCtx();
       openSheet({
-        title: 'Περισσότερα',
-        size: 'sm',
-        body: `<div class="stack">
-          <button type="button" class="palette-item" data-act="palette">${icon('search', 19)}<span>Γρήγορη αναζήτηση</span></button>
-          <button type="button" class="palette-item" data-act="nav" data-view="fitness">${icon('zap', 19)}<span>Προπόνηση / Training</span></button>
-          <button type="button" class="palette-item" data-act="nav" data-view="meals">${icon('utensils', 19)}<span>Συνταγές / Recipes</span></button>
-          <button type="button" class="palette-item" data-act="nav" data-view="family">${icon('users', 19)}<span>Οικογένεια & προφίλ</span></button>
-          <button type="button" class="palette-item" data-act="nav" data-view="guide">${icon('book', 19)}<span>Μεθοδολογία & πηγές</span></button>
-          <button type="button" class="palette-item" data-act="theme">${icon(resolvedTheme() === 'dark' ? 'sun' : 'moon', 19)}<span>${resolvedTheme() === 'dark' ? 'Φωτεινό θέμα' : 'Σκούρο θέμα'}</span></button>
-          ${state.theme !== 'auto' ? `<button type="button" class="palette-item" data-act="themeAuto">${icon('monitor', 19)}<span>Θέμα: ακολούθησε τη συσκευή</span></button>` : ''}
-          <button type="button" class="palette-item" data-act="print">${icon('printer', 19)}<span>Εκτύπωση</span></button>
-          <button type="button" class="palette-item" data-act="export">${icon('download', 19)}<span>Export δεδομένων</span></button>
-          <button type="button" class="palette-item" data-act="import">${icon('upload', 19)}<span>Import δεδομένων</span></button>
-        </div>`
+        title:state.lang==='en'?'Explore ZENITH':'Όλες οι ενότητες',
+        size:'lg',
+        body:moreMenu(NAV,ctx)
       });
+      break;
+    }
+    case 'focusRecipes': {
+      const input=byId('recipeSearch');
+      if(!input){state.view='meals';await persistSettings();renderAll();}
+      const target=byId('recipeSearch');
+      target?.scrollIntoView({behavior:'smooth',block:'center'});
+      target?.focus({preventScroll:true});
       break;
     }
     case 'member': {
