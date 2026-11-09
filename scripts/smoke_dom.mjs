@@ -212,7 +212,49 @@ for (const id of VIEWS) {
   ok(window.location.search.includes(`view=${id}`), `view "${id}" is reflected in the URL`);
 }
 
-/* ── 3a. Fitness Studio: actual actions and local persistence ─────────── */
+/* ── 3a. Family Workspace — progressive navigation & real actions ─────── */
+section('Family Workspace');
+
+ok(window.document.querySelectorAll('#sideNav .zn-nav-section').length===3,
+  'sidebar groups 8 destinations into 3 understandable sections');
+const mobileTabs=[...window.document.querySelectorAll('#tabbar [data-act="nav"]')].map(b=>b.dataset.view);
+ok(mobileTabs.includes('meals'),'mobile navigation gives Recipes a direct tab');
+ok(!mobileTabs.includes('progress'),'secondary Progress is reached through the complete More directory');
+
+await clickSel('#tabbar [data-act="more"]',window.document,100);
+ok(window.document.querySelectorAll('.zn-menu-tile').length===8,
+  'More directory exposes all 8 family sections, no hidden destinations');
+ok(window.document.querySelectorAll('.zn-menu-tools button').length>=4,
+  'More menu offers actual backup, print and appearance actions');
+await clickSel('.zn-menu-tile[data-view="progress"]',window.document,100);
+ok(window.location.search.includes('view=progress'),
+  'More directory navigates directly to a secondary section');
+
+for(const section of ['plan','meals','shopping','fitness','progress','family','guide']){
+  await clickSel(`#sideNav [data-act="nav"][data-view="${section}"]`,window.document,70);
+  ok(viewEl().querySelectorAll('.zn-workspace-dock').length===1,
+    'one contextual action dock exists in '+section);
+  ok([...viewEl().querySelectorAll('.zn-workspace-dock [data-act="nav"]')].every(btn=>
+    ['today','plan','meals','shopping','fitness','progress','family','guide'].includes(btn.dataset.view)),
+    'context actions navigate to real app destinations in '+section);
+}
+await clickSel('#sideNav [data-act="nav"][data-view="meals"]',window.document,70);
+await clickSel('[data-act="focusRecipes"]',viewEl(),90);
+ok(window.document.activeElement?.id==='recipeSearch',
+  'Search recipes button immediately focuses the real recipe search input');
+
+await clickSel('#sideNav [data-act="nav"][data-view="today"]',window.document,100);
+ok(viewEl().querySelectorAll('.zn-family-hub').length===1,
+  'Today has a single compact family status hub');
+ok(viewEl().querySelectorAll('.zn-hub-action').length===4,
+  'Today exposes four task-based shortcuts without duplicate meal action');
+const mealHero=viewEl().querySelector('.next-card');
+const familyHub=viewEl().querySelector('.zn-family-hub');
+ok(!!mealHero&&!!familyHub&&(mealHero.compareDocumentPosition(familyHub)&4)!==0,
+  'next actual meal precedes the family hub in reading order');
+
+/* ── 3b. Fitness Studio: actual actions and local persistence ─────────── */
+
 section('Fitness studio');
 
 await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'),90);
