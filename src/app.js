@@ -35,7 +35,7 @@ import {
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
 } from './views.js?v=16.0.0';
 import { translateTree } from './i18n.js?v=16.0.0';
-import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId } from './fitness-engine.js';
+import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf } from './fitness-engine.js';
 import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
 import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js';
 import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js';
@@ -720,8 +720,29 @@ async function boot() {
     cache.fitnessSettings = (await all('settings')).filter(x => String(x.id).startsWith('fitness:'));
     if (!Number.isInteger(state.fitnessWeekOffset) || Math.abs(state.fitnessWeekOffset)>52) state.fitnessWeekOffset=0;
 
-    const requested = new URLSearchParams(location.search).get('view');
+    const params = new URLSearchParams(location.search);
+    const requested = params.get('view');
     if (NAV.some(n => n[0] === requested)) state.view = requested;
+    // A shareable athlete link must take users to the correct person and dated
+    // week, independently of the previously opened person's saved selection.
+    if (state.view === 'fitness') {
+      const requestedMember = params.get('member');
+      if (requestedMember && cache.profiles.some(p => p.id === requestedMember))
+        state.member = requestedMember;
+      const requestedWeek = params.get('week');
+      if (requestedWeek && /^\d{4}-\d{2}-\d{2}$/.test(requestedWeek)) {
+        try {
+          if (weekStartOf(requestedWeek) === requestedWeek) {
+            const delta = (Date.parse(requestedWeek+'T12:00:00Z') -
+              Date.parse(mondayOf()+'T12:00:00Z')) / (7*86400000);
+            if (Number.isInteger(delta) && Math.abs(delta) <= 52) {
+              state.fitnessWeekOffset = delta;
+              state.fitnessSelectedDate = null;
+            }
+          }
+        } catch { /* An invalid URL must never break the whole family app. */ }
+      }
+    }
     if (!cache.profiles.some(p => p.id === state.member)) state.member = cache.profiles[0]?.id || 'mother';
     if (!NAV.some(n => n[0] === state.view)) state.view = 'today';
     if (!THEMES.includes(state.theme)) state.theme = 'auto';
@@ -1001,6 +1022,29 @@ document.addEventListener('click', async e => {
       openSheet({title:state.lang==='en'?'Real team calendar':'Πραγματικό πρόγραμμα ομάδας',
         size:'lg',body:fitnessCalendarForm(ctx),footer:'',
         onMount:()=>mountFitnessCalendarEditor(ctx)});
+      break;
+    }
+    case 'fitnessKnownWeek': {
+      // Display only a real, dated calendar already saved for this member.
+      // This is review of the historical plan, NOT verification of the new week.
+      if (profile.id !== 'son') break;
+      const week = String(target.dataset.week || '');
+      let valid = false;
+      try { valid = /^\d{4}-\d{2}-\d{2}$/.test(week) && weekStartOf(week) === week; }
+      catch { valid = false; }
+      const settings = buildCtx().fitnessWeek.settings;
+      if (!valid || !Object.prototype.hasOwnProperty.call(settings.calendarWeeks || {}, week)
+          || !settings.calendarWeeks[week]?.length) break;
+      const offset = (Date.parse(week+'T12:00:00Z') -
+        Date.parse(mondayOf()+'T12:00:00Z')) / (7*86400000);
+      if (!Number.isInteger(offset) || Math.abs(offset) > 52) break;
+      state.view = 'fitness';
+      state.fitnessWeekOffset = offset;
+      state.fitnessSelectedDate = null;
+      history.replaceState(null, '', location.pathname +
+        '?view=fitness&member=son&week=' + encodeURIComponent(week));
+      await persistSettings(); renderAll();
+      try { window.scrollTo({top:0,behavior:'smooth'}); } catch {}
       break;
     }
     case 'fitnessWeek': {
