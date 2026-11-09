@@ -5,7 +5,7 @@
  * is sourced from the active family context, never demo content.
  * Buttons use existing, permission-preserving app actions.
  */
-import { esc, icon } from './ui.js?v=16.0.0';
+import { esc, icon } from './ui.js?v=16.1.0';
 
 export const WORKSPACE_SECTIONS=Object.freeze({
   today:{el:'Σήμερα',en:'Today',ic:'sun',descEl:'Το επόμενο χρήσιμο βήμα',descEn:'Your next useful action'},
@@ -116,6 +116,7 @@ export function moreMenu(nav,ctx){
     +'<div class="zn-menu-tools">'
     +'<button type="button" data-act="palette">'+icon('search',18)+' '+T(en,'Γρήγορες εντολές','Quick commands')+'</button>'
     +'<button type="button" data-act="theme">'+icon('sun',18)+' '+T(en,'Αλλαγή θέματος','Change theme')+'</button>'
+    +'<button type="button" data-act="density" aria-pressed="'+String(ctx.state.density==='compact')+'">'+icon('monitor',18)+' '+(ctx.state.density==='compact'?T(en,'Άνετη προβολή','Comfortable spacing'):T(en,'Συμπαγής προβολή','Compact spacing'))+'</button>'
     +'<button type="button" data-act="print">'+icon('printer',18)+' '+T(en,'Εκτύπωση','Print')+'</button>'
     +'<button type="button" data-act="export">'+icon('download',18)+' '+T(en,'Αντίγραφο δεδομένων','Export backup')+'</button>'
     +'<button type="button" data-act="import">'+icon('upload',18)+' '+T(en,'Εισαγωγή αντιγράφου','Import backup')+'</button>'

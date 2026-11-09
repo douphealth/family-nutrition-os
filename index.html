@@ -38,22 +38,23 @@
 
 <!-- Sets data-theme from the saved choice or the device before first paint,
      so a dark-mode phone never flashes white. -->
-<script src="src/theme-boot.js?v=16.0.0"></script>
+<script src="src/theme-boot.js?v=16.1.0"></script>
 
 <link rel="preload" href="assets/fonts/inter-greek-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles/tokens.css?v=16.0.0">
-<link rel="stylesheet" href="styles/base.css?v=16.0.0">
-<link rel="stylesheet" href="styles/components.css?v=16.0.0">
-<link rel="stylesheet" href="styles/views.css?v=16.0.0">
-<link rel="stylesheet" href="styles/revamp.css?v=16.0.0">
-<link rel="stylesheet" href="styles/fitness.css?v=16.0.0">
-<link rel="stylesheet" href="styles/fitness-calendar.css?v=16.0.0">
-<link rel="stylesheet" href="styles/performance.css?v=16.0.0">
-<link rel="stylesheet" href="styles/atlas.css?v=16.0.0">
-<link rel="stylesheet" href="styles/exercise-coach.css?v=16.0.0">
-<link rel="stylesheet" href="styles/workspace.css?v=16.0.0">
-<link rel="stylesheet" href="styles/print.css?v=16.0.0" media="print">
+<link rel="stylesheet" href="styles/tokens.css?v=16.1.0">
+<link rel="stylesheet" href="styles/base.css?v=16.1.0">
+<link rel="stylesheet" href="styles/components.css?v=16.1.0">
+<link rel="stylesheet" href="styles/views.css?v=16.1.0">
+<link rel="stylesheet" href="styles/revamp.css?v=16.1.0">
+<link rel="stylesheet" href="styles/fitness.css?v=16.1.0">
+<link rel="stylesheet" href="styles/fitness-calendar.css?v=16.1.0">
+<link rel="stylesheet" href="styles/performance.css?v=16.1.0">
+<link rel="stylesheet" href="styles/atlas.css?v=16.1.0">
+<link rel="stylesheet" href="styles/exercise-coach.css?v=16.1.0">
+<link rel="stylesheet" href="styles/workspace.css?v=16.1.0">
+<link rel="stylesheet" href="styles/studio.css?v=16.1.0" media="screen">
+<link rel="stylesheet" href="styles/print.css?v=16.1.0" media="print">
 </head>
 <body>
 
@@ -88,6 +89,7 @@
       <div class="topbar-in">
         <div class="member-strip" id="memberStrip" role="group" aria-label="Επιλογή μέλους οικογένειας"></div>
         <div class="spacer"></div>
+        <button type="button" class="icon-btn zn-density-btn" id="densityBtn" data-act="density" aria-label="Συμπαγής προβολή" aria-pressed="false"></button>
         <button type="button" class="icon-btn" id="paletteBtn" data-act="palette" aria-label="Γρήγορες εντολές (Ctrl+K)"></button>
         <button type="button" class="lang-btn" id="langBtn" data-act="lang" aria-label="Αλλαγή στα Αγγλικά">EN</button>
         <button type="button" class="icon-btn" id="themeBtn" data-act="theme" aria-label="Αλλαγή θέματος"></button>
@@ -117,6 +119,6 @@
   </div>
 </noscript>
 
-<script type="module" src="src/app.js?v=16.0.0"></script>
+<script type="module" src="src/app.js?v=16.1.0"></script>
 </body>
 </html>

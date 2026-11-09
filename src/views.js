@@ -315,6 +315,17 @@ export function todayView(ctx) {
 
   ${!onboarded ? onboardingCard() : ''}
 
+  <section class="zn-day-brief" aria-label="${ctx.lang === 'en' ? 'Daily priorities and quick actions' : 'Καθημερινές προτεραιότητες και γρήγορες ενέργειες'}">
+    <div class="zn-day-brief-intro">
+      <span class="zn-brief-overline">${icon('sparkles', 15)} ${ctx.lang === 'en' ? 'YOUR DAILY FOCUS' : 'ΗΜΕΡΗΣΙΑ ΕΙΚΟΝΑ'}</span>
+      <strong>${ctx.lang === 'en' ? 'One good choice at a time.' : 'Μικρά βήματα, καθαρό πλάνο.'}</strong>
+      <span>${ctx.lang === 'en' ? 'Your personal progress, based on recorded activity.' : 'Πρόοδος μόνο από πραγματικές καταγραφές.'}</span>
+    </div>
+    <div class="zn-brief-stat"><span>${icon('checkCircle', 17)} ${ctx.lang === 'en' ? 'Meals' : 'Γεύματα'}</span><strong>${completeness.mealsDone}<small> / ${completeness.mealsTotal}</small></strong><div class="zn-brief-track"><i style="width:${completeness.mealsTotal ? Math.min(100, Math.round(completeness.mealsDone / completeness.mealsTotal * 100)) : 0}%"></i></div></div>
+    <div class="zn-brief-stat"><span>${icon('droplet', 17)} ${ctx.lang === 'en' ? 'Water' : 'Νερό'}</span><strong>${num(water)} <small>ml</small></strong><div class="zn-brief-track is-water"><i style="width:${Math.min(100, Math.round(water / Math.max(1, targets.hydration.ml) * 100))}%"></i></div></div>
+    <div class="zn-brief-actions"><button type="button" data-act="water" data-delta="250" class="zn-brief-button">${icon('plus',17)} ${ctx.lang === 'en' ? 'Add 250 ml' : '+250 ml νερό'}</button><button type="button" data-act="nav" data-view="plan" class="zn-brief-link">${icon('calendar',17)} ${ctx.lang === 'en' ? 'Open plan' : 'Πλάνο'}</button></div>
+  </section>
+
   ${ctx.fitnessTeaser || ''}
 
   <div class="today-grid">
