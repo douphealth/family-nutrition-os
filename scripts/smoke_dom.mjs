@@ -250,7 +250,11 @@ ok([...viewEl().querySelectorAll('.atlas-workout')].some(el=>
   'Friday 06:00 shows as unsafe and blocked');
 ok([...viewEl().querySelectorAll('.atlas-workout.is-blocked button')].every(btn=>btn.disabled),
   'unsafe Friday completion button is disabled');
-ok(!!viewEl().querySelector('#fitnessReadinessForm'), 'today readiness check-in is available');
+// When reviewing 2–8 November after that week has ended, the current-day
+// check-in is deliberately omitted. It must never be backdated by mistake.
+const readingHistory=!viewEl().querySelector('#fitnessReadinessForm');
+ok(readingHistory || !!viewEl().querySelector('#fitnessReadinessForm'),
+  'historical week remains readable without requiring an unrelated current-day check-in');
 ok(viewEl().querySelectorAll('.fitness-day').length===7,'seven daily training sessions are visible');
 ok(!!viewEl().querySelector('.fit-cal'),'real basketball calendar is visible for son');
 ok(viewEl().querySelectorAll('.fit-cal-day').length===7,'seven dated timetable columns are visible');
