@@ -344,7 +344,7 @@ export function todayView(ctx) {
 
   ${familyCommand(ctx)}
 
-  ${familyPulse(ctx)}<section class="card v18-telemetry-card" aria-label="Executive 4-Member Telemetry, NDS-100 &amp; GL"><div class="card-head"><div><div class="eyebrow">ZENITH PRO v18.0 · Executive 4-Member Telemetry</div><div class="card-title">${ctx.lang === 'en' ? 'Household Telemetry, NDS-100 &amp; Glycemic Load' : 'Οικογενειακή Τηλεμετρία 4 Μελών, NDS-100 &amp; GL'}</div></div></div><div class="v18-telemetry-grid"><div class="v18-metric"><span>NDS-100</span><strong>${Math.min(100, Math.round(((totals?.confirmed?.p || 0) * 1.2 + (totals?.confirmed?.fiber || 0) * 2.5) / Math.max(1, (targets?.kcal || 2000) / 1000)))}</strong></div><div class="v18-metric"><span>GL (${ctx.lang === 'en' ? 'Glycemic Load' : 'Γλυκαιμικό Φορτίο'})</span><strong>${Math.max(0, Math.round(((totals?.confirmed?.c || 0) - (totals?.confirmed?.fiber || 0)) * 0.5))}</strong></div><div class="v18-metric"><span>${ctx.lang === 'en' ? 'Active Member' : 'Ενεργό Μέλος'}</span><strong>${esc(profile?.name || 'Member')}</strong></div></div></section>
+  ${familyPulse(ctx)}
 
   <section class="card water-card tone-aqua" aria-label="Νερό">
     <div class="card-head">
