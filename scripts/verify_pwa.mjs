@@ -50,7 +50,7 @@ if (!new RegExp(`^zenith-v${major}-\\d{4}-\\d{2}-\\d{2}-\\d+$`).test(cacheName ?
 const htmlForVersion = read('index.html');
 const declaredBuild = /<meta name="zenith-build" content="([^"]+)"/.exec(htmlForVersion)?.[1];
 if (!declaredBuild?.startsWith(`${pkg.version}-`)) fail(`index.html build marker ${declaredBuild} must start with ${pkg.version}-`);
-for (const m of htmlForVersion.matchAll(/\\?v=(\\d+\\.\\d+\\.\\d+)/g)) {
+for (const m of htmlForVersion.matchAll(/\?v=(\d+\.\d+\.\d+)/g)) {
   if (m[1] !== pkg.version) fail(`index.html asset version ${m[1]} differs from ${pkg.version}`);
 }
 if (!htmlForVersion.includes('src/update-boot.js?v='+pkg.version)) fail('index.html must load independent update boot script');
@@ -72,7 +72,7 @@ const walk = file => {
 };
 walk('src/app.js');
 for (const file of modules) {
-  for (const m of read(file).matchAll(/\\?v=(\\d+\\.\\d+\\.\\d+)/g)) {
+  for (const m of read(file).matchAll(/\?v=(\d+\.\d+\.\d+)/g)) {
     if (m[1] !== pkg.version) fail(`${file} imports an out-of-date asset version ${m[1]} instead of ${pkg.version}`);
   }
 }
