@@ -57,8 +57,41 @@ self.addEventListener('activate', event => {
     await Promise.all(clients.map(client => client.postMessage({ type: 'ZENITH_UPDATED', cache: CACHE })));
   })());
 });
+// A future GitHub commit can modify JS/CSS without changing the HTML or worker.
+// Compare the immutable precache snapshot with the origin on each app reopen.
+// This closes the stale-app gap even when no agent remembers to bump a version.
+async function checkPublishedAssets() {
+  const cache = await caches.open(CACHE);
+  const paths = CORE.filter(path => /\\.(?:js|css)$/.test(path) || path === './index.html');
+  const fresh = [];
+  let changed = false;
+  for (let offset = 0; offset < paths.length; offset += 6) {
+    const batch = await Promise.all(paths.slice(offset, offset + 6).map(async path => {
+      const response = await reliableFetch(path);
+      const old = await cache.match(path);
+      const updatedBytes = new Uint8Array(await response.clone().arrayBuffer());
+      const oldBytes = old ? new Uint8Array(await old.arrayBuffer()) : null;
+      const differs = !oldBytes || oldBytes.length !== updatedBytes.length ||
+        updatedBytes.some((byte, index) => byte !== oldBytes[index]);
+      return { path, response, differs };
+    }));
+    fresh.push(...batch);
+    if (batch.some(item => item.differs)) changed = true;
+  }
+  if (changed) {
+    // Only advance the saved snapshot after every file was fetched successfully.
+    await Promise.all(fresh.map(item => cache.put(item.path, item.response)));
+  }
+  return { available: changed, checked: paths.length, cache: CACHE };
+}
 self.addEventListener('message', event => {
-  if (event.data === 'skipWaiting') self.skipWaiting();
+  if (event.data === 'skipWaiting') { self.skipWaiting(); return; }
+  if (event.data?.type === 'CHECK_ASSETS' && event.ports?.[0]) {
+    const port = event.ports[0];
+    event.waitUntil(checkPublishedAssets()
+      .then(result => port.postMessage(result))
+      .catch(error => port.postMessage({ error: String(error.message || error) })));
+  }
 });
 async function savedAsset(request) {
   let cached = await caches.match(request);

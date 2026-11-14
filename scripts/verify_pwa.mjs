@@ -55,6 +55,8 @@ for (const m of htmlForVersion.matchAll(/\\?v=(\\d+\\.\\d+\\.\\d+)/g)) {
 }
 if (!htmlForVersion.includes('src/update-boot.js?v='+pkg.version)) fail('index.html must load independent update boot script');
 if (!sw.includes("'./src/update-boot.js'")) fail('sw.js must cache the update boot script');
+if (!sw.includes("CHECK_ASSETS") || !sw.includes("checkPublishedAssets")) fail('sw.js must detect future published JS/CSS changes');
+if (!read('src/update-boot.js').includes("inspectAssets(worker)")) fail('update boot must compare live assets even when release marker is unchanged');
 
 /* ── 3 · every module the app can import is precached ──────────────────── */
 const modules = new Set();

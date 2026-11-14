@@ -29,10 +29,30 @@
     url.searchParams.set('__zenith_build', token);
     location.replace(url.href);
   }
+  function inspectAssets(worker) {
+    return new Promise(function (resolve, reject) {
+      if (!worker) { resolve(null); return; }
+      var channel = new MessageChannel();
+      var done = false;
+      var deadline = setTimeout(function () {
+        if (!done) { done = true; reject(new Error('Asset comparison timed out')); }
+      }, 20000);
+      channel.port1.onmessage = function (event) {
+        if (done) return;
+        done = true;
+        clearTimeout(deadline);
+        if (event.data?.error) reject(new Error(event.data.error));
+        else resolve(event.data);
+      };
+      try { worker.postMessage({ type: 'CHECK_ASSETS' }, [channel.port2]); }
+      catch (error) { clearTimeout(deadline); reject(error); }
+    });
+  }
   async function check() {
+    var worker = null;
     if (navigator.serviceWorker) {
       var reg = currentRegistration || await navigator.serviceWorker.getRegistration('./');
-      if (reg) await reg.update();
+      if (reg) { await reg.update(); worker = reg.active; }
     }
     // Cache-busted document is the authoritative release signal.
     var url = new URL('./index.html', location.href);
@@ -42,8 +62,10 @@
     var html = await response.text();
     var remote = /<meta name="zenith-build" content="([^"]+)"/.exec(html);
     var latest = remote && remote[1];
-    if (latest && latest !== BUILD) reloadToBuild(latest);
-    return { available: !!latest && latest !== BUILD, current: BUILD, latest: latest || null };
+    var assetResult = await inspectAssets(worker);
+    var changed = !!(latest && latest !== BUILD) || !!assetResult?.available;
+    if (changed) reloadToBuild((latest && latest !== BUILD) ? latest : 'assets-' + Date.now());
+    return { available: changed, current: BUILD, latest: latest || null, assets: assetResult?.checked || 0 };
   }
   window.ZenithUpdate = { check: check, build: BUILD };
   if (!('serviceWorker' in navigator)) return;
@@ -56,7 +78,7 @@
       scope: './', updateViaCache: 'none'
     }).then(function (reg) {
       currentRegistration = reg;
-      reg.update().catch(function () {});
+      reg.update().then(function () { return check(); }).catch(function () {});
       document.addEventListener('visibilitychange', function () {
         if (!document.hidden) check().catch(function () {});
       });
