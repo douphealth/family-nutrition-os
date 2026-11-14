@@ -5,7 +5,7 @@
  * is sourced from the active family context, never demo content.
  * Buttons use existing, permission-preserving app actions.
  */
-import { esc, icon } from './ui.js?v=18.0.1';
+import { esc, icon } from './ui.js?v=18.1.0';
 
 export const WORKSPACE_SECTIONS=Object.freeze({
   today:{el:'Σήμερα',en:'Today',ic:'sun',descEl:'Το επόμενο χρήσιμο βήμα',descEn:'Your next useful action'},
