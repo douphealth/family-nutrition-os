@@ -1,4 +1,4 @@
-import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=16.0.0';
+import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=18.0.1';
 import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js';
 import { fitnessCalendarPanel } from './fitness-calendar-view.js';
 import { performanceView } from './performance-view.js';
@@ -95,7 +95,7 @@ export function fitnessView(ctx) {
       +'</h2></div>'+verifiedTimetable+warningsHtml
       +'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
   }
-  return shell+verifiedTimetable+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>'+}'<div class="fitness-alert" data-v18="acwr-biomechanics">'+icon('shield',18)+'<span><strong>ZENITH PRO v18.0 Biomechanics OS:</strong> '+title('Στόχος ACWR 0.80–1.30 (Sweet Spot) · Έλεγχος αντενδείξεων αρθρώσεων & ετοιμότητας.','ACWR 0.80–1.30 Sweet Spot · Joint Contraindication Coaching Cues Active.',en)+'</span></div>'+'';
+  return shell+verifiedTimetable+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
 }
 
 export function fitnessTodayCard(ctx) {

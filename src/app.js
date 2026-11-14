@@ -14,27 +14,27 @@
 import {
   APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, SLOT_TIME, AISLES,
   PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY
-} from './data.js?v=16.1.0';
+} from './data.js?v=18.0.1';
 import {
   isMinor, targetsFor, dayMacros, mealMacros, planCoverage, weightTrend, loggingStreak,
   contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
   upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
   householdRoleServings, buildShoppingList, buildShoppingListForMembers
-} from './nutrition-engine.js?v=16.1.0';
+} from './nutrition-engine.js?v=18.0.1';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
   storageInfo, requestPersistence, activeBackend
-} from './storage.js?v=16.1.0';
+} from './storage.js?v=18.0.1';
 import {
   esc, icon, logo, byId, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, dateFromKey,
   num, num1, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
-} from './ui.js?v=16.1.0';
+} from './ui.js?v=18.0.1';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
-} from './views.js?v=16.1.0';
-import { translateTree } from './i18n.js?v=16.1.0';
+} from './views.js?v=18.0.1';
+import { translateTree } from './i18n.js?v=18.0.1';
 import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf } from './fitness-engine.js';
 import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
 import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js';
@@ -1774,7 +1774,7 @@ if ('serviceWorker' in navigator) {
     location.reload();
   });
 
-  navigator.serviceWorker.register('./sw.js?v=16.1.0', { scope: './', updateViaCache: 'none' }).then(reg => {
+  navigator.serviceWorker.register('./sw.js?v=18.0.1', { scope: './', updateViaCache: 'none' }).then(reg => {
     reg?.update?.()?.catch?.(() => {});
     reg?.addEventListener?.('updatefound', () => {
       const worker = reg.installing;
