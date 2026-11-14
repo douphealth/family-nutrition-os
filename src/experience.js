@@ -125,9 +125,9 @@ export function moreMenu(nav,ctx){
       'No account or cloud sync. Data remains on this device.')+'</p></div>';
 }
 /**
- * Member-first, one-tap daily actions.
- * Every button reuses the app's existing delegated meal/water/nav handlers.
- * Nothing is inferred from another family member's log or persisted here.
+ * Family-first daily command: the active person's next action, real meal log,
+ * hydration progress and shortcuts. No extra network calls or chart library.
+ * The gauges never invent data; missing targets are shown as zero progress.
  */
 export function dailyFocus(ctx) {
   const en = ctx.lang === 'en';
@@ -136,48 +136,61 @@ export function dailyFocus(ctx) {
   const plan = ctx.planDay || {};
   const log = ctx.log || {};
   const slots = ['breakfast', 'lunch', 'snack', 'dinner'];
-  const pending = slots.filter(slot => plan[slot] && !['done', 'skipped'].includes(log.meals?.[slot]?.status));
+  const pending = slots.filter(s => plan[s] && !['done', 'skipped'].includes(log.meals?.[s]?.status));
   const slot = pending.includes(ctx.nudge?.slot) ? ctx.nudge.slot : (pending[0] || null);
   const recipe = slot && typeof ctx.recipeById === 'function' ? ctx.recipeById(plan[slot]) : null;
   const total = slots.filter(s => plan[s]).length;
   const done = slots.filter(s => plan[s] && log.meals?.[s]?.status === 'done').length;
   const water = Math.max(0, Number(log.waterMl) || 0);
   const goal = Math.max(0, Number(ctx.targets?.hydration?.ml) || 0);
-  const completed = total > 0 && !pending.length;
+  const percentage = n => Math.min(100, Math.max(0, Math.round(n)));
+  const mealPct = total ? percentage(done / total * 100) : 0;
+  const waterPct = goal ? percentage(water / goal * 100) : 0;
   const slotNames = en
     ? { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snack', dinner: 'Dinner' }
     : { breakfast: 'Πρωινό', lunch: 'Μεσημεριανό', snack: 'Σνακ', dinner: 'Βραδινό' };
-  const title = recipe?.name || (completed
-    ? copy('Τα γεύματα ολοκληρώθηκαν', 'Meals completed')
-    : copy('Δες το σημερινό πλάνο', 'See today’s meal plan'));
-  const step = slot && recipe ? slotNames[slot] : copy('Ημέρα σε εξέλιξη', 'Your day in progress');
-  const primary = slot && recipe
+  const next = recipe
+    ? copy('Επόμενο: ', 'Next: ') + slotNames[slot] + ' · ' + recipe.name
+    : done === total && total
+      ? copy('Όλα τα γεύματα έχουν καταγραφεί', 'All meals have been logged')
+      : pending.length === 0 && total
+        ? copy('Δεν εκκρεμούν άλλα γεύματα', 'No meals are left pending')
+        : copy('Δες το πρόγραμμα της ημέρας', 'Review today’s meal plan');
+  const primary = recipe
     ? '<button type="button" class="zn-daily-primary" data-act="meal" data-slot="' + esc(slot)
       + '" data-recipe="' + esc(recipe.id) + '" data-portion="1" aria-label="'
-      + esc(copy('Καταγραφή γεύματος ', 'Log meal ') + recipe.name + copy(' για ', ' for ') + (profile.name || ''))
-      + '">' + icon('check', 19) + copy('Το έφαγα', 'Log this meal') + '</button>'
+      + esc(copy('Καταγραφή ', 'Log ') + recipe.name + copy(' για ', ' for ') + (profile.name || ''))
+      + '">' + icon('check', 19) + copy('Το έφαγα', 'I ate this') + '</button>'
     : '<button type="button" class="zn-daily-primary" data-act="nav" data-view="plan">'
-      + icon('calendar', 19) + copy('Άνοιγμα πλάνου', 'Open meal plan') + '</button>';
+      + icon('calendar', 19) + copy('Δες το πλάνο', 'Open my plan') + '</button>';
+  const gauge = (title, value, pct, style) =>
+    '<div class="zn-daily-progress-item"><div class="zn-daily-gauge ' + style + '" role="progressbar"'
+    + ' aria-label="' + esc(title) + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct
+    + '" style="--zn-progress:' + pct + '%"><span>' + pct + '%</span></div>'
+    + '<div class="zn-daily-progress-copy"><small>' + esc(title) + '</small><strong>' + esc(value)
+    + '</strong></div></div>';
   return '<section class="zn-daily-focus" aria-labelledby="zn-daily-focus-title">'
-    + '<div class="zn-daily-copy"><div class="zn-daily-eyebrow">'
-    + icon('sparkles', 15) + copy('ΣΗΜΕΡΑ ΓΙΑ', 'TODAY FOR') + ' ' + esc(profile.name || '') + '</div>'
-    + '<span class="zn-daily-step">' + esc(step) + '</span>'
-    + '<h2 id="zn-daily-focus-title">' + esc(title) + '</h2>'
-    + '<p>' + copy('Μία ενέργεια τη φορά. Όσα καταγράφεις αφορούν μόνο το επιλεγμένο μέλος.',
-      'One action at a time. Records belong only to the selected family member.') + '</p></div>'
-    + '<div class="zn-daily-metrics" aria-label="' + copy('Σημερινές καταγραφές', 'Today’s logs') + '">'
-    + '<span>' + icon('checkCircle', 16) + copy('Γεύματα', 'Meals') + ' <b>' + done + '/' + total + '</b></span>'
-    + '<span>' + icon('droplet', 16) + copy('Νερό', 'Water') + ' <b>' + Math.round(water)
-    + (goal ? '/' + Math.round(goal) : '') + ' ml</b></span></div>'
-    + '<div class="zn-daily-actions" role="group" aria-label="'
-    + copy('Γρήγορες ενέργειες για το μέλος', 'Quick actions for this member') + '">'
-    + primary
-    + '<button type="button" class="zn-daily-secondary" data-act="water" data-delta="250" aria-label="'
-    + copy('Προσθήκη 250 ml νερού', 'Add 250 ml of water') + '">' + icon('droplet', 17)
-    + copy('+250 ml νερό', '+250 ml water') + '</button>'
+    + '<div class="zn-daily-main"><div class="zn-daily-eyebrow">'
+    + icon('sparkles', 16) + copy('ΣΗΜΕΡΑ ΓΙΑ', 'TODAY FOR') + ' ' + esc(profile.name || '')
+    + '</div><h2 id="zn-daily-focus-title">'
+    + copy('Το δικό σου πρόγραμμα, απλά.', 'Your day, made simple.') + '</h2>'
+    + '<p class="zn-daily-next">' + esc(next) + '</p>'
+    + '<p class="zn-daily-assurance">'
+    + copy('Εδώ βλέπεις μόνο τη δική σου πρόοδο. Άλλαξε μέλος επάνω για διαφορετικό πρόγραμμα.',
+      'Your own progress only. Switch family member above to see a different plan.')
+    + '</p><div class="zn-daily-actions" role="group" aria-label="'
+    + copy('Γρήγορες ενέργειες', 'Quick actions') + '">' + primary
+    + '<button type="button" class="zn-daily-secondary" data-act="water" data-delta="250">'
+    + icon('droplet', 17) + copy('+250 ml νερό', '+250 ml water') + '</button>'
     + '<button type="button" class="zn-daily-secondary" data-act="nav" data-view="plan">'
     + icon('calendar', 17) + copy('Πλάνο εβδομάδας', 'Weekly plan') + '</button>'
     + '<button type="button" class="zn-daily-secondary" data-act="nav" data-view="fitness">'
     + icon('zap', 17) + copy('Προπόνηση', 'Training') + '</button>'
-    + '</div></section>';
+    + '</div></div>'
+    + '<div class="zn-daily-progress" aria-label="' + copy('Σημερινή πρόοδος', 'Today’s progress') + '">'
+    + gauge(copy('Γεύματα', 'Meals'), done + '/' + total, mealPct, 'is-meal')
+    + gauge(copy('Νερό', 'Water'), Math.round(water) + (goal ? ' / ' + Math.round(goal) : '') + ' ml', waterPct, 'is-water')
+    + '<p class="zn-daily-progress-note">'
+    + copy('Πραγματικές καταγραφές, όχι εκτιμήσεις.', 'Actual logs, not estimates.')
+    + '</p></div></section>';
 }
