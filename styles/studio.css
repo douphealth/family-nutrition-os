@@ -207,3 +207,111 @@
     .zn-brief-track i{transition:none!important}
   }
 }
+
+/* ZENITH / Workspace refinement — navigation clarity, visual hierarchy, and
+   functional mobile command access. Screen-only; print contracts stay intact. */
+@media screen {
+  .app,.main,.content,.page,.today-grid {min-width:0}
+  .page{isolation:isolate}
+  .content{container-type:inline-size}
+  .sidebar{border-color:var(--line-2)!important}
+  .sidebar .brand{position:relative}
+  .sidebar .brand::after{content:"";position:absolute;bottom:-1px;left:8px;width:44px;height:3px;background:var(--brand);border-radius:4px}
+  .zn-nav-heading{font-variant-caps:all-small-caps}
+  .nav-btn{transition:transform .18s ease,background .18s ease,border-color .18s ease}
+  .nav-btn:hover{transform:translateX(2px)}
+  .nav-btn.active{box-shadow:inset 3px 0 var(--brand)!important}
+  .topbar-in{outline:1px solid color-mix(in srgb,var(--surface) 90%,var(--ink));outline-offset:-2px}
+  .member-chip{transition:border-color .18s ease,background .18s ease,transform .18s ease}
+  .member-chip:hover{border-color:var(--brand-line)!important;transform:translateY(-1px)}
+  .member-chip.active{box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 15%,transparent)!important}
+  .dash-head{position:relative}
+  .dash-head .dash-greet{min-width:0}
+  .dash-greet h1{max-width:24ch;text-wrap:balance}
+  .dash-greet h1 em{font-style:normal;color:var(--brand-text)}
+  .dash-head .eyebrow{margin-bottom:10px}
+  .page-head h1{text-wrap:balance}
+  .page-head h1 em{font-style:normal}
+  .date-chip{font-variant-numeric:tabular-nums}
+  .card,.kpi,.planner-day,.recipe-card,.family-card,.shop-aisle,.zn-family-hub,.zn-workspace-dock{
+    transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+  }
+  .card:focus-within,.recipe-card:focus-within,.planner-day:focus-within,
+  .family-card:focus-within,.shop-aisle:focus-within{
+    border-color:var(--brand-line)!important;
+    box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 12%,transparent),var(--studio-lift)!important;
+  }
+  .kpi{position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;inset:0 auto auto 0;height:3px;width:44px;border-radius:0 0 5px 0;background:var(--tone,var(--brand));opacity:.65}
+  .zn-day-brief{box-shadow:0 12px 28px -24px rgba(13,65,43,.38)}
+  .zn-brief-track{height:7px!important}
+  .zn-brief-stat strong{font-variant-numeric:tabular-nums}
+  .zn-brief-button,.zn-brief-link{transition:transform .16s ease,box-shadow .16s ease}
+  .zn-brief-button:hover,.zn-brief-link:hover{transform:translateY(-2px)}
+  .next-card{isolation:isolate}
+  .next-card::before{
+    content:"";position:absolute;inset:auto -95px -150px auto;
+    width:360px;height:360px;border:1px solid rgba(255,255,255,.15);
+    border-radius:50%;box-shadow:0 0 0 45px rgba(255,255,255,.025),0 0 0 95px rgba(255,255,255,.015);
+    pointer-events:none;z-index:-1;
+  }
+  .next-card .next-title{text-wrap:balance}
+  .next-card .next-actions{position:relative;z-index:2}
+  .next-shortcuts{position:relative;z-index:2}
+  .water-total b{font-variant-numeric:tabular-nums}
+  .water-card{border-top:3px solid var(--aqua-line)!important}
+  .water-tracker .glass{transition:background .16s ease,border-color .16s ease,transform .16s ease}
+  .water-tracker .glass:hover{transform:translateY(-2px)}
+  .family-pulse{border-radius:21px!important}
+  .family-pulse-person{transition:background .18s ease,border-color .18s ease,transform .18s ease}
+  .family-pulse-person:hover{border-color:var(--brand-line)!important;background:var(--surface-hover)!important;transform:translateY(-1px)}
+  .zn-family-hub-top h2{text-wrap:balance}
+  .zn-hub-actions button{transition:transform .18s ease,border-color .18s ease,background .18s ease}
+  .zn-hub-actions button:hover{transform:translateY(-2px)}
+  .zn-menu-tile,.zn-context-button{transition:background .18s ease,border-color .18s ease,transform .18s ease}
+  .zn-menu-tile:hover,.zn-context-button:hover{transform:translateY(-1px)}
+  button:focus-visible,a:focus-visible,[role=button]:focus-visible{
+    outline:3px solid var(--zn-focus,#e8b15c)!important;outline-offset:3px!important;
+  }
+  @media(max-width:1099px) and (min-width:760px){
+    .nav-btn:hover{transform:none}
+    .sidebar .brand::after{display:none}
+  }
+  @media(max-width:759px){
+    .topbar-in{gap:5px!important}
+    .member-strip{flex:1;min-width:0;gap:5px}
+    #paletteBtn{
+      display:inline-flex!important;align-items:center;justify-content:center;
+      flex:none!important;width:44px!important;min-width:44px!important;height:44px!important;
+      padding:0!important;font-size:0!important;border-radius:12px!important;
+      background:var(--surface-2)!important;
+    }
+    #paletteBtn .palette-label,#paletteBtn kbd{display:none!important}
+    #paletteBtn svg{width:20px;height:20px}
+    .topbar #langBtn{flex:none;min-width:42px;height:44px;border-radius:12px}
+    .topbar #themeBtn,.topbar #densityBtn{display:none!important}
+    .dash-head .dash-meta{gap:6px}
+    .dash-head .date-chip{padding:0 9px}
+    .dash-greet h1{text-wrap:pretty}
+    .zn-day-brief{padding:16px!important}
+    .zn-brief-actions button{min-height:46px}
+    .next-card::before{width:250px;height:250px;right:-125px;bottom:-100px}
+    .next-shortcuts{gap:6px}
+    .next-shortcut{min-height:44px}
+    .family-pulse-person:hover,.zn-hub-actions button:hover,.nav-btn:hover{transform:none}
+    .tabbar{padding:6px!important}
+    .tab-btn{min-height:54px}
+    .tab-btn.active{box-shadow:inset 0 -2px var(--brand)}
+  }
+  @media(max-width:350px){
+    .topbar #langBtn{min-width:39px}
+    #paletteBtn{width:40px!important;min-width:40px!important}
+    .member-chip{padding-left:3px!important;padding-right:6px!important}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .card,.kpi,.planner-day,.recipe-card,.family-card,.shop-aisle,.zn-family-hub,.zn-workspace-dock,
+    .zn-hub-actions button,.zn-brief-button,.zn-brief-link,.nav-btn,.member-chip,.family-pulse-person{
+      transition:none!important;
+    }
+  }
+}
