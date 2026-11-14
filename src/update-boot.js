@@ -77,6 +77,7 @@
     navigator.serviceWorker.register('./sw.js?v=18.1.1', {
       scope: './', updateViaCache: 'none'
     }).then(function (reg) {
+      if (!reg || typeof reg.update !== 'function') return;
       currentRegistration = reg;
       reg.update().then(function () { return check(); }).catch(function () {});
       document.addEventListener('visibilitychange', function () {
