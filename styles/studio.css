@@ -315,3 +315,147 @@
     }
   }
 }
+
+/* Family-first command board — v18.1 refinement.
+   No JS charts or network calls; semantic, accessible, purely CSS progress. */
+@media screen {
+  .zn-daily-focus {
+    --zn-panel: color-mix(in srgb, var(--member) 8%, var(--surface));
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(230px, .72fr);
+    gap: clamp(18px, 3vw, 38px);
+    padding: clamp(23px, 3vw, 38px);
+    margin-bottom: 22px;
+    overflow: hidden;
+    isolation: isolate;
+    background:
+      radial-gradient(520px 300px at 99% -12%, color-mix(in srgb, var(--member) 16%, transparent), transparent 78%),
+      linear-gradient(118deg, var(--surface), var(--zn-panel));
+    border: 1px solid var(--brand-line);
+    border-radius: 28px;
+    box-shadow: var(--studio-lift);
+  }
+  .zn-daily-focus::before {
+    content: ""; position: absolute; z-index: -1;
+    inset: auto auto -100px -110px; width: 250px; height: 250px;
+    border: 1px solid color-mix(in srgb, var(--member) 18%, transparent);
+    border-radius: 50%; pointer-events: none;
+  }
+  .zn-daily-main { min-width: 0; display: grid; align-content: center; gap: 10px; }
+  .zn-daily-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    width: fit-content; padding: 7px 11px;
+    border-radius: 999px; background: var(--brand-soft);
+    color: var(--brand-text); font-weight: 840; letter-spacing: .1em;
+    font-size: .7rem;
+  }
+  .zn-daily-main h2 {
+    margin: 4px 0 0;
+    color: var(--ink);
+    font-size: clamp(1.55rem, 2.6vw, 2.8rem);
+    line-height: 1.1; letter-spacing: -.055em;
+    font-weight: 850; text-wrap: balance;
+  }
+  .zn-daily-next {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(.94rem, 1.25vw, 1.08rem);
+    font-weight: 730; line-height: 1.5;
+  }
+  .zn-daily-assurance {
+    margin: 0; max-width: 55ch;
+    color: var(--ink-2);
+    font-size: .8rem; line-height: 1.55;
+  }
+  .zn-daily-actions {
+    display: flex; flex-wrap: wrap; gap: 9px;
+    margin-top: 8px;
+  }
+  .zn-daily-primary,.zn-daily-secondary {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 9px; min-height: 48px;
+    padding: 11px 16px; border-radius: 13px;
+    font-size: .85rem; font-weight: 790;
+    line-height: 1.2; text-align: center;
+    transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
+  }
+  .zn-daily-primary {
+    background: var(--brand); color: var(--brand-ink);
+    box-shadow: 0 12px 23px -18px var(--brand);
+  }
+  .zn-daily-secondary {
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line-2);
+  }
+  .zn-daily-primary:hover,.zn-daily-secondary:hover { transform: translateY(-2px); }
+  .zn-daily-secondary:hover { background: var(--surface-hover); }
+  .zn-daily-primary:focus-visible,.zn-daily-secondary:focus-visible {
+    outline: 3px solid var(--zn-focus,#e8b15c)!important;
+    outline-offset: 3px!important;
+  }
+  .zn-daily-progress {
+    display: grid; align-content: center; gap: 14px;
+    padding: clamp(14px, 2vw, 23px);
+    border: 1px solid var(--line);
+    border-radius: 21px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+  }
+  .zn-daily-progress-item {
+    display: flex; align-items: center; min-width: 0; gap: 16px;
+  }
+  .zn-daily-gauge {
+    flex: none; position: relative;
+    width: 74px; height: 74px; display: grid; place-items: center;
+    border-radius: 50%;
+    background: conic-gradient(var(--brand) var(--zn-progress), var(--surface-3) 0);
+    color: var(--ink); font-variant-numeric: tabular-nums;
+  }
+  .zn-daily-gauge.is-water {
+    background: conic-gradient(var(--aqua,var(--brand)) var(--zn-progress), var(--surface-3) 0);
+  }
+  .zn-daily-gauge::before {
+    content: ""; position: absolute; inset: 7px;
+    border-radius: 50%; background: var(--surface);
+  }
+  .zn-daily-gauge > span { position: relative; font-size: .9rem; font-weight: 850; }
+  .zn-daily-progress-copy { display: grid; gap: 5px; min-width: 0; }
+  .zn-daily-progress-copy small { color: var(--ink-2); font-size: .75rem; font-weight: 720; }
+  .zn-daily-progress-copy strong {
+    color: var(--ink); font-variant-numeric: tabular-nums;
+    font-size: clamp(.91rem,1.2vw,1.08rem);
+    font-weight: 850; overflow-wrap: anywhere;
+  }
+  .zn-daily-progress-note {
+    margin: 1px 0 0; font-size: .7rem; color: var(--ink-3);
+    line-height: 1.4;
+  }
+  @media (max-width: 1099px) {
+    .zn-daily-focus { grid-template-columns: minmax(0, 1fr); }
+    .zn-daily-progress { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .zn-daily-progress-note { grid-column: 1/-1; }
+  }
+  @media (max-width: 759px) {
+    .zn-daily-focus { gap: 18px; padding: 19px 16px; border-radius: 20px; margin-bottom: 16px; }
+    .zn-daily-main h2 { font-size: clamp(1.55rem, 7.3vw, 2.15rem); }
+    .zn-daily-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+    .zn-daily-primary { grid-column: 1/-1; }
+    .zn-daily-primary,.zn-daily-secondary { min-height: 48px; padding: 10px 8px; font-size: .77rem; }
+    .zn-daily-progress { padding: 14px 12px; gap: 12px 7px; }
+    .zn-daily-progress-item { gap: 8px; }
+    .zn-daily-gauge { width: 57px; height: 57px; }
+    .zn-daily-gauge::before { inset: 6px; }
+    .zn-daily-gauge > span { font-size: .72rem; }
+    .zn-daily-progress-copy small { font-size: .69rem; }
+    .zn-daily-progress-copy strong { font-size: .79rem; }
+    .zn-daily-progress-note { font-size: .67rem; }
+  }
+  @media (max-width: 350px) {
+    .zn-daily-progress { grid-template-columns: 1fr; }
+    .zn-daily-progress-note { grid-column: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zn-daily-primary,.zn-daily-secondary { transition: none; }
+    .zn-daily-primary:hover,.zn-daily-secondary:hover { transform: none; }
+  }
+}
