@@ -4,7 +4,7 @@
 Plan, cook, shop and log meals for four people at once. It works offline, needs no account and no server,
 and every figure it shows is traceable to a public source.
 
-**Live:** <https://douphealth.github.io/family-nutrition-os/> · Greek interface · installable as an app · v13.0.0 “Aegean”
+**Live:** <https://douphealth.github.io/family-nutrition-os/> · Greek interface · installable as an app · v16.0.0
 
 <p align="center">
   <img src="docs/desktop-today.webp" alt="Today: the next meal with the plate for this person, water, and progress for the day" width="49%">
@@ -130,6 +130,10 @@ Pages to serve that exact build and checks that every precached file is really l
 
 Refreshing food data: `USDA_API_KEY=… npm run data:usda` (or `node scripts/fetch_usda.mjs --portal`, which uses the public FoodData Central
 site), then `npm test` — the provenance test will say what changed.
+
+## Contributing
+
+Contributions, bug reports and reproducible fixes are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, privacy and review guidelines.
 
 ## Licence
 
