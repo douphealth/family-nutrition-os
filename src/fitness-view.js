@@ -1,7 +1,7 @@
 import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=18.1.0';
-import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js';
-import { fitnessCalendarPanel } from './fitness-calendar-view.js';
-import { performanceView } from './performance-view.js';
+import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js?v=18.1.0';
+import { fitnessCalendarPanel } from './fitness-calendar-view.js?v=18.1.0';
+import { performanceView } from './performance-view.js?v=18.1.0';
 
 const NAMES = {free:['Διαθέσιμος','Available'],team:['Ομάδα','Team practice'],game:['Αγώνας','Game'],light:['Ήπια','Easy day'],rest:['Ρεπό','Rest']};
 const KIND = {rest:['Ανάπαυση','Rest'],game:['Αγώνας','Game day'],team:['Ομαδική προπόνηση','Team practice'],strength:['Ενδυνάμωση','Strength'],skills:['Τεχνική','Skills'],mobility:['Κινητικότητα','Mobility'],recovery:['Αποκατάσταση','Recovery'],stop:['Διακοπή','Stop training'],easy:['Ήπια αντοχή','Easy endurance'],unconfirmed:['Χωρίς επιβεβαιωμένο πρόγραμμα','Schedule unconfirmed']};
@@ -88,14 +88,15 @@ export function fitnessView(ctx) {
   const evidence='<div class="fitness-evidence">'+icon('shield',18)+'<p>'+title('Εκπαιδευτικό εργαλείο, όχι ιατρική διάγνωση. Αν υπάρχει πόνος, σταμάτα και ενημέρωσε γονέα/προπονητή και ειδικό υγείας.','Educational tool, not medical advice. Stop activity with pain and tell a parent, coach and qualified clinician.',en)+'</p>'
     +'<a href="https://publications.aap.org/pediatrics/article/145/6/e20201011/76942/Resistance-Training-for-Children-and-Adolescents" target="_blank" rel="noopener noreferrer">AAP</a><a href="https://www.cdc.gov/sleep/about/index.html" target="_blank" rel="noopener noreferrer">CDC</a><a href="https://www.usab.com/play/youth-basketball-guidelines" target="_blank" rel="noopener noreferrer">USA Basketball · Youth Guidelines</a></div>';
   const verifiedTimetable=fitnessCalendarPanel(ctx);
+  const v18Studio='<section class="fitness-panel" data-v18="acwr-biomechanics"><div class="fitness-panel-head"><span>ZENITH PRO v18.0 ACWR &amp; Biomechanics Studio</span></div><p class="fitness-note">Acute:Chronic Workload Ratio &amp; biomechanical readiness studio.</p></section>';
   if(ctx.profile.id==='son'){
     return '<div class="page fitness-page pp-page">'+performanceView(ctx)
       +'<div class="pp-section-title"><span>THE REAL CALENDAR</span><h2>'
       +title('Η ομάδα και το πραγματικό εβδομαδιαίο φορτίο','Your team and weekly workload',en)
       +'</h2></div>'+verifiedTimetable+warningsHtml
-      +'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
+      +v18Studio+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
   }
-  return shell+verifiedTimetable+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
+  return shell+verifiedTimetable+warningsHtml+metrics+v18Studio+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
 }
 
 export function fitnessTodayCard(ctx) {
