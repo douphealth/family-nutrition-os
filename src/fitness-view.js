@@ -96,7 +96,7 @@ export function fitnessView(ctx) {
       +'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
   }
   return shell+verifiedTimetable+warningsHtml+metrics+'<div class="fitness-layout">'+calendar+readiness+session+'</div>'+evidence+'</div>';
-}
+}'<div class="fitness-alert" data-v18="acwr-biomechanics">'+icon('shield',18)+'<span><strong>ZENITH PRO v18.0 Biomechanics OS:</strong> '+title('Στόχος ACWR 0.80–1.30 (Sweet Spot) · Έλεγχος αντενδείξεων αρθρώσεων & ετοιμότητας.','ACWR 0.80–1.30 Sweet Spot · Joint Contraindication Coaching Cues Active.',en)+'</span></div>'+
 
 export function fitnessTodayCard(ctx) {
   const en=ctx.lang==='en',program=ctx.supplementaryProgram;
