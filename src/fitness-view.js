@@ -1,7 +1,7 @@
-import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=18.1.0';
-import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js?v=18.1.0';
-import { fitnessCalendarPanel } from './fitness-calendar-view.js?v=18.1.0';
-import { performanceView } from './performance-view.js?v=18.1.0';
+import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=18.1.1';
+import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js?v=18.1.1';
+import { fitnessCalendarPanel } from './fitness-calendar-view.js?v=18.1.1';
+import { performanceView } from './performance-view.js?v=18.1.1';
 
 const NAMES = {free:['Διαθέσιμος','Available'],team:['Ομάδα','Team practice'],game:['Αγώνας','Game'],light:['Ήπια','Easy day'],rest:['Ρεπό','Rest']};
 const KIND = {rest:['Ανάπαυση','Rest'],game:['Αγώνας','Game day'],team:['Ομαδική προπόνηση','Team practice'],strength:['Ενδυνάμωση','Strength'],skills:['Τεχνική','Skills'],mobility:['Κινητικότητα','Mobility'],recovery:['Αποκατάσταση','Recovery'],stop:['Διακοπή','Stop training'],easy:['Ήπια αντοχή','Easy endurance'],unconfirmed:['Χωρίς επιβεβαιωμένο πρόγραμμα','Schedule unconfirmed']};

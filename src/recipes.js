@@ -14,7 +14,7 @@
  *       legume · fish · veg · highprotein
  */
 
-import { deriveRecipe } from './foods.js?v=16.0.0';
+import { deriveRecipe } from './foods.js?v=18.1.1';
 
 const RAW_RECIPES = [
   /* ── Breakfast ──────────────────────────────────────────────────────── */

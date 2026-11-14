@@ -71,6 +71,11 @@ const walk = file => {
   }
 };
 walk('src/app.js');
+for (const file of modules) {
+  for (const m of read(file).matchAll(/\\?v=(\\d+\\.\\d+\\.\\d+)/g)) {
+    if (m[1] !== pkg.version) fail(`${file} imports an out-of-date asset version ${m[1]} instead of ${pkg.version}`);
+  }
+}
 for (const f of modules) if (!precached.has(`./${f}`)) fail(`${f} is imported by the app but not precached — it would be missing offline`);
 
 /* ── 4 · everything index.html loads, and every stylesheet's fonts ─────── */
