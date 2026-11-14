@@ -62,7 +62,7 @@ self.addEventListener('activate', event => {
 // This closes the stale-app gap even when no agent remembers to bump a version.
 async function checkPublishedAssets() {
   const cache = await caches.open(CACHE);
-  const paths = CORE.filter(path => /\\.(?:js|css)$/.test(path) || path === './index.html');
+  const paths = CORE.filter(path => /\.(?:js|css)$/.test(path) || path === './index.html');
   const fresh = [];
   let changed = false;
   for (let offset = 0; offset < paths.length; offset += 6) {
@@ -104,7 +104,7 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   const url = new URL(req.url);
-  const isCodeOrStyle = /\\.(?:js|css)$/.test(url.pathname);
+  const isCodeOrStyle = /\.(?:js|css)$/.test(url.pathname);
   if (req.mode === 'navigate' || isCodeOrStyle) {
     event.respondWith((async () => {
       try {
