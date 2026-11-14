@@ -19,7 +19,7 @@ import { FOODS } from './foods.js?v=16.0.0';
 export const APP = {
   name: 'ZENITH PRO',
 subtitle: 'ZENITH PRO v18.0 Executive OS', //   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
-version: '18.0.0', //   version: '16.1.0',
+version: '18.0.1',
 updated: '2026-11-14', //   updated: '2026-11-09',
   schema: 2
 };
