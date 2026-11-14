@@ -1,156 +1,113 @@
-/**
- * ZENITH PRO · service worker
- * ---------------------------------------------------------------------------
- * Strategy
- *   navigation  → network-first, falling back to the cached shell. v2 was
- *                 cache-first, which could pin an old build for a long time;
- *                 this picks up a deployed update on the next load.
- *   same-origin → stale-while-revalidate (instant from cache, refreshed after).
- *
- * Bump CACHE whenever any precached file changes.
- */
-
-const CACHE = 'zenith-v18-2026-11-14-5';
-
+/** ZENITH PRO offline PWA — atomic updates, fresh code, intact family data. */
+const CACHE = 'zenith-v18-2026-11-15-1';
 const CORE = [
-  './',
-  './index.html',
-  './styles/tokens.css',
-  './styles/base.css',
-  './styles/components.css',
-  './styles/views.css',
-  './styles/revamp.css',
-  './styles/fitness.css',
-  './styles/fitness-calendar.css',
-  './styles/performance.css',
-  './styles/atlas.css',
-  './styles/exercise-coach.css',
-  './styles/workspace.css',
-  './styles/studio.css',
-  './styles/print.css',
-  './assets/fonts/inter-greek-wght-normal.woff2',
-  './assets/fonts/inter-latin-wght-normal.woff2',
-  './src/theme-boot.js',
-  './src/app.js',
-  './src/experience.js',
-  './src/views.js',
-  './src/fitness-engine.js',
-  './src/fitness-view.js',
-  './src/fitness-calendar.js',
-  './src/fitness-calendar-view.js',
-  './src/performance-program.js',
-  './src/exercise-library.js',
-  './src/performance-view.js',
-  './src/ui.js',
-  './src/i18n.js',
-  './src/art.js',
-  './src/dates.js',
-  './src/data.js',
-  './src/foods.js',
-  './src/recipes.js',
-  './src/nutrition-engine.js',
-  './src/storage.js',
-  './manifest.webmanifest',
-  './assets/icon.svg',
-  './assets/icon-192.png',
-  './assets/icon-512.png',
-  './assets/icon-maskable-512.png',
-  './assets/icon-180.png',
+  './','./index.html',
+  './styles/tokens.css','./styles/base.css','./styles/components.css','./styles/views.css',
+  './styles/revamp.css','./styles/fitness.css','./styles/fitness-calendar.css',
+  './styles/performance.css','./styles/atlas.css','./styles/exercise-coach.css',
+  './styles/workspace.css','./styles/studio.css','./styles/print.css',
+  './assets/fonts/inter-greek-wght-normal.woff2','./assets/fonts/inter-latin-wght-normal.woff2',
+  './src/theme-boot.js','./src/update-boot.js','./src/app.js','./src/experience.js',
+  './src/views.js','./src/fitness-engine.js','./src/fitness-view.js',
+  './src/fitness-calendar.js','./src/fitness-calendar-view.js',
+  './src/performance-program.js','./src/exercise-library.js','./src/performance-view.js',
+  './src/ui.js','./src/i18n.js','./src/art.js','./src/dates.js','./src/data.js',
+  './src/foods.js','./src/recipes.js','./src/nutrition-engine.js','./src/storage.js',
+  './manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png',
+  './assets/icon-512.png','./assets/icon-maskable-512.png','./assets/icon-180.png',
   './assets/favicon.png'
 ];
-
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function reliableFetch(url) {
+  let last;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch(url, { cache: 'reload' });
+      if (response.ok && response.type !== 'opaque') return response;
+      last = new Error('Precache '+url+': HTTP '+response.status);
+    } catch (error) { last = error; }
+    if (attempt < 3) await delay((attempt + 1) * 350);
+  }
+  throw last || new Error('Precache failed: '+url);
+}
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then(cache => Promise.allSettled(CORE.map(url => cache.add(url))))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      // A failed asset must never replace a complete offline version.
+      // Small batches avoid intermittent GitHub Pages 503 responses.
+      for (let i = 0; i < CORE.length; i += 6) {
+        await Promise.all(CORE.slice(i, i + 6).map(async url => {
+          await cache.put(url, await reliableFetch(url));
+        }));
+      }
+      await self.skipWaiting();
+    } catch (error) {
+      await caches.delete(CACHE);
+      throw error;
+    }
+  })());
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k.startsWith('zenith-') && k !== CACHE).map(k => caches.delete(k)));
+    await Promise.all(keys.filter(key => key.startsWith('zenith-') && key !== CACHE).map(key => caches.delete(key)));
     await self.clients.claim();
-
-    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    await Promise.all(windows.map(client => {
-      try {
-        const url = new URL(client.url);
-        if (url.origin !== self.location.origin) return undefined;
-        url.searchParams.set('__zenith_build', '18.1.0');
-        return client.navigate(url.href);
-      } catch {
-        return undefined;
-      }
-    }));
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    await Promise.all(clients.map(client => client.postMessage({ type: 'ZENITH_UPDATED', cache: CACHE })));
   })());
 });
-
 self.addEventListener('message', event => {
   if (event.data === 'skipWaiting') self.skipWaiting();
 });
-
+async function savedAsset(request) {
+  let cached = await caches.match(request);
+  if (cached) return cached;
+  const url = new URL(request.url);
+  url.search = '';
+  return caches.match(url.href);
+}
 self.addEventListener('fetch', event => {
   const req = event.request;
-
-  if (req.method !== 'GET') return;
-  if (!req.url.startsWith(self.location.origin)) return;
-
-  // Navigation: try the network so updates land, fall back to the offline shell.
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then(res => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => caches.match('./index.html').then(hit => hit || caches.match('./')))
-    );
-    return;
-  }
-
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   const url = new URL(req.url);
-  const isCodeOrStyle = /\.(?:js|css)$/.test(url.pathname);
-
-  // Code and CSS: network-first. Versioned URLs in index/module imports already
-  // defeat older workers; this also prevents future open tabs from pinning code.
-  if (isCodeOrStyle) {
-    event.respondWith(
-      fetch(req, { cache: 'no-store' })
-        .then(res => {
-          if (res && res.ok && res.type === 'basic') {
-            const copy = res.clone();
-            caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(async () => {
-          const exact = await caches.match(req);
-          if (exact) return exact;
-          url.search = '';
-          return caches.match(url.href);
-        })
-    );
+  const isCodeOrStyle = /\\.(?:js|css)$/.test(url.pathname);
+  if (req.mode === 'navigate' || isCodeOrStyle) {
+    event.respondWith((async () => {
+      try {
+        // Never let the browser HTTP cache pin an earlier release.
+        const response = await fetch(req, { cache: 'no-store' });
+        if (!response.ok && response.status >= 500) throw new Error('Temporary origin HTTP '+response.status);
+        if (response.ok && response.type === 'basic') {
+          const key = req.mode === 'navigate' ? './index.html' : req;
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE).then(cache => cache.put(key, copy)).catch(() => {}));
+        }
+        return response;
+      } catch {
+        const cached = req.mode === 'navigate'
+          ? (await caches.match('./index.html') || await caches.match('./'))
+          : await savedAsset(req);
+        return cached || Response.error();
+      }
+    })());
     return;
   }
-
-  // Other same-origin assets can stay instant while refreshing in background.
-  event.respondWith(
-    caches.match(req).then(cached => {
-      const network = fetch(req)
-        .then(res => {
-          if (res && res.ok && res.type === 'basic') {
-            const copy = res.clone();
-            caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    if (cached) {
+      event.waitUntil(fetch(req, { cache: 'no-store' }).then(res => {
+        if (res.ok && res.type === 'basic') return caches.open(CACHE).then(c => c.put(req, res));
+      }).catch(() => {}));
+      return cached;
+    }
+    try {
+      const response = await fetch(req, { cache: 'no-store' });
+      if (response.ok && response.type === 'basic') {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {}));
+      }
+      return response;
+    } catch { return Response.error(); }
+  })());
 });

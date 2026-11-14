@@ -47,6 +47,15 @@ if (pkg.version !== appVersion) fail(`package.json ${pkg.version} ≠ APP.versio
 const major = String(pkg.version).split('.')[0];
 if (!new RegExp(`^zenith-v${major}-\\d{4}-\\d{2}-\\d{2}-\\d+$`).test(cacheName ?? '')) fail(`CACHE «${cacheName}» should look like zenith-v${major}-YYYY-MM-DD-N`);
 
+const htmlForVersion = read('index.html');
+const declaredBuild = /<meta name="zenith-build" content="([^"]+)"/.exec(htmlForVersion)?.[1];
+if (!declaredBuild?.startsWith(`${pkg.version}-`)) fail(`index.html build marker ${declaredBuild} must start with ${pkg.version}-`);
+for (const m of htmlForVersion.matchAll(/\\?v=(\\d+\\.\\d+\\.\\d+)/g)) {
+  if (m[1] !== pkg.version) fail(`index.html asset version ${m[1]} differs from ${pkg.version}`);
+}
+if (!htmlForVersion.includes('src/update-boot.js?v='+pkg.version)) fail('index.html must load independent update boot script');
+if (!sw.includes("'./src/update-boot.js'")) fail('sw.js must cache the update boot script');
+
 /* ── 3 · every module the app can import is precached ──────────────────── */
 const modules = new Set();
 const walk = file => {
