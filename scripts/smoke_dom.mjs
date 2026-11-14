@@ -255,6 +255,25 @@ ok(!!mealHero&&!!familyHub&&(mealHero.compareDocumentPosition(familyHub)&4)!==0,
 
 /* ── 3b. Fitness Studio: actual actions and local persistence ─────────── */
 
+section('Personal dashboard');
+const personal = viewEl().querySelector('.zn-daily-focus');
+ok(!!personal, 'member-first daily command board renders on Today');
+ok(!viewEl().querySelector('.zn-day-brief'), 'old daily status strip is replaced');
+ok(personal?.querySelectorAll('.zn-daily-gauge[role="progressbar"]').length === 2,
+  'meals and water have accessible real-data gauges');
+ok(personal?.querySelector('.zn-daily-primary')?.getAttribute('data-act') === 'meal' ||
+   personal?.querySelector('.zn-daily-primary')?.getAttribute('data-view') === 'plan',
+  'primary action uses existing meal logging or real meal planner');
+ok([...personal?.querySelectorAll('[data-act="nav"]') || []].every(el =>
+  ['today','plan','meals','shopping','fitness','progress','family','guide'].includes(el.dataset.view)),
+  'dashboard shortcuts point only to implemented destinations');
+await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'), 70);
+ok(viewEl().querySelector('.zn-daily-eyebrow')?.textContent.includes('Δημήτρης'),
+  'switching to son refreshes the correct personal dashboard');
+await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="mother"]'), 70);
+ok(viewEl().querySelector('.zn-daily-eyebrow')?.textContent.includes('Αναστασία'),
+  'switching back restores mother dashboard without stale values');
+
 section('Fitness studio');
 
 await click(window.document.querySelector('#memberStrip [data-act="member"][data-id="son"]'),90);

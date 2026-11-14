@@ -41,7 +41,7 @@ import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar
 import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js';
 import { buildSupplementaryProgram, supplementLogId } from './performance-program.js';
 import { performanceSettingsForm } from './performance-view.js';
-import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu } from './experience.js';
+import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu, dailyFocus } from './experience.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -463,6 +463,13 @@ function render() {
     else html = todayView(ctx);
 
     view.innerHTML = html;
+    // Replace the former duplicate daily status strip with an accessible,
+    // single member-first command surface. Existing nutrition and persistence
+    // paths remain untouched; its controls use the same delegated handlers.
+    if (state.view === 'today') {
+      const oldBrief = view.querySelector('.zn-day-brief');
+      if (oldBrief) oldBrief.outerHTML = dailyFocus(ctx);
+    }
     // Contextual shortcuts are real actions, never placeholder widgets.
     // Insert after the view H1 so heading order and existing screen structure remain intact.
     if(state.view!=='today'){
