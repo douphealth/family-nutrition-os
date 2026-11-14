@@ -35,13 +35,13 @@ import {
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
 } from './views.js?v=18.1.0';
 import { translateTree } from './i18n.js?v=18.1.0';
-import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf } from './fitness-engine.js';
-import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js';
-import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js';
-import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js';
-import { buildSupplementaryProgram, supplementLogId } from './performance-program.js';
-import { performanceSettingsForm } from './performance-view.js';
-import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu } from './experience.js';
+import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf } from './fitness-engine.js?v=18.1.0';
+import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js?v=18.1.0';
+import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js?v=18.1.0';
+import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js?v=18.1.0';
+import { buildSupplementaryProgram, supplementLogId } from './performance-program.js?v=18.1.0';
+import { performanceSettingsForm } from './performance-view.js?v=18.1.0';
+import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu } from './experience.js?v=18.1.0';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
