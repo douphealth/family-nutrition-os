@@ -315,3 +315,23 @@
     }
   }
 }
+
+
+/* PWA update affordance — high-contrast, keyboard reachable, no sidebar overflow */
+@media screen {
+  .side-ver{min-width:0;flex-wrap:wrap;row-gap:7px}
+  .zn-check-update{
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    min-height:34px;padding:6px 9px;margin-left:auto;
+    border:1px solid var(--brand-line);border-radius:10px;
+    background:var(--brand-soft);color:var(--brand-text);
+    font:inherit;font-weight:760;line-height:1.2;white-space:nowrap;cursor:pointer
+  }
+  .zn-check-update:hover{background:var(--surface-hover)}
+  .zn-check-update:disabled{opacity:.6;cursor:wait}
+  .zn-check-update:focus-visible{outline:3px solid #e8b15c;outline-offset:2px}
+  @media(min-width:760px) and (max-width:1099px){
+    .side-ver .zn-check-update{font-size:0;width:36px;padding:6px;margin:0 auto}
+    .side-ver .zn-check-update svg{width:17px;height:17px}
+  }
+}
