@@ -1,4 +1,4 @@
-import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=16.0.0';
+import { esc, icon, GREEK_DAYS_SHORT } from './ui.js?v=18.0.1';
 import { FITNESS_DAYS, FITNESS_GOALS, FITNESS_MODES } from './fitness-engine.js';
 import { fitnessCalendarPanel } from './fitness-calendar-view.js';
 import { performanceView } from './performance-view.js';
