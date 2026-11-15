@@ -1,1 +1,0 @@
-import{$ as e,m as t,nt as n,p as r,s as i}from"./index-C9ZJYdLf.js";var a=n(e());function o(){let e=r(e=>e.profiles),n=r(e=>e.activeId),o=r(e=>i(e,e.activeId)),s=e.find(e=>e.id===n)??e[0];if(!s)throw Error(`No family profiles available`);return{profile:(0,a.useMemo)(()=>t(s,o),[s,o]),load:o,profiles:e}}export{o as t};
