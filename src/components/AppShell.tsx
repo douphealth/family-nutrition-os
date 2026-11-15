@@ -6,6 +6,8 @@ import { setState, useStore, useSaveStatus } from '@/lib/store';
 import logo from '@/assets/zenith-logo-leaf.png';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { memberProgress } from '@/lib/family-progress';
+import { useToday } from '@/lib/useToday';
 
 const NAV = [
   { to: '/', label: 'Σήμερα', icon: Sun },
@@ -25,11 +27,17 @@ export function LanguageSwitch() {
 }
 
 export function MemberSwitcher({ compact = false }: { compact?: boolean }) {
-  const profiles = useStore(s => s.profiles);
-  const activeId = useStore(s => s.activeId);
+  const state = useStore(s => s);
+  const activeId = state.activeId;
+  const today = useToday();
   const { t, pick } = useI18n();
-  return <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" role="radiogroup" aria-label={t('Μέλος οικογένειας')}>
-    {profiles.map(p => <Button variant="outline" role="radio" aria-checked={p.id === activeId} key={p.id} onClick={() => setState(s => ({ ...s, activeId: p.id }))} className={cn('h-auto min-h-11 justify-start gap-2 rounded-lg px-2 py-2 sm:pr-4',p.id === activeId ? 'border-primary bg-primary/5' : 'border-transparent bg-muted/60')}><span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs text-primary-foreground">{p.name.charAt(0)}</span><span className="min-w-0 text-left"><span className="block truncate text-sm">{p.name}</span>{!compact && <span className="block text-[10px] font-normal text-muted-foreground">{t(p.relation)}</span>}</span></Button>)}
+  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label={t('Μέλος οικογένειας')}>
+    {state.profiles.map(p => { const pr = memberProgress(state, p.id, today, today); const pct = Math.round(pr.meals / Math.max(1, pr.mealTotal) * 100); const on = p.id === activeId;
+      return <button type="button" role="radio" aria-checked={on} key={p.id} onClick={() => setState(s => ({ ...s, activeId: p.id }))} className={cn('group min-h-11 rounded-lg border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-2 focus-visible:outline-ring', on ? 'border-primary bg-primary/5 shadow-soft' : 'border-border bg-card')}>
+        <span className="flex items-center gap-2"><span className={cn('grid size-8 shrink-0 place-items-center rounded-full text-xs font-semibold', on ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground')}>{p.name.charAt(0)}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{p.name}</span>{!compact && <span className="block truncate text-[11px] text-muted-foreground">{t(p.relation)}</span>}</span><span className="tabular text-xs font-semibold text-primary">{pct}%</span></span>
+        <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden><span className="block h-full rounded-full bg-gradient-to-r from-success to-sun transition-all duration-700" style={{ width: `${pct}%` }} /></span>
+        <span className="mt-1.5 block text-[11px] text-muted-foreground">{pr.meals}/{pr.mealTotal} {pick('γεύματα σήμερα','meals today')}{pr.sessions > 0 && ` · ${pr.sessions} ${pick('προπόνηση','workout')}`}</span>
+      </button>; })}
   </div>;
 }
 
@@ -50,8 +58,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <p className="mt-auto px-3 pt-8 text-xs leading-relaxed text-sidebar-foreground/60">{pick('Μόνο στη συσκευή σου. Χωρίς λογαριασμό.','Only on your device. No account required.')}<br />USDA · EFSA · WHO · AAP</p>
     </aside>
     <main className="mx-auto max-w-7xl px-4 pb-24 sm:px-8 lg:pb-12"><div className="mb-6 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b py-4"><Link to="/" className="flex items-center gap-2 text-xl font-semibold lg:hidden"><img src={logo} width={1024} height={1024} alt="" className="size-9 object-contain" />Zenith.</Link><p role="status" className={cn('text-xs', saved === 'error' ? 'text-destructive' : 'text-muted-foreground')}>{savedLabel}</p><LanguageSwitch /></div>{children}</main>
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label={pick('Καθημερινή πλοήγηση','Daily navigation')}><div className="grid grid-cols-5">{[NAV[0],NAV[1],NAV[2],NAV[3]].map(({to,label,icon:Icon}) => <Link key={to} to={to} className={cn('flex min-h-16 flex-col items-center justify-center gap-1 text-[11px]',isActive(to) ? 'font-semibold text-primary' : 'text-muted-foreground')}><Icon className="size-5" />{t(label)}</Link>)}<Button variant="ghost" className="flex h-16 flex-col gap-1 rounded-none px-1 text-[11px]" onClick={() => setMore(x => !x)} aria-expanded={more} aria-label={t('Περισσότερα')}>{more ? <X className="size-5" /> : <Menu className="size-5" />}{t('Περισσότερα')}</Button></div></nav>
-    {more && <div className="fixed inset-x-0 bottom-16 z-40 border-y bg-card p-4 shadow-lift lg:hidden"><h2 className="mb-3 text-sm font-semibold">{pick('Οικογένεια & οργάνωση','Family & organization')}</h2><div className="grid grid-cols-2 gap-2">{NAV.slice(4).map(({to,label,icon:Icon}) => <Button asChild variant="outline" key={to} className="h-12 justify-start"><Link to={to}><Icon />{t(label)}</Link></Button>)}</div></div>}
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label={pick('Καθημερινή πλοήγηση','Daily navigation')}><div className="grid grid-cols-5">{[NAV[0],NAV[1],NAV[2],NAV[3]].map(({to,label,icon:Icon}) => <Link key={to} to={to} className={cn('flex min-h-16 flex-col items-center justify-center gap-1 text-[11px]',isActive(to) ? 'font-semibold text-primary' : 'text-muted-foreground')}><span className={cn('grid h-7 w-12 place-items-center rounded-full transition-colors',isActive(to) && 'bg-primary/10')}><Icon className="size-5" /></span>{t(label)}</Link>)}<Button variant="ghost" className="flex h-16 flex-col gap-1 rounded-none px-1 text-[11px]" onClick={() => setMore(x => !x)} aria-expanded={more} aria-label={t('Περισσότερα')}>{more ? <X className="size-5" /> : <Menu className="size-5" />}{t('Περισσότερα')}</Button></div></nav>
+    {more && <div className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm lg:hidden" onClick={() => setMore(false)} aria-hidden />}{more && <div className="fixed inset-x-0 bottom-16 z-40 animate-rise rounded-t-xl border-t bg-card p-4 shadow-lift lg:hidden"><h2 className="mb-3 text-sm font-semibold">{pick('Οικογένεια & οργάνωση','Family & organization')}</h2><div className="grid grid-cols-2 gap-2">{NAV.slice(4).map(({to,label,icon:Icon}) => <Button asChild variant="outline" key={to} className="h-12 justify-start"><Link to={to}><Icon />{t(label)}</Link></Button>)}</div></div>}
   </div>;
 }
 

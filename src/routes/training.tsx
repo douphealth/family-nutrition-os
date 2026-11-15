@@ -16,6 +16,7 @@ import { buildSupplementaryProgram } from '@/training/performance-program';
 import { EMPTY_TRAINING, saveTrainingLog, saveTrainingSettings } from '@/training/store';
 import { REASONS, SESSION_STATE, SESSION_TITLE, TRAINING_EVIDENCE } from '@/training/evidence';
 import { MemberTraining } from '@/components/training/MemberTraining';
+import { BasketballSkills, BasketballSessionFocus } from '@/components/training/BasketballSkills';
 
 export const Route = createFileRoute('/training')({
   head: () => pageHead('Προπόνηση οικογένειας · Family training', 'Age-aware training for every family member with guided exercises, readiness checks and evidence links.'),
@@ -58,6 +59,7 @@ function BasketballTraining() {
       <div className="absolute inset-0 bg-background/25" />
       <div className="relative max-w-md py-8 pr-5 sm:py-10"><p className="mb-3 text-sm font-semibold uppercase text-training">Zenith · Athlete studio</p><h1 className="text-3xl font-bold leading-tight sm:text-4xl">{t("Μπάσκετ.")}<br />{t("Πιο δυνατά,")}<br />{t("με σωστό ρυθμό.")}</h1><p className="mt-4 max-w-64 text-sm font-medium">{profile.name} {t("· Ατομικό πρόγραμμα")}<br />{t("Συμπληρώνει την ομάδα. Δεν την ανταγωνίζεται.")}</p></div>
     </header>
+    <BasketballSkills profile={profile} />
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">{t("Η εβδομάδα σου")}</h2><p className="mt-1 text-sm text-muted-foreground">{start} — {shiftDate(start,6)} · {week.calendarKnown ? t('Καταγεγραμμένες υποχρεώσεις') : t('Χρειάζεται επιβεβαίωση ομάδας')}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" size="icon" aria-label={t("Προηγούμενη εβδομάδα")} onClick={() => changeWeek(shiftDate(start,-7))}><ArrowLeft /></Button><Button variant="outline" onClick={() => changeWeek(weekStartOf(today))}>{t("Σήμερα")}</Button><Button variant="outline" size="icon" aria-label={t("Επόμενη εβδομάδα")} onClick={() => changeWeek(shiftDate(start,7))}><ArrowRight /></Button></div></div>
     <div className="grid grid-cols-2 gap-4 border-y py-5 sm:grid-cols-4">
       {[[t('Ομάδα'), week.calendarKnown ? `${week.calendarStats.teamMinutes}′` : '—'],[t('Ατομικά παράθυρα'),`${program.plannedMinutes}′`],[t('Συνθήκες ελέγχθηκαν'),`${program.clearedMinutes}′`],[t('Ολοκληρωμένα'),`${program.completedMinutes}′`]].map(([label,value]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-3xl font-semibold tabular">{value}</p></div>)}
@@ -73,6 +75,7 @@ function BasketballTraining() {
       {session && <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
         <section className="min-w-0"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm text-training">{session.date} · {session.minutes}{t("′ παράθυρο ·")}{session.intensity}</p><h2 className="mt-2 text-2xl font-semibold">{t(SESSION_TITLE[session.type])}</h2></div><Button onClick={() => setCoach(true)}><PlayIcon /> {canExecute ? t('Έναρξη συνεδρίας') : t('Προεπισκόπηση')}</Button></div>
           <p className="mt-4 border-l-4 border-training bg-training-surface p-4 text-sm">{t(REASONS[session.reason] ?? session.reason)}</p>
+          <BasketballSessionFocus id={settings.basketballSkillFocus} note={settings.basketballCoachNote} />
           <p className="my-4 text-sm text-muted-foreground">{t("Τα λεπτά περιλαμβάνουν προθέρμανση και ανάπαυση, όχι συνεχή άσκηση. Ακολούθησε τη δόση κάθε βήματος. Τα βίντεο δείχνουν τεχνική, όχι ένταση ή θεραπεία.")}</p>
           <ol>{session.steps.map((step: any,i: number) => <li key={i} className="border-b py-4"><details open={i === 0}><summary className="flex list-none items-start gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-training-surface font-mono text-sm text-training">{i+1}</span><span className="min-w-0 flex-1 text-sm leading-relaxed">{pick(step.el, step.en)}</span><span className="shrink-0 text-sm font-medium text-training">{step.minutes}′</span></summary><div className="mt-3 pl-0 sm:pl-11">{step.exerciseIds.map((id: string) => <ExerciseGuide id={id} key={id} />)}</div></details></li>)}</ol>
           {session.done && <Button className="mt-4" variant="outline" onClick={() => completed(false)}><Undo2 /> {t("Αναίρεση ολοκλήρωσης")}</Button>}
@@ -86,7 +89,7 @@ function BasketballTraining() {
       </div>}
     </>}
     <section className="border-t pt-6"><h2 className="flex items-center gap-2 text-xl font-semibold"><ShieldCheck className="size-5 text-training" /> {t("Τεκμηρίωση, όχι υποσχέσεις")}</h2><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t("Επαναφέραμε το αρχικό πρόγραμμα από την έκδοση 18.1.2. Δεν αποτελεί εξατομικευμένη συνταγή ή εγγύηση αποτελέσματος. Η πρόοδος και η επιβάρυνση αποφασίζονται μαζί με τον προπονητή της ομάδας.")}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{TRAINING_EVIDENCE.map(source => <div key={source.url} className="border-b py-4"><a className="inline-flex items-start gap-2 font-medium text-training underline-offset-4 hover:underline" href={source.url} target="_blank" rel="noopener noreferrer">{t(source.name)}<ExternalLink className="mt-1 size-3 shrink-0" /></a><p className="mt-2 text-sm">{t(source.claim)}</p><p className="mt-2 text-xs text-muted-foreground">{t(source.checked)}</p></div>)}</div><p className="mt-4 text-xs text-muted-foreground">{t("14 σύνδεσμοι YouTube: τίτλος, κανάλι και διαθεσιμότητα επανελέγχθηκαν 15/11/2026. Δεν έγινε πλήρης ανεξάρτητος έλεγχος κάθε βίντεο. Η διαθεσιμότητα μπορεί να αλλάξει. Χωρίς ενσωμάτωση βίντεο ή αυτόματη αναπαραγωγή.")}</p></section>
-    {coach && session && <SessionCoach session={session} allowed={canExecute} onClose={() => setCoach(false)} onComplete={minutes => completed(true, minutes)} />}
+    {coach && session && <SessionCoach session={session} allowed={canExecute} basketballFocus={settings.basketballSkillFocus} basketballNote={settings.basketballCoachNote} onClose={() => setCoach(false)} onComplete={minutes => completed(true, minutes)} />}
   </div>;
 }
 function PlayIcon() {

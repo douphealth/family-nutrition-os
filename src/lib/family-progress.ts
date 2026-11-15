@@ -17,3 +17,30 @@ export function memberProgress(state: State, memberId: string, start: string, en
     completedMinutes: sessions.reduce((sum, log) => sum + Math.max(0, Number(log.completedMinutes) || 0), 0),
     unknownMinutes: sessions.filter(log => !Number.isFinite(log.completedMinutes)).length };
 }
+
+/** Local-only aggregates: no identifiers or personal details leave the device. */
+export function familyRoutines(state: State, end: string, days: 7 | 28) {
+  const start = addDays(end, 1 - days);
+  const previousEnd = addDays(start, -1);
+  const previousStart = addDays(start, -days);
+  const daily = Array.from({ length: days }, (_, i) => {
+    const date = addDays(start, i);
+    const members = state.profiles.map(p => memberProgress(state, p.id, date, date));
+    return { date, meals: members.reduce((sum, p) => sum + p.meals, 0),
+      mealTotal: members.reduce((sum, p) => sum + p.mealTotal, 0),
+      sessions: members.reduce((sum, p) => sum + p.sessions, 0) };
+  });
+  const current = state.profiles.map(p => memberProgress(state, p.id, start, end));
+  const previous = state.profiles.map(p => memberProgress(state, p.id, previousStart, previousEnd));
+  const meals = current.reduce((sum, p) => sum + p.meals, 0);
+  const mealTotal = current.reduce((sum, p) => sum + p.mealTotal, 0);
+  const previousMeals = previous.reduce((sum, p) => sum + p.meals, 0);
+  return { start, end, daily, meals, mealTotal, previousMeals,
+    sessions: current.reduce((sum, p) => sum + p.sessions, 0),
+    previousSessions: previous.reduce((sum, p) => sum + p.sessions, 0),
+    completedMinutes: current.reduce((sum, p) => sum + p.completedMinutes, 0),
+    unknownMinutes: current.reduce((sum, p) => sum + p.unknownMinutes, 0),
+    slots: SLOTS.map(slot => ({ slot, completed: daily.reduce((sum, day) => sum +
+      state.profiles.filter(p => state.logs[p.id]?.[day.date]?.meals[slot]?.status === 'done').length, 0),
+      total: days * state.profiles.length })) };
+}

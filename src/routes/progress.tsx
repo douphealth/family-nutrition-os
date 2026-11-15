@@ -14,6 +14,7 @@ import { setState, todayKey, useStore, type DayLog } from "@/lib/store";
 import { useActive } from "@/lib/useActive";
 import { cn } from "@/lib/utils";
 import { FamilyProgress } from '@/components/FamilyProgress';
+import { FamilyRoutines } from '@/components/FamilyRoutines';
 
 export const Route = createFileRoute("/progress")({
   head: () => pageHead("Πρόοδος οικογένειας · Family progress", "Completed meals and training for each family member, with recorded minutes and personal weight trends."),
@@ -48,6 +49,7 @@ function Progress() {
     <>
       <PageHeader eyebrow={t("Τάση, όχι μία μέρα")} title={t("Πρόοδος")} />
       <FamilyProgress />
+      <FamilyRoutines />
       <div className="mb-6"><MemberSwitcher /></div>
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <section className="card-soft p-6">

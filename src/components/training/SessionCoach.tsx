@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { exerciseFor, isSafeYouTubeWatchUrl } from '@/training/exercise-library';
 import { SESSION_TITLE } from '@/training/evidence';
 import { Input } from '@/components/ui/input';
+import { BasketballSessionFocus } from './BasketballSkills';
 
 export function ExerciseGuide({ id }: { id: string }) {
-  const { t, pick, language } = useI18n();
+   const { t, pick, language } = useI18n();
   const e = exerciseFor(id);
   if (!e) return null;
   return <div className="border-t py-4 first:border-0">
@@ -21,7 +22,7 @@ export function ExerciseGuide({ id }: { id: string }) {
   </div>;
 }
 
-export function SessionCoach({ session, allowed, onClose, onComplete }: { session: any; allowed: boolean; onClose: () => void; onComplete: (minutes: number) => void }) {
+export function SessionCoach({ session, allowed, onClose, onComplete, basketballFocus, basketballNote }: { session: any; allowed: boolean; onClose: () => void; onComplete: (minutes: number) => void; basketballFocus?: unknown; basketballNote?: unknown }) {
   const { t, pick, language } = useI18n();
   const [index, setIndex] = useState(0);
   const [seconds, setSeconds] = useState(0);
@@ -43,6 +44,7 @@ export function SessionCoach({ session, allowed, onClose, onComplete }: { sessio
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8">
       <div className="flex items-center justify-between gap-3 border-b pb-4"><div><p className="text-xs text-training">{session.date} {session.start && `· ${session.start}–${session.end}`}</p><h2 id="coach-title" className="text-xl font-semibold">{session.type === 'mobility' ? pick('Κίνηση & κινητικότητα','Movement & mobility') : t(SESSION_TITLE[session.type])}</h2></div><Button variant="ghost" size="icon" aria-label={t("Κλείσιμο συνεδρίας")} onClick={onClose} autoFocus><X /></Button></div>
       {!allowed && <p className="mt-4 rounded-lg bg-accent p-4 text-sm text-accent-foreground">{t("Προεπισκόπηση μόνο. Δεν έχεις έγκριση εκτέλεσης για αυτή την ημέρα.")}</p>}
+      {index === 0 && <BasketballSessionFocus id={basketballFocus} note={basketballNote} />}
       <div className="mt-6 flex gap-1" aria-label={t(`Βήμα ${index + 1} από ${session.steps.length}`)}>{session.steps.map((_: unknown, i: number) => <div key={i} className={`h-1 flex-1 ${i <= index ? 'bg-training' : 'bg-muted'}`} />)}</div>
       <p className="mt-6 text-sm font-medium text-training">{t("ΒΗΜΑ")}{index + 1} / {session.steps.length} {t("· ΠΑΡΑΘΥΡΟ")}{step.minutes}′</p>
       <h3 className="mt-3 text-xl font-semibold leading-relaxed">{pick(step.el, step.en)}</h3>

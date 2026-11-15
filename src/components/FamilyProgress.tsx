@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { setState, useStore } from '@/lib/store';
 import { useToday } from '@/lib/useToday';
 import { greekDate } from '@/lib/format';
+import { Ring } from '@/components/Ring';
 
 export function FamilyProgress() {
   const state = useStore(s => s);
@@ -21,7 +22,7 @@ export function FamilyProgress() {
       const progress = memberProgress(state, p.id, start, today);
       return <article key={p.id} className="card-soft p-5" aria-label={p.name}>
         <div className="mb-5 flex items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 font-semibold text-primary">{p.name.charAt(0)}</span><div className="min-w-0"><h3 className="truncate font-sans text-lg font-semibold">{p.name}</h3><p className="text-xs text-muted-foreground">{t(p.relation)}</p></div>{progress.completeDays > 0 && <Check className="ml-auto size-5 text-success" />}</div>
-        <div className="flex items-center justify-between gap-2 text-sm"><span className="flex items-center gap-2 text-muted-foreground"><Utensils className="size-4" />{pick('Γεύματα','Meals')}</span><b className="tabular" data-testid={`meals-${p.id}`}>{progress.meals}/{progress.mealTotal}</b></div>
+        <div className="mb-5 flex justify-center"><Ring value={progress.meals} max={progress.mealTotal} size={112} stroke={10} color="var(--success)"><span><b className="tabular block text-2xl">{Math.round(progress.meals / Math.max(1, progress.mealTotal) * 100)}%</b><span className="text-[11px] text-muted-foreground">{pick('γεύματα','meals')}</span></span></Ring></div><div className="flex items-center justify-between gap-2 text-sm"><span className="flex items-center gap-2 text-muted-foreground"><Utensils className="size-4" />{pick('Γεύματα','Meals')}</span><b className="tabular" data-testid={`meals-${p.id}`}>{progress.meals}/{progress.mealTotal}</b></div>
         <progress className="family-meter my-3 h-1.5 w-full" value={progress.meals} max={progress.mealTotal} aria-label={pick('Ολοκληρωμένα γεύματα','Completed meals')} />
         <div className="flex items-center justify-between gap-2 text-sm"><span className="flex items-center gap-2 text-muted-foreground"><Dumbbell className="size-4" />{pick('Συνεδρίες','Sessions')}</span><b data-testid={`sessions-${p.id}`}>{progress.sessions}</b></div>
         <p className="mt-2 text-xs text-muted-foreground">{progress.completedMinutes}′ {pick('καταγεγραμμένα','recorded')}{progress.unknownMinutes > 0 && ` · ${progress.unknownMinutes} ${pick('χωρίς λεπτά','without minutes')}`}</p>
