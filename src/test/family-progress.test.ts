@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FAMILY } from '@/engine/data';
-import { familyRoutines, memberProgress } from '@/lib/family-progress';
+import { activityLog, familyRoutines, memberProgress } from '@/lib/family-progress';
 import { mergeChangedState, parseSavedState } from '@/lib/persistence';
 import type { State } from '@/lib/store';
 
@@ -68,5 +68,15 @@ describe('Saved family completion', () => {
   it('rejects incomplete backups rather than destroying existing member records', () => {
     expect(() => parseSavedState({ profiles: [{}] })).toThrow();
     expect(() => parseSavedState({ ...fixture(), activeId: 'missing' })).toThrow();
+  });
+  it('counts quick-logged activities with exactly the reported minutes and rejects invalid entries', () => {
+    const state = fixture();
+    const entry = activityLog('mother', '2026-11-15', 'walk', 30, 1)!;
+    state.trainingLogs = { [entry.id]: entry };
+    const p = memberProgress(state, 'mother', '2026-11-15', '2026-11-15');
+    expect(p.sessions).toBe(1);
+    expect(p.completedMinutes).toBe(30);
+    expect(activityLog('mother', '2026-11-15', 'walk', 0, 1)).toBeNull();
+    expect(activityLog('mother', '2026-11-15', 'walk', 241, 1)).toBeNull();
   });
 });

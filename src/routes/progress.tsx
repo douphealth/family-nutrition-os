@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { TrendingDown, TrendingUp, Minus as Flat, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { MemberSwitcher, PageHeader } from "@/components/AppShell";
+import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { addDays } from "@/engine/dates";
@@ -15,6 +15,7 @@ import { useActive } from "@/lib/useActive";
 import { cn } from "@/lib/utils";
 import { FamilyProgress } from '@/components/FamilyProgress';
 import { FamilyRoutines } from '@/components/FamilyRoutines';
+import { QuickCheckIn } from '@/components/QuickCheckIn';
 
 export const Route = createFileRoute("/progress")({
   head: () => pageHead("Πρόοδος οικογένειας · Family progress", "Completed meals and training for each family member, with recorded minutes and personal weight trends."),
@@ -48,9 +49,10 @@ function Progress() {
   return (
     <>
       <PageHeader eyebrow={t("Τάση, όχι μία μέρα")} title={t("Πρόοδος")} />
+      <QuickCheckIn />
       <FamilyProgress />
       <FamilyRoutines />
-      <div className="mb-6"><MemberSwitcher /></div>
+      <h2 className="mb-3 text-xl font-semibold">{t("Βάρος")} · {profile.name}</h2>
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <section className="card-soft p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">

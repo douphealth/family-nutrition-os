@@ -1,6 +1,8 @@
 export type Bilingual = { el: string; en: string };
 const text = (el: string, en: string): Bilingual => ({ el, en });
-const video = (id: string, title: string) => ({ url: `https://www.youtube.com/watch?v=${id}`, title, channel: 'Jr. NBA Jr. WNBA', checkedAt: '2026-11-15', verification: 'metadata-only' as const });
+export type VideoLevel = 'foundation' | 'advanced';
+const video = (id: string, title: string, channel = 'Jr. NBA Jr. WNBA', level: VideoLevel = 'foundation') => ({ url: `https://www.youtube.com/watch?v=${id}`, title, channel, level, checkedAt: '2026-11-15', verification: 'metadata-only' as const });
+const BT = 'BreakthroughBBall';
 
 // Learning resources, not additional prescribed sessions or clearance.
 export const BASKETBALL_SKILLS = [
@@ -13,7 +15,7 @@ export const BASKETBALL_SKILLS = [
     next: text('Με τον προπονητή: βλέμμα σε στόχο, έπειτα αργή κίνηση και απλή αλλαγή χεριού.', 'With your coach: eyes on a target, then slow movement and a simple hand change.'),
     observe: text('Ο προπονητής μετρά απώλειες ελέγχου σε ίδιο χρόνο, επιφάνεια και ρυθμό· όχι μόνο ταχύτητα.', 'Your coach can compare lost-control events over the same time, surface and pace; not speed alone.'),
     equipment: text('Μπάλα · επίπεδος χώρος', 'Ball · level space'),
-    videos: [video('v_jqSQswdbU', 'Jr. NBA at Home: 100 Dribble Drill')],
+    videos: [video('v_jqSQswdbU', 'Jr. NBA at Home: 100 Dribble Drill'), video('BnvGa0I8bMc', 'Fundamentals of Dribbling'), video('2_Nqc7eXkBM', 'Stationary Crossover (Low/Middle/High)'), video('y11vH_H7uWo', 'Chris Paul on Ball Handling', undefined, 'advanced'), video('wJK-BT1GBIc', '3 Two-Ball Drills for ELITE Handles', BT, 'advanced')],
   },
   {
     id: 'shooting', title: text('Σουτ & σταθερή ρουτίνα', 'Shooting & repeatable routine'),
@@ -24,7 +26,7 @@ export const BASKETBALL_SKILLS = [
     next: text('Πρώτα σταθερή τεχνική, έπειτα μικρή αλλαγή απόστασης ή υποδοχή πάσας — όχι και τα δύο μαζί.', 'Establish repeatable form, then slightly change distance or add a catch; not both at once.'),
     observe: text('Σύγκρινε εύστοχα/προσπάθειες από ίδια θέση· ένα μικρό δείγμα δεν αποδεικνύει βελτίωση.', 'Compare makes/attempts from the same spot; a small sample does not establish improvement.'),
     equipment: text('Μπάλα · καλάθι', 'Ball · hoop'),
-    videos: [video('Ftj7lAdgY1k', '7 Spot Shooting | Fun Youth Basketball Drills from the Jr. NBA available in the MOJO App')],
+    videos: [video('Ftj7lAdgY1k', '7 Spot Shooting | Fun Youth Basketball Drills from the Jr. NBA available in the MOJO App'), video('2hY6fQmPJQ8', '10 Best Basketball Form Shooting Drills You Need To Know', BT), video('1N01NH1h0ds', 'Fix Your Arc With The Stop Shooting Drill', BT, 'advanced'), video('JqR-SLQDMwI', '"The Shot Doctor" - How to Fix Bad Shooting Form – 12 Common Problems Solved', BT, 'advanced')],
   },
   {
     id: 'finishing', title: text('Lay-up & βηματισμός', 'Layups & footwork'),
@@ -35,7 +37,7 @@ export const BASKETBALL_SKILLS = [
     next: text('Ο προπονητής προσθέτει αργή προσέγγιση· επαφή και ταχύτητα μόνο μέσα σε εγκεκριμένη ομαδική δουλειά.', 'Your coach can add a slow approach; contact and speed belong in approved team work.'),
     observe: text('Έλεγξε τη σωστή ακολουθία ξεχωριστά από την ευστοχία· δούλεψε και τις δύο πλευρές.', 'Assess correct footwork separately from shot accuracy; work on both sides.'),
     equipment: text('Μπάλα · καλάθι · ελεύθερη προσγείωση', 'Ball · hoop · clear landing space'),
-    videos: [video('3noGvqHdoRE', 'Fundamentals of Lay-Ups'), video('9z6NtAuiB4U', 'Layup Skip Drill')],
+    videos: [video('3noGvqHdoRE', 'Fundamentals of Lay-Ups'), video('9z6NtAuiB4U', 'Layup Skip Drill'), video('YFe1g5F4apY', 'The Mikan Drill - Jr. Wizards Instructional Series', 'Jr. Wizards', 'advanced')],
   },
   {
     id: 'passing', title: text('Πάσα & αποφάσεις', 'Passing & decisions'),
@@ -57,9 +59,21 @@ export const BASKETBALL_SKILLS = [
     next: text('Αργός καθρέφτης με συνεργάτη, μετά αποφάσεις στην ομάδα· όχι έξτρα εξαντλητικά slides.', 'Slow partner mirroring, then decisions in team practice; not extra exhausting slide drills.'),
     observe: text('Ζήτησε έλεγχο ισορροπίας, απόστασης και αποφυγής φάουλ· όχι μόνο κλεψίματα.', 'Ask for feedback on balance, spacing and foul avoidance; not steals alone.'),
     equipment: text('Επίπεδο γήπεδο · κατάλληλα παπούτσια', 'Level court · suitable shoes'),
-    videos: [video('4A6KqSJX8Ek', 'Fundamentals of A Defensive Stance')],
+    videos: [video('4A6KqSJX8Ek', 'Fundamentals of A Defensive Stance'), video('PggPs5r-iJY', '3-Touch Defensive Drill'), video('aSvFDJcIzys', 'Closeout, Slide, & Backpedal Drill', undefined, 'advanced'), video('380WaSj2DxE', '2-Person Closeout Drill', undefined, 'advanced')],
+  },
+  {
+    id: 'footwork', title: text('Πόδια, pivot & jab step', 'Footwork, pivots & jab step'),
+    goal: text('Νόμιμος άξονας, ισορροπία και απειλή πριν από ντρίμπλα ή σουτ.', 'A legal pivot foot, balance and a threat before you dribble or shoot.'),
+    cues: [text('Διάλεξε πόδι-άξονα και κράτα το στο πάτωμα μέχρι να φύγει η μπάλα από το χέρι για ντρίμπλα.', 'Choose a pivot foot and keep it down until the ball leaves your hand on the dribble.'), text('Triple threat: μπάλα κοντά στο σώμα, γόνατα λυγισμένα, βλέμμα στο καλάθι.', 'Triple threat: ball close to the body, knees flexed, eyes on the rim.'), text('Το jab step είναι μικρό και γρήγορο· το σώμα μένει ισορροπημένο πάνω από τη βάση.', 'Keep the jab step short and quick, with your body balanced over your base.')],
+    correction: text('Αν σέρνεται ή σηκώνεται το πόδι-άξονας, κάνε το αργά χωρίς μπάλα μέχρι να είναι αυτόματο.', 'If the pivot foot slides or lifts, rehearse slowly without the ball until it is automatic.'),
+    easier: text('Μπροστινό και πίσω pivot χωρίς άμυνα, με σταθερή μπάλα.', 'Front and reverse pivots without a defender, ball held firmly.'),
+    next: text('Με τον προπονητή: jab, ψεύτικο σουτ και μία επιλογή (σουτ ή drive) απέναντι σε παθητικό αμυντικό.', 'With your coach: jab, shot fake and one read (shoot or drive) against a passive defender.'),
+    observe: text('Ο προπονητής ελέγχει παραβάσεις βημάτων και ισορροπία, όχι μόνο αν πέτυχε το καλάθι.', 'Your coach checks travels and balance, not only whether the shot went in.'),
+    equipment: text('Μπάλα · καλάθι · επίπεδο γήπεδο', 'Ball · hoop · level court'),
+    videos: [video('5DgXrx7ZkHU', 'Reverse Pivot Drill'), video('WM90iRaOZ3w', 'Fundamentals Of The Jab Step'), video('Ggg1unQOFfY', 'The Jab Step Breakdown Drill', undefined, 'advanced'), video('izfKUPxZboc', 'Pivot, Shot Fake, Jab Step (Advanced Footwork)', 'Atlanta Hawks', 'advanced')],
   },
 ] as const;
 
 export type BasketballSkillId = typeof BASKETBALL_SKILLS[number]['id'];
+export const BASKETBALL_VIDEO_COUNT = BASKETBALL_SKILLS.reduce((n, s) => n + s.videos.length, 0);
 export function basketballSkill(id: unknown) { return BASKETBALL_SKILLS.find(skill => skill.id === id); }

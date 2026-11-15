@@ -6,10 +6,11 @@ import { buildFitnessWeek, defaultFitnessSettings } from '@/training/fitness-eng
 import { buildSupplementaryProgram } from '@/training/performance-program';
 
 describe('Dimitris basketball learning resources', () => {
-  it('provides eight distinct direct basketball videos across five skill areas', () => {
+  it('provides 23 distinct videos across six skill areas with advanced options in each', () => {
     const videos = BASKETBALL_SKILLS.flatMap(s => [...s.videos]);
-    expect(BASKETBALL_SKILLS.map(s => s.id)).toEqual(['handling', 'shooting', 'finishing', 'passing', 'defense']);
-    expect(new Set(videos.map(v => v.url)).size).toBe(8);
+    expect(BASKETBALL_SKILLS.map(s => s.id)).toEqual(['handling', 'shooting', 'finishing', 'passing', 'defense', 'footwork']);
+    expect(new Set(videos.map(v => v.url)).size).toBe(23);
+    expect(BASKETBALL_SKILLS.filter(s => s.id !== 'passing').every(s => s.videos.some(v => v.level === 'advanced'))).toBe(true);
     expect(videos.every(v => isSafeYouTubeWatchUrl(v.url))).toBe(true);
   });
   it('does not turn saved refinements into extra workload or clearance', () => {

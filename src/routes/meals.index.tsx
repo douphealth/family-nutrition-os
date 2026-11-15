@@ -12,7 +12,7 @@ import { SLOT_IMAGE } from "@/lib/images";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/meals/")({
-  head: () => pageHead("Συνταγές", "28 ελληνικές συνταγές με θρεπτικά στοιχεία από USDA για κάθε μερίδα."),
+  head: () => pageHead("Συνταγές", "40 ελληνικές συνταγές με θρεπτικά στοιχεία από USDA για κάθε μερίδα."),
   component: Meals,
 });
 

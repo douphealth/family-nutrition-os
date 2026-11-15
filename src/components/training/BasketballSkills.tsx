@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n';
 import { useStore } from '@/lib/store';
-import { BASKETBALL_SKILLS, basketballSkill, type Bilingual } from '@/training/basketball-skills';
+import { BASKETBALL_SKILLS, BASKETBALL_VIDEO_COUNT, basketballSkill, type Bilingual, type VideoLevel } from '@/training/basketball-skills';
 import { isSafeYouTubeWatchUrl } from '@/training/exercise-library';
 import { EMPTY_TRAINING, saveTrainingSettings } from '@/training/store';
 import { cn } from '@/lib/utils';
@@ -17,11 +17,13 @@ export function BasketballSkills({ profile }: { profile: { id: string; name: str
   const skill = basketballSkill(selected) ?? BASKETBALL_SKILLS[0];
   const [note, setNote] = useState(typeof settings.basketballCoachNote === 'string' ? settings.basketballCoachNote : '');
   const [didSave, setDidSave] = useState(false);
+  const [level, setLevel] = useState<'all' | VideoLevel>('all');
+  const videos = skill.videos.filter(v => isSafeYouTubeWatchUrl(v.url) && (level === 'all' || v.level === level));
   const render = (value: Bilingual) => pick(value.el, value.en);
   return <section className="border-y py-6" aria-labelledby="basketball-skills-title">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><p className="text-xs font-semibold uppercase text-training">{profile.name} · Basketball lab</p><h2 id="basketball-skills-title" className="mt-2 text-2xl font-semibold">{pick('Μία δεξιότητα. Μία καθαρή βελτίωση.', 'One skill. One clear refinement.')}</h2></div>
-      <span className="flex items-center gap-2 text-sm text-training"><Youtube className="size-4" />{pick('8 βίντεο · Jr. NBA', '8 videos · Jr. NBA')}</span>
+      <span className="flex items-center gap-2 text-sm text-training"><Youtube className="size-4" />{pick(`${BASKETBALL_VIDEO_COUNT} βίντεο · βασικά & προχωρημένα`, `${BASKETBALL_VIDEO_COUNT} videos · foundation & advanced`)}</span>
     </div>
     <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">{pick('Οι δεξιότητες εντάσσονται στην προπόνηση της ομάδας με τον προπονητή. Δεν προσθέτουν νέες συνεδρίες, λεπτά ή άδεια εκτέλεσης. Τετάρτη: μόνο αποκατάσταση, χωρίς προπόνηση μπάλας.', 'Practice these skills within team training with your coach. They add no sessions, minutes or execution clearance. Wednesday remains recovery-only, without ball practice.')}</p>
     <div className="my-5 flex flex-wrap gap-2" role="group" aria-label={pick('Δεξιότητα μπάσκετ', 'Basketball skill')}>
@@ -38,8 +40,10 @@ export function BasketballSkills({ profile }: { profile: { id: string; name: str
       <aside className="min-w-0 border-t pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
         <p className="mb-3 text-xs text-muted-foreground">{render(skill.equipment)}</p>
         <h4 className="font-semibold">{pick('Δες την τεχνική', 'Watch the technique')}</h4>
-        <div className="mt-2 divide-y">{skill.videos.filter(v => isSafeYouTubeWatchUrl(v.url)).map(v => <div key={v.url} className="py-3"><p className="text-sm leading-relaxed">{v.title}</p><Button asChild variant="outline" size="sm" className="mt-2"><a href={v.url} target="_blank" rel="noopener noreferrer"><Youtube />{pick('Άνοιγμα YouTube', 'Open YouTube')}</a></Button></div>)}</div>
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{pick('Jr. NBA Jr. WNBA · Τίτλοι, κανάλι και διαθεσιμότητα ελέγχθηκαν 15/11/2026. Όχι πλήρης έλεγχος περιεχομένου. Τα βίντεο είναι παραδείγματα, όχι προσωπική δοσολογία· μην αντιγράφεις αυτόματα επαναλήψεις ή ένταση.', 'Jr. NBA Jr. WNBA · Titles, channel and availability checked 15/11/2026. Not a full content review. Videos are examples, not a personal dose; do not automatically copy repetitions or intensity.')}</p>
+        <div className="mt-3 flex gap-1 rounded-full border p-1" role="group" aria-label={pick('Επίπεδο βίντεο', 'Video level')}>{(['all', 'foundation', 'advanced'] as const).map(l => <button key={l} type="button" aria-pressed={level === l} onClick={() => setLevel(l)} className={cn('flex-1 rounded-full px-2 py-1.5 text-xs font-medium transition-colors', level === l ? 'bg-training text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>{l === 'all' ? pick('Όλα', 'All') : l === 'foundation' ? pick('Βάση', 'Foundation') : pick('Προχωρημένα', 'Advanced')}</button>)}</div>
+        <div className="mt-2 divide-y">{videos.length === 0 && <p className="py-3 text-sm text-muted-foreground">{pick('Δεν υπάρχει βίντεο αυτού του επιπέδου εδώ.', 'No video at this level for this skill.')}</p>}{videos.map(v => <div key={v.url} className="py-3"><div className="flex items-center gap-2"><span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', v.level === 'advanced' ? 'bg-training text-primary-foreground' : 'bg-training-surface text-training')}>{v.level === 'advanced' ? pick('Προχωρημένο', 'Advanced') : pick('Βάση', 'Foundation')}</span><span className="truncate text-xs text-muted-foreground">{v.channel}</span></div><p className="mt-1 text-sm leading-relaxed">{v.title}</p><Button asChild variant="outline" size="sm" className="mt-2"><a href={v.url} target="_blank" rel="noopener noreferrer"><Youtube />{pick('Άνοιγμα YouTube', 'Open YouTube')}</a></Button></div>)}</div>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{pick('Τα προχωρημένα βίντεο ξεκινούν μόνο όταν η βασική εκδοχή γίνεται σωστά, και μόνο με έγκριση προπονητή.', 'Start advanced videos only once the foundation version is clean, and only with your coach’s approval.')}</p>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{pick('Jr. NBA · BreakthroughBBall · NBA ομάδες · Τίτλοι, κανάλι και διαθεσιμότητα ελέγχθηκαν 15/11/2026. Όχι πλήρης έλεγχος περιεχομένου. Τα βίντεο είναι παραδείγματα, όχι προσωπική δοσολογία· μην αντιγράφεις αυτόματα επαναλήψεις ή ένταση.', 'Jr. NBA · BreakthroughBBall · NBA teams · Titles, channel and availability checked 15/11/2026. Not a full content review. Videos are examples, not a personal dose; do not automatically copy repetitions or intensity.')}</p>
       </aside>
     </div>
     <form className="mt-6 border-t pt-5" onSubmit={e => { e.preventDefault(); saveTrainingSettings(profile.id, { basketballSkillFocus: skill.id, basketballCoachNote: note.trim() }, profile); setDidSave(true); }}>

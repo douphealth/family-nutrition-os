@@ -12,7 +12,7 @@ export function memberProgress(state: State, memberId: string, start: string, en
   }
   const sessions = Object.values(state.trainingLogs ?? {}).filter(log =>
     log.memberId === memberId && log.done === true && log.date >= start && log.date <= end &&
-    /^(member-session:|supplement-log:)/.test(String(log.id)));
+    /^(member-session:|supplement-log:|activity-log:)/.test(String(log.id)));
   return { meals, mealTotal: days * SLOTS.length, completeDays, sessions: sessions.length,
     completedMinutes: sessions.reduce((sum, log) => sum + Math.max(0, Number(log.completedMinutes) || 0), 0),
     unknownMinutes: sessions.filter(log => !Number.isFinite(log.completedMinutes)).length };
@@ -43,4 +43,12 @@ export function familyRoutines(state: State, end: string, days: 7 | 28) {
     slots: SLOTS.map(slot => ({ slot, completed: daily.reduce((sum, day) => sum +
       state.profiles.filter(p => state.logs[p.id]?.[day.date]?.meals[slot]?.status === 'done').length, 0),
       total: days * state.profiles.length })) };
+}
+export const ACTIVITY_KINDS = ['team', 'walk', 'strength', 'mobility', 'sport'] as const;
+export type ActivityKind = typeof ACTIVITY_KINDS[number];
+/** A member-reported completed activity; minutes are what the member actually did, never a plan. */
+export function activityLog(memberId: string, date: string, kind: ActivityKind, minutes: number, stamp: number) {
+  const m = Math.round(Number(minutes));
+  if (!Number.isFinite(m) || m < 1 || m > 240 || !ACTIVITY_KINDS.includes(kind)) return null;
+  return { id: `activity-log:${memberId}:${date}:${stamp}`, memberId, date, kind, done: true, completedMinutes: m };
 }
