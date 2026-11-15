@@ -13,6 +13,7 @@ import { SLOT_IMAGE } from "@/lib/images";
 import { getLog, planFor, recipeById, setState, todayKey, updateLog, useStore } from "@/lib/store";
 import { useActive } from "@/lib/useActive";
 import { cn } from "@/lib/utils";
+import { useToday } from '@/lib/useToday';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,7 +37,7 @@ function greeting() {
 function Today() {
   const { t: tr, pick, language } = useI18n();
   const { profile, load } = useActive();
-  const date = todayKey();
+  const date = useToday();
   const plan = planFor(date);
   const log = useStore((s) => getLog(s, s.activeId, date));
   const t = targetsFor(profile, load);
@@ -73,7 +74,7 @@ function Today() {
 
       <MemberSwitcher />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y py-4"><p className="text-sm text-muted-foreground">{pick('Για εσένα σήμερα','For you today')} · {tr(profile.role)}</p><Button asChild variant="outline"><Link to="/training">{pick('Η δική μου προπόνηση','My training')} →</Link></Button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y py-4"><p className="text-sm text-muted-foreground">{pick('Για εσένα σήμερα','For you today')} · {tr(profile.role)}</p><div className="flex flex-wrap gap-2"><Button asChild variant="ghost"><Link to="/progress">{pick('Πρόοδος οικογένειας','Family progress')} →</Link></Button><Button asChild variant="outline"><Link to="/training">{pick('Η δική μου προπόνηση','My training')} →</Link></Button></div></div>
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         {/* Next meal */}

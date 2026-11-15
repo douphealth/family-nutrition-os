@@ -47,6 +47,10 @@ describe('Recovered supplemental basketball safety rules', () => {
     expect(program().completedMinutes).toBe(0);
     expect(program().clearedMinutes).toBe(0);
   });
+  it('does not rewrite recorded basketball workload when a future plan changes', () => {
+    const log = { id: 'supplement-log:son:2026-11-02', memberId: 'son', date: '2026-11-02', done: true, completedMinutes: 12 };
+    expect(program([log], { ...settings, supplementmonMinutes: 60 }).completedMinutes).toBe(12);
+  });
   it('every session interval maps to known exercise guides', () => {
     for (const s of program().sessions) for (const step of s.steps) {
       expect(step.exerciseIds.length).toBeGreaterThan(0);

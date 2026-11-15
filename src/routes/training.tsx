@@ -49,9 +49,9 @@ function BasketballTraining() {
   const program = useMemo(() => buildSupplementaryProgram(profile, week, logs), [profile, week, logs]);
   if (!profile) return <p>{t("Το πρόγραμμα χρειάζεται το προφίλ του αθλητή της οικογένειας.")}</p>;
   const session = program.sessions[selected];
-  const canExecute = Boolean(session && session.date === today && ['ready','recovery-only'].includes(session.state));
+  const canExecute = Boolean(session && !session.done && session.date === today && ['ready','recovery-only'].includes(session.state));
   const changeWeek = (date: string) => { setStart(date); setSelected(0); setCoach(false); };
-  const completed = (done: boolean) => { if (!session) return; saveTrainingLog(session.id, { id: session.id, memberId: profile.id, date: session.date, done, completedAt: done ? new Date().toISOString() : null }); };
+  const completed = (done: boolean, minutes = 0) => { if (!session || (done && !canExecute)) return; saveTrainingLog(session.id, { id: session.id, memberId: profile.id, date: session.date, done, completedMinutes: done ? minutes : 0, completedAt: done ? new Date().toISOString() : null }); };
   return <div className="training-page space-y-6">
     <header className="relative min-h-60 overflow-hidden border-b animate-rise">
       <img src={court} alt={t("Φωτεινό γήπεδο μπάσκετ με μπάλα και πετσέτα")} width={1600} height={912} className="absolute inset-0 h-full w-full object-cover" />
@@ -86,7 +86,7 @@ function BasketballTraining() {
       </div>}
     </>}
     <section className="border-t pt-6"><h2 className="flex items-center gap-2 text-xl font-semibold"><ShieldCheck className="size-5 text-training" /> {t("Τεκμηρίωση, όχι υποσχέσεις")}</h2><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t("Επαναφέραμε το αρχικό πρόγραμμα από την έκδοση 18.1.2. Δεν αποτελεί εξατομικευμένη συνταγή ή εγγύηση αποτελέσματος. Η πρόοδος και η επιβάρυνση αποφασίζονται μαζί με τον προπονητή της ομάδας.")}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{TRAINING_EVIDENCE.map(source => <div key={source.url} className="border-b py-4"><a className="inline-flex items-start gap-2 font-medium text-training underline-offset-4 hover:underline" href={source.url} target="_blank" rel="noopener noreferrer">{t(source.name)}<ExternalLink className="mt-1 size-3 shrink-0" /></a><p className="mt-2 text-sm">{t(source.claim)}</p><p className="mt-2 text-xs text-muted-foreground">{t(source.checked)}</p></div>)}</div><p className="mt-4 text-xs text-muted-foreground">{t("14 σύνδεσμοι YouTube: τίτλος, κανάλι και διαθεσιμότητα επανελέγχθηκαν 15/11/2026. Δεν έγινε πλήρης ανεξάρτητος έλεγχος κάθε βίντεο. Η διαθεσιμότητα μπορεί να αλλάξει. Χωρίς ενσωμάτωση βίντεο ή αυτόματη αναπαραγωγή.")}</p></section>
-    {coach && session && <SessionCoach session={session} allowed={canExecute} onClose={() => setCoach(false)} onComplete={() => completed(true)} />}
+    {coach && session && <SessionCoach session={session} allowed={canExecute} onClose={() => setCoach(false)} onComplete={minutes => completed(true, minutes)} />}
   </div>;
 }
 function PlayIcon() {

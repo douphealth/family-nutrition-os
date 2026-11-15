@@ -184,6 +184,7 @@ export function buildSupplementaryProgram(profile,week,logs=[]){
       intensity:slot.type==='recovery'?'RPE 1–2/10':'RPE 3–4/10',
       steps:adaptSteps(DRILLS[slot.type],slot.duration).map((step,index)=>({...step,exerciseIds:DRILL_VIDEO_KEYS[slot.type][index]||[]})),
       requiresQualifiedCoach:slot.type==='strength',state,reason,done,
+      completedMinutes:done&&Number.isFinite(recorded?.completedMinutes)?Math.max(0,recorded.completedMinutes):0,
       conflict:window.valid?null:window.reason,
       overnightMinutes:window.overnightMinutes??null,
       teamMinutes:day.sportMinutes,schoolMinutes:day.schoolMinutes,
@@ -194,7 +195,7 @@ export function buildSupplementaryProgram(profile,week,logs=[]){
   const plannedMinutes=sessions.reduce((sum,s)=>sum+s.minutes,0);
   const clearedMinutes=sessions.filter(s=>(s.state==='ready'||s.state==='recovery-only')&&!s.done)
     .reduce((sum,s)=>sum+s.minutes,0);
-  const completedMinutes=sessions.filter(s=>s.done).reduce((sum,s)=>sum+s.minutes,0);
+  const completedMinutes=sessions.filter(s=>s.done).reduce((sum,s)=>sum+s.completedMinutes,0);
   const blockedMinutes=sessions.filter(s=>s.state==='blocked'||s.state==='disabled')
     .reduce((sum,s)=>sum+s.minutes,0);
   return {

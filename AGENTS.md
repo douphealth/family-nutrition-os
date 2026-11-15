@@ -6,3 +6,5 @@
 - Date-sensitive device-local pages render behind ClientOnly and use local date updates, so static Pages output cannot contain stale dates or timezone-dependent hydration mismatches.
 
 - Non-athlete member plans use conservative age-aware defaults and immutable completed-minute logs; changes to a future plan must not rewrite completed workload.
+- Persist validated household state in IndexedDB with an immediate localStorage mirror and leaf-level tab merges, so reloads preserve data without discarding unrelated member edits.
+- Completion summaries count only eaten meal slots and explicitly completed member/supplement sessions; recorded minutes never come from a newly edited plan.

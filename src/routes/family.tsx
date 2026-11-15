@@ -10,7 +10,7 @@ import { GOALS } from "@/engine/data";
 import { adultBmiLabel, bmi, canUseAdultBmi, isMinor, targetsFor } from "@/engine/nutrition-engine";
 import { nf } from "@/lib/format";
 import { pageHead } from "@/lib/head";
-import { loadOf, setState, useStore, withPlate, type Profile } from "@/lib/store";
+import { loadOf, restoreState, setState, useStore, withPlate, type Profile } from "@/lib/store";
 
 export const Route = createFileRoute("/family")({
   head: () => pageHead("Οικογένεια", "Τα προφίλ της οικογένειας με στόχους ενέργειας, πρωτεΐνης και νερού."),
@@ -28,12 +28,12 @@ function Family() {
     a.href = URL.createObjectURL(blob);
     a.download = `zenith-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
   const importJson = async (f: File) => {
     try {
       const data = JSON.parse(await f.text());
-      if (!Array.isArray(data.profiles)) throw new Error();
-      setState(() => data);
+      restoreState(data);
       toast.success(tr("Το αντίγραφο επαναφέρθηκε"));
     } catch { toast.error(tr("Το αρχείο δεν είναι έγκυρο αντίγραφο")); }
   };
@@ -47,6 +47,7 @@ function Family() {
           <input ref={file} type="file" accept="application/json" hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />
         </div>
       </PageHeader>
+      <p className="mb-6 border-l-2 border-primary pl-4 text-sm text-muted-foreground">{pick('Οι αλλαγές μένουν σε αυτή τη συσκευή. Κράτα αντίγραφο πριν καθαρίσεις δεδομένα του προγράμματος περιήγησης. Ο συγχρονισμός μεταξύ κινητών δεν έχει συνδεθεί ακόμη.','Changes stay on this device. Export a backup before clearing browser data. Cross-phone sync is not connected yet.')}</p>
       <div className="grid gap-6 md:grid-cols-2">
         {s.profiles.map((raw) => {
           const p = withPlate(raw, loadOf(s, raw.id));

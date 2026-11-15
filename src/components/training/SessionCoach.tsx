@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, Pause, Play, RotateCcw, X, Youtube } 
 import { Button } from '@/components/ui/button';
 import { exerciseFor, isSafeYouTubeWatchUrl } from '@/training/exercise-library';
 import { SESSION_TITLE } from '@/training/evidence';
+import { Input } from '@/components/ui/input';
 
 export function ExerciseGuide({ id }: { id: string }) {
   const { t, pick, language } = useI18n();
@@ -20,11 +21,14 @@ export function ExerciseGuide({ id }: { id: string }) {
   </div>;
 }
 
-export function SessionCoach({ session, allowed, onClose, onComplete }: { session: any; allowed: boolean; onClose: () => void; onComplete: () => void }) {
+export function SessionCoach({ session, allowed, onClose, onComplete }: { session: any; allowed: boolean; onClose: () => void; onComplete: (minutes: number) => void }) {
   const { t, pick, language } = useI18n();
   const [index, setIndex] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
+  const [completedMinutes, setCompletedMinutes] = useState('');
+  const reported = Number(completedMinutes);
+  const validMinutes = completedMinutes !== '' && Number.isFinite(reported) && reported > 0 && reported <= 240;
   const step = session.steps[index];
   const limit = step.minutes * 60;
   useEffect(() => {
@@ -45,7 +49,8 @@ export function SessionCoach({ session, allowed, onClose, onComplete }: { sessio
       <p className="mt-3 text-sm text-muted-foreground">{t("Ο χρόνος περιλαμβάνει διαλείμματα. Οι επαναλήψεις είναι αυτές του βήματος — δεν συνεχίζεις μέχρι να τελειώσει ο χρόνος.")}</p>
       <div className="my-6 flex flex-wrap items-center gap-3 border-y py-5"><span className="mr-auto font-mono text-4xl tabular">{String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</span><Button disabled={!allowed} onClick={() => setRunning(x => !x)} variant="outline">{running ? <Pause /> : <Play />}{running ? t('Παύση') : t('Χρονόμετρο')}</Button><Button variant="ghost" size="icon" aria-label={t("Μηδενισμός χρόνου")} onClick={() => { setSeconds(0); setRunning(false); }}><RotateCcw /></Button></div>
       {step.exerciseIds.map((id: string) => <ExerciseGuide key={id} id={id} />)}
-      <div className="mt-6 flex flex-wrap justify-between gap-3 border-t pt-5"><Button variant="outline" disabled={index === 0} onClick={() => move(index - 1)}><ChevronLeft /> {t("Πίσω")}</Button>{index < session.steps.length - 1 ? <Button onClick={() => move(index + 1)}>{t("Επόμενο βήμα")}<ChevronRight /></Button> : <Button disabled={!allowed} onClick={() => { onComplete(); onClose(); }}><Check /> {t("Ολοκλήρωσα τη συνεδρία")}</Button>}</div>
+      {index === session.steps.length - 1 && allowed && <label className="mt-6 block text-sm font-medium">{pick('Πόσα λεπτά ολοκλήρωσες πραγματικά;','How many minutes did you actually complete?')}<Input type="number" min="1" max="240" inputMode="numeric" value={completedMinutes} onChange={e => setCompletedMinutes(e.target.value)} className="mt-2 max-w-40" /></label>}
+      <div className="mt-6 flex flex-wrap justify-between gap-3 border-t pt-5"><Button variant="outline" disabled={index === 0} onClick={() => move(index - 1)}><ChevronLeft /> {t("Πίσω")}</Button>{index < session.steps.length - 1 ? <Button onClick={() => move(index + 1)}>{t("Επόμενο βήμα")}<ChevronRight /></Button> : <Button disabled={!allowed || !validMinutes} onClick={() => { onComplete(reported); onClose(); }}><Check /> {t("Ολοκλήρωσα τη συνεδρία")}</Button>}</div>
       <p className="mt-6 text-sm text-muted-foreground">{t("Πόνος, ζάλη ή αδιαθεσία → διακοπή. Πρώτα ο γονέας/προπονητής, όχι το χρονόμετρο.")}</p>
     </div>
   </div>;

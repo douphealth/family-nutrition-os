@@ -2,7 +2,8 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { BookOpen, CalendarDays, ChefHat, Dumbbell, Languages, LineChart, Menu, ShoppingBasket, Sun, Users, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { setState, useStore } from '@/lib/store';
+import { setState, useStore, useSaveStatus } from '@/lib/store';
+import logo from '@/assets/zenith-logo-leaf.png';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +20,8 @@ const NAV = [
 
 export function LanguageSwitch() {
   const { language, pick } = useI18n();
-  return <div className="inline-flex items-center gap-1 rounded-md border bg-card p-1" role="group" aria-label={pick('Γλώσσα','Language')}><Languages className="mx-1 size-4 text-muted-foreground" />{(['el','en'] as const).map(lang => <Button key={lang} size="sm" variant={language === lang ? 'default' : 'ghost'} aria-pressed={language === lang} onClick={() => setState(s => ({ ...s, language: lang }))}>{lang === 'el' ? 'ΕΛ' : 'EN'}</Button>)}</div>;
+  const loading = useSaveStatus() === 'loading';
+  return <div className="inline-flex items-center gap-1 rounded-md border bg-card p-1" role="group" aria-label={pick('Γλώσσα','Language')}><Languages className="mx-1 size-4 text-muted-foreground" />{(['el','en'] as const).map(lang => <Button disabled={loading} key={lang} size="sm" variant={language === lang ? 'default' : 'ghost'} aria-pressed={language === lang} onClick={() => setState(s => ({ ...s, language: lang }))}>{lang === 'el' ? 'ΕΛ' : 'EN'}</Button>)}</div>;
 }
 
 export function MemberSwitcher({ compact = false }: { compact?: boolean }) {
@@ -35,17 +37,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: s => s.location.pathname });
   const { t, pick, language } = useI18n();
   const [more, setMore] = useState(false);
+  const saved = useSaveStatus();
+  const savedLabel = saved === 'saved' ? pick('Αποθηκεύτηκε στη συσκευή','Saved on this device') : saved === 'saving' || saved === 'loading' ? pick('Αποθήκευση…','Saving…') : saved === 'fallback' ? pick('Εφεδρική αποθήκευση · κράτα αντίγραφο','Backup storage · export a copy') : pick('Δεν αποθηκεύτηκε · κράτα αντίγραφο','Not saved · export a copy');
   const isActive = (to: string) => to === '/' ? path === '/' : path.startsWith(to);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   useEffect(() => { setMore(false); }, [path]);
   return <div className="min-h-screen lg:pl-60">
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-sidebar px-4 py-7 text-sidebar-foreground lg:flex">
-      <Link to="/" className="mb-8 px-3"><span className="block text-2xl font-semibold">Zenith<span className="text-sidebar-primary">.</span></span><span className="text-xs text-sidebar-foreground/65">{pick('Οικογενειακή ευεξία','Family wellbeing')}</span></Link>
+      <Link to="/" className="mb-8 flex items-center gap-3 px-3"><img src={logo} width={1024} height={1024} alt="Zenith" className="size-12 object-contain" /><span><span className="block text-2xl font-semibold">Zenith<span className="text-sidebar-primary">.</span></span><span className="text-xs text-sidebar-foreground/65">{pick('Οικογενειακή ευεξία','Family wellbeing')}</span></span></Link>
       <p className="mb-2 px-3 text-[10px] uppercase text-sidebar-foreground/50">{pick('Κάθε μέρα','Every day')}</p>
       <nav className="flex flex-col gap-1" aria-label={pick('Κύρια πλοήγηση','Main navigation')}>{NAV.map(({to,label,icon:Icon},i) => <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={cn('flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors',isActive(to) ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50',i===5 && 'mt-5 border-t pt-5')}><Icon className={cn('size-[18px]',isActive(to)&&'text-sidebar-primary')} />{t(label)}</Link>)}</nav>
       <p className="mt-auto px-3 pt-8 text-xs leading-relaxed text-sidebar-foreground/60">{pick('Μόνο στη συσκευή σου. Χωρίς λογαριασμό.','Only on your device. No account required.')}<br />USDA · EFSA · WHO · AAP</p>
     </aside>
-    <main className="mx-auto max-w-7xl px-4 pb-24 sm:px-8 lg:pb-12"><div className="mb-6 flex min-h-20 items-center justify-between gap-3 border-b py-4"><Link to="/" className="text-xl font-semibold lg:hidden">Zenith.</Link><p className="hidden text-sm text-muted-foreground lg:block">{pick('Το δικό σου πλάνο. Η δική σου μέρα.','Your plan. Your day.')}</p><LanguageSwitch /></div>{children}</main>
+    <main className="mx-auto max-w-7xl px-4 pb-24 sm:px-8 lg:pb-12"><div className="mb-6 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b py-4"><Link to="/" className="flex items-center gap-2 text-xl font-semibold lg:hidden"><img src={logo} width={1024} height={1024} alt="" className="size-9 object-contain" />Zenith.</Link><p role="status" className={cn('text-xs', saved === 'error' ? 'text-destructive' : 'text-muted-foreground')}>{savedLabel}</p><LanguageSwitch /></div>{children}</main>
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label={pick('Καθημερινή πλοήγηση','Daily navigation')}><div className="grid grid-cols-5">{[NAV[0],NAV[1],NAV[2],NAV[3]].map(({to,label,icon:Icon}) => <Link key={to} to={to} className={cn('flex min-h-16 flex-col items-center justify-center gap-1 text-[11px]',isActive(to) ? 'font-semibold text-primary' : 'text-muted-foreground')}><Icon className="size-5" />{t(label)}</Link>)}<Button variant="ghost" className="flex h-16 flex-col gap-1 rounded-none px-1 text-[11px]" onClick={() => setMore(x => !x)} aria-expanded={more} aria-label={t('Περισσότερα')}>{more ? <X className="size-5" /> : <Menu className="size-5" />}{t('Περισσότερα')}</Button></div></nav>
     {more && <div className="fixed inset-x-0 bottom-16 z-40 border-y bg-card p-4 shadow-lift lg:hidden"><h2 className="mb-3 text-sm font-semibold">{pick('Οικογένεια & οργάνωση','Family & organization')}</h2><div className="grid grid-cols-2 gap-2">{NAV.slice(4).map(({to,label,icon:Icon}) => <Button asChild variant="outline" key={to} className="h-12 justify-start"><Link to={to}><Icon />{t(label)}</Link></Button>)}</div></div>}
   </div>;

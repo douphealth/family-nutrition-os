@@ -13,9 +13,10 @@ import { pageHead } from "@/lib/head";
 import { setState, todayKey, useStore, type DayLog } from "@/lib/store";
 import { useActive } from "@/lib/useActive";
 import { cn } from "@/lib/utils";
+import { FamilyProgress } from '@/components/FamilyProgress';
 
 export const Route = createFileRoute("/progress")({
-  head: () => pageHead("Πρόοδος", "Ζυγίσεις με εβδομαδιαία τάση και ημερολόγιο καταγραφής 28 ημερών."),
+  head: () => pageHead("Πρόοδος οικογένειας · Family progress", "Completed meals and training for each family member, with recorded minutes and personal weight trends."),
   component: Progress,
 });
 
@@ -46,6 +47,7 @@ function Progress() {
   return (
     <>
       <PageHeader eyebrow={t("Τάση, όχι μία μέρα")} title={t("Πρόοδος")} />
+      <FamilyProgress />
       <div className="mb-6"><MemberSwitcher /></div>
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <section className="card-soft p-6">

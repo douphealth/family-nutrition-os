@@ -12,14 +12,21 @@ All nutrition figures come from a deterministic engine in `src/engine/` with ref
 - **Πλάνο (Plan)** – weekly meal plan per person
 - **Συνταγές (Meals)** – recipes with full nutrition breakdown
 - **Ψώνια (Shopping)** – auto-generated, tickable shopping list
-- **Πρόοδος (Progress)** – weigh-ins and trends
+- **Πρόοδος (Progress)** – family meal and training completion, actual recorded minutes, weigh-ins and trends
 - **Οικογένεια (Family)** – profiles, goals and activity levels
 - **Οδηγός (Guide)** – how the numbers are calculated and their sources
 
 ## Privacy
 
-No account, no backend, no tracking. Everything is stored in your browser's `localStorage`
-on the device you use.
+No account, no backend, no tracking. Household state is saved in IndexedDB with an immediate
+localStorage mirror. Existing localStorage data migrates automatically; same-origin browser tabs
+share updates. The header reports save failures instead of silently pretending data was saved.
+
+Use **Family → Backup / Restore** to transfer a validated JSON backup or keep an external copy.
+Browser storage is not a permanent backup: clearing site data or using private browsing can erase it.
+Cross-phone automatic sync is not connected; it requires an independently hosted authenticated shared service.
+Training completion records the minutes the member explicitly reports, never recalculates old workload
+from a changed plan, and keeps unknown-duration older completions separate.
 
 ## Getting started
 

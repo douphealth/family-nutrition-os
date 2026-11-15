@@ -171,4 +171,8 @@ main button { max-width: 100%; }
 main h1, main h2, main h3 { overflow-wrap: anywhere; }
 main .rounded-2xl { border-radius: 8px; }
 main .rounded-xl { border-radius: 8px; }
+.family-meter { appearance: none; border: 0; border-radius: 4px; overflow: hidden; background: var(--muted); color: var(--success); }
+.family-meter::-webkit-progress-bar { background: var(--muted); }
+.family-meter::-webkit-progress-value { background: var(--success); }
+.family-meter::-moz-progress-bar { background: var(--success); }
 @media (prefers-reduced-motion: reduce) { .animate-rise { animation: none; } }

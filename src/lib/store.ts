@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { FAMILY, PLAN_28, RECIPES } from "@/engine/data";
 import { cycleDayIndex, localDateKey } from "@/engine/dates";
 import { plateScale, rotationEnergy } from "@/engine/nutrition-engine";
+import { mergeChangedState, parseSavedState, readDurableState, writeDurableState } from './persistence';
 
 export type MealStatus = "done" | "skipped";
 export interface DayLog { meals: Record<string, { status: MealStatus; portion: number }>; waterMl: number }
@@ -48,20 +49,65 @@ const initial = (): State => ({
 let state: State = initial();
 let hydrated = false;
 const listeners = new Set<() => void>();
+export type SaveStatus = 'loading' | 'saving' | 'saved' | 'fallback' | 'error';
+let saveStatus: SaveStatus = 'loading';
+let revision = 0;
+let writeQueue = Promise.resolve();
+const statusListeners = new Set<() => void>();
+function status(value: SaveStatus) { saveStatus = value; statusListeners.forEach(l => l()); }
+function notify() { listeners.forEach(l => l()); }
+function localSaved(): State | null {
+  try { const raw = localStorage.getItem(KEY); return raw ? parseSavedState(JSON.parse(raw)) : null; }
+  catch { return null; }
+}
+function persist() {
+  const snapshot = structuredClone(state);
+  const stamp = Date.now();
+  revision += 1;
+  const writingRevision = revision;
+  status('saving');
+  let localOk = false;
+  try { localStorage.setItem(KEY, JSON.stringify(snapshot)); localStorage.setItem(`${KEY}-saved-at`, String(stamp)); localOk = true; } catch { /* Durable store remains available. */ }
+  writeQueue = writeQueue.then(async () => {
+    try { await writeDurableState(snapshot, stamp); if (revision === writingRevision) status('saved'); }
+    catch { if (revision === writingRevision) status(localOk ? 'fallback' : 'error'); }
+  });
+}
 
 function load() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) state = { ...initial(), ...JSON.parse(raw) };
-  } catch { /* keep defaults */ }
+  const local = localSaved();
+  if (local) state = local;
+  const startingRevision = revision;
+  let stamp = 0;
+  try { stamp = Number(localStorage.getItem(`${KEY}-saved-at`)) || 0; } catch { /* IndexedDB may still work. */ }
+  void readDurableState().then(row => {
+    if (revision !== startingRevision) return;
+    if (row && (!local || row.savedAt > stamp)) { state = row.state; notify(); }
+    persist();
+  }).catch(() => { if (revision === startingRevision) status(local ? 'fallback' : 'error'); });
+  window.addEventListener('storage', event => {
+    if (event.key !== KEY || !event.newValue) return;
+    try { state = parseSavedState(JSON.parse(event.newValue)); revision += 1; notify(); status('saved'); }
+    catch { /* Invalid writes must never erase family data. */ }
+  });
+  void navigator.storage?.persist?.().catch(() => false);
 }
 
 export function setState(fn: (s: State) => State) {
-  state = fn(state);
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* quota */ }
-  listeners.forEach((l) => l());
+  load();
+  const next = fn(state);
+  const latest = typeof window === 'undefined' ? null : localSaved();
+  state = latest ? mergeChangedState(state, next, latest) : next;
+  persist();
+  notify();
+}
+
+/** Restore is explicitly replacement, not a partial edit. */
+export function restoreState(input: unknown) { load(); state = parseSavedState(input); persist(); notify(); }
+export function useSaveStatus() {
+  return useSyncExternalStore(cb => { statusListeners.add(cb); return () => statusListeners.delete(cb); }, () => saveStatus, () => 'loading' as SaveStatus);
 }
 
 const serverState = initial();
