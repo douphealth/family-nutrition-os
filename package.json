@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "build:pages": "GITHUB_PAGES=1 vite build && node scripts/pages-postbuild.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

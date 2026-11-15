@@ -65,3 +65,17 @@ doctor or registered dietitian, especially for children, pregnancy or medical co
 ## License
 
 See [LICENSE](./LICENSE).
+
+## GitHub Pages
+
+The live app is served from the `gh-pages` branch at
+https://douphealth.github.io/family-nutrition-os/.
+
+To rebuild it yourself:
+
+```bash
+npm run build:pages   # static build in dist/client (base path /family-nutrition-os/)
+```
+
+Then publish the contents of `dist/client` to the `gh-pages` branch
+(for example with `npx gh-pages -d dist/client --dotfiles`).
