@@ -19,9 +19,9 @@ test('age guard and profile-specific normalization',()=>{
  assert.equal(a.strengthSessions,2);assert.equal(a.minutes,40);assert.equal(a.goal,'court');assert.equal(a.schedule[2],'team');
  assert.equal(a.memberId,'son');assert.equal(a.id,'fitness:son');
 });
-test('youth with six sport commitments gets zero extra strength',()=>{
+test('five confirmed sport days plus tentative event leave strength blocked',()=>{
  const w=buildFitnessWeek(son,{...defaultFitnessSettings(son),coachSupervised:true},[],today);
- assert.equal(w.sportDays,6);assert.equal(w.strengthDays.length,0);
+ assert.equal(w.sportDays,5);assert.equal(w.strengthDays.length,0);
  assert.ok(w.warnings.includes('high-team-load'));
  assert.equal(w.days[5].kind,'team');assert.equal(w.days[6].kind,'team');
  assert.equal(w.days[2].kind,'rest'); assert.equal(w.extraMinutes,0);

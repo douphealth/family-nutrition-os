@@ -14,12 +14,12 @@
  *     METHOD for the citations.
  */
 
-import { FOODS } from './foods.js?v=18.1.1';
+import { FOODS } from './foods.js?v=18.1.2';
 
 export const APP = {
   name: 'ZENITH PRO',
-subtitle: 'ZENITH PRO v18.0 Executive OS', //   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
-version: '18.1.1',
+subtitle: 'Οικογενειακό Σύστημα Διατροφής', //   subtitle: 'Οικογενειακό Σύστημα Διατροφής',
+version: '18.1.2',
 updated: '2026-11-15', //   updated: '2026-11-09',
   schema: 2
 };
@@ -90,7 +90,7 @@ export const AISLES = [
  * live in recipes.js (authored on the canonical food table in foods.js) and are
  * re-exported here so the rest of the app keeps one import site for content.
  */
-export { RECIPES, PLAN_28, RECIPE_ART, IRON_RICH, IRON_HIGH_MG } from './recipes.js?v=18.1.1';
+export { RECIPES, PLAN_28, RECIPE_ART, IRON_RICH, IRON_HIGH_MG } from './recipes.js?v=18.1.2';
 
 /* ── Evidence ──────────────────────────────────────────────────────────────
  * Every claim the app makes traces back to one of these, and nothing is listed

@@ -1,7 +1,7 @@
 /**
  * Exact, date-specific calendar presentation; user supplied source evidence.
  */
-import {esc,icon} from './ui.js?v=18.1.1';
+import {esc,icon} from './ui.js?v=18.1.2';
 import {clockLabel} from './fitness-calendar.js';
 import {shiftDate} from './fitness-engine.js';
 const daysEl=['Δευ','Τρί','Τετ','Πέμ','Παρ','Σάβ','Κυρ'];
@@ -11,6 +11,7 @@ const iconNames={school:'book',team:'zap',game:'award'};
 const types={school:['Σχολείο','School'],team:['Μπάσκετ','Basketball'],game:['Αγώνας','Game']};
 const durationLabel=(min,en)=>en?clockLabel(min):Math.floor(min/60)+'ώ '+String(min%60).padStart(2,'0')+'λ';
 const shortDate=date=>date.slice(8,10)+'/'+date.slice(5,7);
+const tentative=ev=>['tentative','game-status-unconfirmed','repeated-unverified'].includes(ev?.note);
 
 export function fitnessCalendarPanel(ctx) {
   const w=ctx.fitnessWeek,en=ctx.lang==='en';
@@ -19,8 +20,8 @@ export function fitnessCalendarPanel(ctx) {
   const supp=ctx.supplementaryProgram;
   const extraPlanned=supp?.available?supp.plannedMinutes:w.extraMinutes;
   const status=w.calendarKnown
-    ? tr(en,'Επιβεβαιωμένες ώρες · '+(w.calendar.repeated?'επανάληψη με επιλογή':'συγκεκριμένη εβδομάδα'),
-      'Recorded times · '+(w.calendar.repeated?'manually repeated':'dated week'))
+    ? tr(en,'Καταχωρισμένες ώρες · '+(w.calendar.repeated?'μη επαληθευμένη επανάληψη':'συγκεκριμένη εβδομάδα'),
+      'Recorded slots · '+(w.calendar.repeated?'unverified repetition':'dated week'))
     : tr(en,'Η εβδομάδα δεν έχει επιβεβαιωθεί','This week is not verified');
   const sourceNote=w.calendar.source==='screenshot'
     ? tr(en,'Πηγή: οικογενειακό στιγμιότυπο 02–08/11/2026.','Source: family screenshot dated 2–8 Nov 2026.')
@@ -37,8 +38,8 @@ export function fitnessCalendarPanel(ctx) {
       <button type="button" class="fitness-btn fitness-primary" data-act="fitnessCalendarEdit">`+icon('sliders',17)+' '+tr(en,'Διαχείριση ωρών','Edit timetable')+`</button>
     </div>
     <div class="fit-cal-stat-grid">
-      <div class="fit-cal-metric"><span>`+tr(en,'Μπάσκετ ομάδας','Team basketball')+`</span><b>`+(w.calendarKnown?durationLabel(st.teamMinutes,en):'—')+`</b>
-        <small>`+tr(en,'Ακριβές άθροισμα των καταχωρισμένων ωρών','Sum of entered basketball time')+`</small></div>
+      <div class="fit-cal-metric"><span>`+tr(en,'Επιβεβαιωμένο μπάσκετ','Confirmed basketball')+`</span><b>`+(w.calendarKnown?durationLabel(st.teamMinutes,en):'—')+`</b>
+        <small>`+tr(en,'Χωρίς προσωρινές ώρες','Excluding tentative slots')+' · '+(st.tentativeMinutes?durationLabel(st.tentativeMinutes,en):tr(en,'0 προσωρινά','0 tentative'))+`</small></div>
       <div class="fit-cal-metric"><span>`+tr(en,'Ημέρες μπάσκετ','Basketball days')+`</span><b>`+(w.calendarKnown?st.teamDays:'—')+`<small>`+(w.calendarKnown?'/7':'')+`</small></b>
         <small>`+tr(en,'Οι αγώνες μετρούν στον φόρτο','Games count toward workload')+`</small></div>
       <div class="fit-cal-metric"><span>`+tr(en,'Σχολείο','School')+`</span><b>`+(w.calendarKnown&&st.schoolDays>0?durationLabel(st.schoolMinutes,en):'—')+`</b>
@@ -64,7 +65,7 @@ export function fitnessCalendarPanel(ctx) {
           <span class="fit-cal-event-icon">`+icon(iconNames[e.type]||'calendar',16)+`</span><div>
           <b>`+types[e.type][en?1:0]+`</b><strong>`+esc(e.start)+'–'+esc(e.end)+`</strong>
           `+(e.venue?`<small>`+esc(e.venue)+`</small>`:'')+`
-          `+(e.note==='game-status-unconfirmed'?`<em>`+tr(en,'MATCH DAY: ένδειξη τοποθεσίας, όχι επιβεβαίωση αγώνα','MATCH DAY: location label; game not confirmed')+`</em>`:'')+`
+          `+(tentative(e)?`<em>`+tr(en,'Προσωρινό · δεν μετρά στον επιβεβαιωμένο φόρτο','Tentative · not included in confirmed workload')+`</em>`:'')+`
           </div></div>`).join(''):`<div class="fit-cal-rest">`+icon('bed',18)+`<span>`+
           (w.calendarKnown?tr(en,'Ανάπαυση','Rest'):tr(en,'Άγνωστο','Unconfirmed'))+`</span></div>`)+`</div>
         <div class="fit-cal-extra">`+tr(en,'Έξτρα','Extra')+` <b>`+(supp?.sessions.filter(x=>x.date===d.date).reduce((sum,x)=>sum+x.minutes,0)??d.extraMinutes)+`′</b></div>
@@ -86,6 +87,7 @@ export function fitnessCalendarEventRow(event,index,weekStart,lang='el') {
     <label>`+tr(en,'Αρχή','Start')+`<input type="time" name="calStart" value="`+esc(x.start)+`" required></label>
     <label>`+tr(en,'Τέλος','End')+`<input type="time" name="calEnd" value="`+esc(x.end)+`" required></label>
     <label class="fit-cal-venue">`+tr(en,'Χώρος','Venue')+`<input name="calVenue" maxlength="90" value="`+esc(x.venue||'')+`"></label>
+    <label>`+tr(en,'Κατάσταση','Status')+`<select name="calConfirmed"><option value="confirmed" `+(!tentative(x)?'selected':'')+`>`+tr(en,'Επιβεβαιωμένο','Confirmed')+`</option><option value="tentative" `+(tentative(x)?'selected':'')+`>`+tr(en,'Προσωρινό','Tentative')+`</option></select></label>
     <button type="button" class="fit-cal-remove" data-act="fitnessCalendarRemove" aria-label="`+tr(en,'Αφαίρεση','Remove')+`">`+icon('trash',16)+`</button>
   </div>`;
 }

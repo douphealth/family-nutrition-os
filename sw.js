@@ -1,5 +1,5 @@
 /** ZENITH PRO offline PWA — atomic updates, fresh code, intact family data. */
-const CACHE = 'zenith-v18-2026-11-15-1';
+const CACHE = 'zenith-v18-2026-11-15-2';
 const CORE = [
   './','./index.html',
   './styles/tokens.css','./styles/base.css','./styles/components.css','./styles/views.css',

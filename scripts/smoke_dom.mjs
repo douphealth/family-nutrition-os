@@ -283,7 +283,7 @@ ok([...viewEl().querySelectorAll('.coach-video-link')].every(a=>
   'all demonstration links have safe direct YouTube URLs and external-link protection');
 ok(!viewEl().querySelector('iframe'),'YouTube players are not loaded automatically');
 ok(viewEl().querySelector('.atlas-scoreboard')?.textContent.includes('135'),'three 45-minute blocks total 135 requested minutes');
-ok(viewEl().querySelector('.atlas-metrics')?.textContent.includes('12h 25m'),'12h25m actual basketball is shown separately');
+ok(viewEl().querySelector('.atlas-metrics')?.textContent.includes('9h 00m'),'9h confirmed basketball excludes tentative match');
 ok([...viewEl().querySelectorAll('.atlas-workout')].every(el=>el.querySelectorAll('.atlas-drill').length>=5),
   'all personal sessions show full guided exercise steps');
 ok(viewEl().querySelectorAll('.atlas-week-day').length===7,'seven-day athlete training digest renders');

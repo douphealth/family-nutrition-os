@@ -2,7 +2,7 @@
  * ZENITH / ATHLETE ATLAS · screen-only athlete cockpit.
  * Planner is not a medical diagnosis; planned ≠ cleared ≠ completed.
  */
-import {esc,icon} from './ui.js?v=18.1.1';
+import {esc,icon} from './ui.js?v=18.1.2';
 import {SUPPLEMENTARY_SOURCES} from './performance-program.js';
 import {exerciseFor,isSafeYouTubeWatchUrl} from './exercise-library.js';
 
@@ -111,7 +111,7 @@ function exerciseCard(s,en,index) {
      +T(en,'Ασκήσεις, ακριβής τεχνική & YouTube','Exercises, technique & YouTube')+' '
      +'<span class="coach-drill-count">'+demos.length+'</span>'+icon('chevronDown',16)+'</summary>'
      +'<div class="coach-drill-details">'+detail+'</div></details></div><b class="coach-drill-duration">'
-     +x.minutes+'′</b></div>';
+     +Number(x.minutes)+' '+T(en,'λεπτά','min')+'</b></div>';
  }).join('');
  const completeButton=s.done
   ?'<button class="fitness-btn atlas-undo" data-act="performanceDone" data-date="'+esc(s.date)+'" data-done="false">'
