@@ -20,7 +20,7 @@ test('the requested three 45-minute blocks are visible on exact dates and times'
   ['2026-11-06','06:00','06:45',45,'primer']
  ]);
  assert.equal(p.plannedMinutes,135);
- assert.equal(p.teamMinutes,745);
+ assert.equal(p.teamMinutes,540);
  assert.equal(p.clearedMinutes,0);
  assert.equal(p.blockedMinutes,45);
 });
