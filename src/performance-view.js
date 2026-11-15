@@ -111,7 +111,7 @@ function exerciseCard(s,en,index) {
      +T(en,'Ασκήσεις, ακριβής τεχνική & YouTube','Exercises, technique & YouTube')+' '
      +'<span class="coach-drill-count">'+demos.length+'</span>'+icon('chevronDown',16)+'</summary>'
      +'<div class="coach-drill-details">'+detail+'</div></details></div><b class="coach-drill-duration">'
-     +x.minutes+'′</b></div>';
+     +Number(x.minutes)+' '+T(en,'λεπτά','min')+'</b></div>';
  }).join('');
  const completeButton=s.done
   ?'<button class="fitness-btn atlas-undo" data-act="performanceDone" data-date="'+esc(s.date)+'" data-done="false">'
