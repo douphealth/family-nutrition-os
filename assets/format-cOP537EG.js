@@ -1,0 +1,1 @@
+var e=(e,t=0)=>new Intl.NumberFormat(`el-GR`,{maximumFractionDigits:t,minimumFractionDigits:0}).format(e),t=(e,t={weekday:`long`,day:`numeric`,month:`long`})=>{let[n,r,i]=e.split(`-`).map(Number);return new Intl.DateTimeFormat(`el-GR`,t).format(new Date(n,(r??1)-1,i??1))};export{e as n,t};
