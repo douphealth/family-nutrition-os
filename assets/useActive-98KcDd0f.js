@@ -1,0 +1,1 @@
+import{$ as e,X as t,c as n,h as r,m as i}from"./index-GQ0oqQ8R.js";var a=e(t());function o(){let e=i(e=>e.profiles),t=i(e=>e.activeId),o=i(e=>n(e,e.activeId)),s=e.find(e=>e.id===t)??e[0];return{profile:(0,a.useMemo)(()=>r(s,o),[s,o]),load:o,profiles:e}}export{o as t};
