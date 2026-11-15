@@ -7,7 +7,7 @@
  * training), AOSSM 2025 (youth strength), CDC adolescent sleep recommendations.
  */
 
-import { defaultDimitrisCalendar, resolveCalendarWeek, cleanCalendarWeeks, summarizeCalendarEvents, eventDuration, timeMinutes } from './fitness-calendar.js';
+import { defaultDimitrisCalendar, resolveCalendarWeek, cleanCalendarWeeks, summarizeCalendarEvents, eventDuration, timeMinutes, isTentativeEvent } from './fitness-calendar.js';
 
 export const FITNESS_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 export const FITNESS_MODES = ['free', 'team', 'game', 'light', 'rest'];
@@ -276,7 +276,7 @@ export function buildFitnessWeek(profile, savedSettings, logs = [], anchorDate) 
   if(youth && calendarStats.teamMinutes>=600) warnings.push('high-hours');
   if(youth && settings.strengthSessions>0 && !settings.coachSupervised && !highYouthLoad && !calendarMissing) warnings.push('supervision');
   if(youth && sportDays>=5 && settings.goal==='court') warnings.push('avoid-stacking');
-  if(resolved.events.some(e=>e.note==='game-status-unconfirmed'))warnings.push('match-unconfirmed');
+  if(resolved.events.some(e=>isTentativeEvent(e)))warnings.push('match-unconfirmed');
   const days=FITNESS_DAYS.map((dayKey,i)=>{
     const date=shiftDate(start,i),events=resolved.events.filter(e=>e.date===date);
     const log=logs.find(l=>l?.memberId===profile.id&&l?.date===date)||null;
@@ -285,7 +285,7 @@ export function buildFitnessWeek(profile, savedSettings, logs = [], anchorDate) 
       ? {kind:'unconfirmed',duration:0,steps:[step('Δεν έχει επιβεβαιωθεί πρόγραμμα ομάδας για αυτή την εβδομάδα. Εισήγαγε ημερολόγιο ή ενημέρωσε τις ώρες.', 'No team schedule is confirmed for this week. Import or update the calendar.')]}
       : sessionForMode(modes[i],selected.includes(i),settings.goal,settings,youth,i);
     let session=adjustSession(base,readiness);
-    const sportMinutes=events.filter(x=>x.type==='team'||x.type==='game').reduce((sum,x)=>sum+eventDuration(x),0);
+    const sportMinutes=events.filter(x=>(x.type==='team'||x.type==='game')&&!isTentativeEvent(x)).reduce((sum,x)=>sum+eventDuration(x),0);
     const schoolMinutes=events.filter(x=>x.type==='school').reduce((sum,x)=>sum+eventDuration(x),0);
     // Never count guided team practice as extra workout time.
     if(calendarKnown && sportMinutes>0)session={...session,duration:0};
