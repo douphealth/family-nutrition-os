@@ -1,1 +1,0 @@
-import{et as e,f as t,rt as n}from"./index-r97d8SJA.js";var r=n(e());function i(){let[e,n]=(0,r.useState)(t);return(0,r.useEffect)(()=>{let e=window.setInterval(()=>n(t()),6e4);return()=>window.clearInterval(e)},[]),e}export{i as t};
