@@ -169,6 +169,7 @@ const courtPrep = [
 ];
 
 function selectStrengthDays(schedule, settings, youth) {
+  if (settings.strengthSessions <= 0) return [];
   if (youth && !settings.coachSupervised) return [];
   const sportDays = schedule.filter(v => v === 'team' || v === 'game').length;
   const restDays = schedule.filter(v => v === 'rest').length;

@@ -5,7 +5,8 @@ export function useActive() {
   const profiles = useStore((s) => s.profiles);
   const activeId = useStore((s) => s.activeId);
   const load = useStore((s) => loadOf(s, s.activeId));
-  const raw = profiles.find((p) => p.id === activeId) ?? profiles[0]!;
+  const raw = profiles.find((p) => p.id === activeId) ?? profiles[0];
+  if (!raw) throw new Error('No family profiles available');
   const profile = useMemo(() => withPlate(raw, load), [raw, load]);
   return { profile, load, profiles };
 }

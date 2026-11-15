@@ -10,6 +10,7 @@ export interface Profile {
   weight: number; activityFactor: number; goal: string; athlete: boolean; accent: string; notes: string; plate?: number;
 }
 export interface State {
+  language?: 'el' | 'en';
   profiles: Profile[];
   activeId: string;
   loads: Record<string, string>;
@@ -33,6 +34,7 @@ export function withPlate(p: Profile, load = "normal"): Profile {
 }
 
 const initial = (): State => ({
+  language: 'el',
   profiles: FAMILY.map((p: Profile) => ({ ...p })),
   activeId: FAMILY[0].id,
   loads: { son: "normal" },

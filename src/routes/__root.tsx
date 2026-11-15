@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
+  ClientOnly,
   Link,
   createRootRouteWithContext,
   useRouter,
@@ -124,7 +125,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppShell>
-        <Outlet />
+        <ClientOnly fallback={<div className="py-16 text-center text-muted-foreground">Zenith…</div>}><Outlet /></ClientOnly>
       </AppShell>
       <Toaster position="top-center" />
     </QueryClientProvider>
