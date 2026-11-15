@@ -1,0 +1,10 @@
+export const PERFORMANCE_FOCUS: any;
+export const PERFORMANCE_BASE_WEEK: any;
+export const WORKOUT_OBJECTIVES: any;
+export const SUPPLEMENTARY_SOURCES: any;
+export const REQUESTED_PERSONAL_SLOTS: any;
+export function supplementLogId(...args: any[]): any;
+export function eligiblePerformanceAthlete(...args: any[]): any;
+export function normalizePersonalSlotPreferences(...args: any[]): any;
+export function inspectTrainingWindow(...args: any[]): any;
+export function buildSupplementaryProgram(...args: any[]): any;

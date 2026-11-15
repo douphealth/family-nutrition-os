@@ -1,0 +1,13 @@
+export const FITNESS_DAYS: any;
+export const FITNESS_MODES: any;
+export const FITNESS_GOALS: any;
+export const FITNESS_EQUIPMENT: any;
+export const FITNESS_LEVELS: any;
+export function isYouthAthlete(...args: any[]): any;
+export function defaultFitnessSettings(...args: any[]): any;
+export function normalizeFitnessSettings(...args: any[]): any;
+export function weekStartOf(...args: any[]): any;
+export function shiftDate(...args: any[]): any;
+export function fitnessLogId(...args: any[]): any;
+export function assessReadiness(...args: any[]): any;
+export function buildFitnessWeek(...args: any[]): any;

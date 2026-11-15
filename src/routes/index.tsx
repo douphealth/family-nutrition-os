@@ -181,6 +181,7 @@ function Today() {
           {profile.athlete && (
             <section className="card-soft p-6">
               <h2 className="text-lg font-semibold">Προπόνηση σήμερα</h2>
+              <Button asChild variant="outline" className="my-3"><Link to="/training">Ατομικό πρόγραμμα μπάσκετ →</Link></Button>
               <p className="text-sm text-muted-foreground">Αλλάζει τους υδατάνθρακες και το νερό του {profile.name}.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {TRAINING_LOADS.map(([id, label]) => (

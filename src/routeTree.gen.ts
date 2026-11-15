@@ -15,6 +15,7 @@ import { Route as GuideRouteImport } from './routes/guide'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as ShoppingRouteImport } from './routes/shopping'
+import { Route as TrainingRouteImport } from './routes/training'
 import { Route as MealsIndexRouteImport } from './routes/meals.index'
 import { Route as MealsIdRouteImport } from './routes/meals.$id'
 
@@ -48,6 +49,11 @@ const ShoppingRoute = ShoppingRouteImport.update({
   path: '/shopping',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainingRoute = TrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MealsIndexRoute = MealsIndexRouteImport.update({
   id: '/meals/',
   path: '/meals/',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/plan': typeof PlanRoute
   '/progress': typeof ProgressRoute
   '/shopping': typeof ShoppingRoute
+  '/training': typeof TrainingRoute
   '/meals/$id': typeof MealsIdRoute
   '/meals/': typeof MealsIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/plan': typeof PlanRoute
   '/progress': typeof ProgressRoute
   '/shopping': typeof ShoppingRoute
+  '/training': typeof TrainingRoute
   '/meals/$id': typeof MealsIdRoute
   '/meals': typeof MealsIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/plan': typeof PlanRoute
   '/progress': typeof ProgressRoute
   '/shopping': typeof ShoppingRoute
+  '/training': typeof TrainingRoute
   '/meals/$id': typeof MealsIdRoute
   '/meals/': typeof MealsIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/progress'
     | '/shopping'
+    | '/training'
     | '/meals/$id'
     | '/meals/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/progress'
     | '/shopping'
+    | '/training'
     | '/meals/$id'
     | '/meals'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/progress'
     | '/shopping'
+    | '/training'
     | '/meals/$id'
     | '/meals/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   PlanRoute: typeof PlanRoute
   ProgressRoute: typeof ProgressRoute
   ShoppingRoute: typeof ShoppingRoute
+  TrainingRoute: typeof TrainingRoute
   MealsIdRoute: typeof MealsIdRoute
   MealsIndexRoute: typeof MealsIndexRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShoppingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/training': {
+      id: '/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meals/': {
       id: '/meals/'
       path: '/meals'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanRoute: PlanRoute,
   ProgressRoute: ProgressRoute,
   ShoppingRoute: ShoppingRoute,
+  TrainingRoute: TrainingRoute,
   MealsIdRoute: MealsIdRoute,
   MealsIndexRoute: MealsIndexRoute,
 }

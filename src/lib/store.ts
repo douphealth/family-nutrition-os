@@ -16,6 +16,8 @@ export interface State {
   logs: Record<string, Record<string, DayLog>>;
   measurements: Record<string, { date: string; weight: number }[]>;
   shopChecked: Record<string, boolean>;
+  trainingSettings?: Record<string, any>;
+  trainingLogs?: Record<string, any>;
 }
 
 const KEY = "fnos-state-v1";
@@ -37,6 +39,8 @@ const initial = (): State => ({
   logs: {},
   measurements: {},
   shopChecked: {},
+  trainingSettings: {},
+  trainingLogs: {},
 });
 
 let state: State = initial();

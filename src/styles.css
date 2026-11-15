@@ -82,9 +82,15 @@
   --color-surface: var(--surface);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-training: var(--training);
+  --color-training-foreground: var(--training-foreground);
+  --color-training-surface: var(--training-surface);
 }
 
 :root {
+  --training: oklch(0.35 0.065 190);
+  --training-foreground: oklch(0.99 0.005 190);
+  --training-surface: oklch(0.95 0.025 190);
   --radius: 1.1rem;
   --background: oklch(0.975 0.012 85);
   --foreground: oklch(0.24 0.025 60);
@@ -138,7 +144,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.015em; }
+  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: 0; }
 }
 
 @utility card-soft {
@@ -153,3 +159,11 @@
 
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @utility animate-rise { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+.training-page { min-width: 0; }
+.training-page button { white-space: normal; height: auto; min-height: 40px; }
+.training-page input, .training-page select { min-width: 0; }
+.training-page h1, .training-page h2, .training-page h3 { font-family: var(--font-sans); }
+.training-page summary { cursor: pointer; }
+.training-page :focus-visible { outline: 2px solid var(--training); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .animate-rise { animation: none; } }

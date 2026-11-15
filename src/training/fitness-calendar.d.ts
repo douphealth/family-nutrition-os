@@ -1,0 +1,13 @@
+export const DIMITRIS_CALENDAR_WEEK: any;
+export const CALENDAR_EVENT_TYPES: any;
+export const isTentativeEvent: any;
+export const timeMinutes: any;
+export function eventDuration(...args: any[]): any;
+export const DIMITRIS_SCREENSHOT_EVENTS: any;
+export function cleanCalendarEvents(...args: any[]): any;
+export function cleanCalendarWeeks(...args: any[]): any;
+export function defaultDimitrisCalendar(...args: any[]): any;
+export function resolveCalendarWeek(...args: any[]): any;
+export function summarizeCalendarEvents(...args: any[]): any;
+export const clockLabel: any;
+export function parseFitnessIcs(...args: any[]): any;

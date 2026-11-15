@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BookOpen, CalendarDays, ChefHat, LineChart, ShoppingBasket, Sun, Users } from "lucide-react";
+import { BookOpen, CalendarDays, ChefHat, Dumbbell, LineChart, ShoppingBasket, Sun, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { setState, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ const NAV = [
   { to: "/meals", label: "Συνταγές", icon: ChefHat },
   { to: "/shopping", label: "Ψώνια", icon: ShoppingBasket },
   { to: "/progress", label: "Πρόοδος", icon: LineChart },
+  { to: "/training", label: "Προπόνηση", icon: Dumbbell },
   { to: "/family", label: "Οικογένεια", icon: Users },
   { to: "/guide", label: "Οδηγός", icon: BookOpen },
 ] as const;
@@ -84,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-xl justify-between px-2 py-1.5">
-          {NAV.slice(0, 5).map(({ to, label, icon: Icon }) => (
+          {[NAV[0], NAV[1], NAV[2], NAV[5], NAV[3]].map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} className={cn("flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px]", isActive(to) ? "text-primary" : "text-muted-foreground")}>
               <Icon className="size-5" />
               {label}
