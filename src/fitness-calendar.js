@@ -11,6 +11,7 @@ const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const days = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
 const safe = v => String(v ?? '').trim().slice(0, 90);
 const basketballVenue = 'ΣΤ. ΚΑΛΑΪΤΖΗΣ';
+export const isTentativeEvent = event => ['tentative', 'game-status-unconfirmed', 'repeated-unverified'].includes(event?.note);
 const weekOf = date => {
   const d = new Date(date + 'T12:00:00Z');
   if (!datePattern.test(date) || !Number.isFinite(d.getTime()) || d.toISOString().slice(0, 10) !== date) return null;
@@ -109,13 +110,13 @@ export function summarizeCalendarEvents(events) {
   for(const ev of events){
     const min=eventDuration(ev);
     if(ev.type==='school'){schoolMinutes+=min;schoolDates.add(ev.date);}
-    else if(ev.type==='team'||ev.type==='game'){
+    else if((ev.type==='team'||ev.type==='game') && !isTentativeEvent(ev)){
       teamMinutes+=min;sportDates.add(ev.date);
       if(timeMinutes(ev.end)>=22*60)lateNights++;
     }
   }
   const school=events.filter(e=>e.type==='school');
-  const practices=events.filter(e=>e.type==='team'||e.type==='game');
+  const practices=events.filter(e=>(e.type==='team'||e.type==='game') && !isTentativeEvent(e));
   const turnarounds=[];
   for(const event of practices){
     const d=new Date(event.date+'T12:00:00Z');
@@ -127,7 +128,8 @@ export function summarizeCalendarEvents(events) {
     }
   }
   turnarounds.sort((a,b)=>a.minutes-b.minutes);
-  return {teamMinutes,schoolMinutes,teamDays:sportDates.size,schoolDays:schoolDates.size,
+  const tentativeMinutes=events.filter(e=>(e.type==='team'||e.type==='game')&&isTentativeEvent(e)).reduce((sum,e)=>sum+eventDuration(e),0);
+  return {teamMinutes,tentativeMinutes,schoolMinutes,teamDays:sportDates.size,schoolDays:schoolDates.size,
     lateNights,shortestSchoolTurnaround:turnarounds[0]||null};
 }
 export const clockLabel = mins => Math.floor(mins/60)+'h '+String(mins%60).padStart(2,'0')+'m';
