@@ -1,7 +1,7 @@
 /**
  * Exact, date-specific calendar presentation; user supplied source evidence.
  */
-import {esc,icon} from './ui.js?v=18.1.1';
+import {esc,icon} from './ui.js?v=18.1.2';
 import {clockLabel} from './fitness-calendar.js';
 import {shiftDate} from './fitness-engine.js';
 const daysEl=['Δευ','Τρί','Τετ','Πέμ','Παρ','Σάβ','Κυρ'];

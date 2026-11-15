@@ -3,7 +3,7 @@
  * Does not touch IndexedDB, localStorage profiles, or nutrition records. */
 (function () {
   'use strict';
-  var BUILD = '18.1.1-20261115';
+  var BUILD = '18.1.2-20261115';
   var hadController = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
   var reloading = false;
   var currentRegistration = null;
@@ -74,7 +74,7 @@
     reloadToBuild(BUILD);
   });
   function register() {
-    navigator.serviceWorker.register('./sw.js?v=18.1.1', {
+    navigator.serviceWorker.register('./sw.js?v=18.1.2', {
       scope: './', updateViaCache: 'none'
     }).then(function (reg) {
       if (!reg || typeof reg.update !== 'function') return;
