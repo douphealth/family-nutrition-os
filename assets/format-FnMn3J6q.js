@@ -1,0 +1,1 @@
+var e=(e,t=0,n=`el`)=>new Intl.NumberFormat(n===`en`?`en-GB`:`el-GR`,{maximumFractionDigits:t,minimumFractionDigits:0}).format(e),t=(e,t={weekday:`long`,day:`numeric`,month:`long`},n=`el`)=>{let[r,i,a]=e.split(`-`).map(Number);return new Intl.DateTimeFormat(n===`en`?`en-GB`:`el-GR`,t).format(new Date(r??2026,(i??1)-1,a??1))};export{e as n,t};
