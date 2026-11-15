@@ -526,8 +526,8 @@ function mountFitnessCalendarEditor(ctx) {
       const start=row.querySelector('[name="calStart"]')?.value||'';
       const end=row.querySelector('[name="calEnd"]')?.value||'';
       const venue=row.querySelector('[name="calVenue"]')?.value||'';
-      return {id,date,type,start,end,venue,
-        note:original?.date===date&&original?.type===type&&original?.start===start&&original?.end===end?original.note:''};
+      const confirmed=row.querySelector('[name="calConfirmed"]')?.value==='confirmed';
+      return {id,date,type,start,end,venue,note:confirmed?'':'tentative'};
     });
     const cleaned=cleanCalendarEvents(entries,weekStart);
     if(cleaned.length!==entries.length){
