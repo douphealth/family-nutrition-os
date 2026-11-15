@@ -21,17 +21,18 @@ test('exact screenshot dates and clock times are preserved',()=>{
   ['2026-11-08','11:00','13:30']
  ]);
 });
-test('real weekly basketball = 745 minutes, school = 2250 minutes',()=>{
+test('verified basketball excludes 205 tentative minutes; school totals remain unchanged',()=>{
  const totals=summarizeCalendarEvents(DIMITRIS_SCREENSHOT_EVENTS);
- assert.equal(totals.teamMinutes,745);
+ assert.equal(totals.teamMinutes,540);
+ assert.equal(totals.tentativeMinutes,205);
  assert.equal(totals.schoolMinutes,2250);
- assert.equal(totals.teamDays,6);
+ assert.equal(totals.teamDays,5);
  assert.equal(totals.schoolDays,5);
- assert.equal(totals.lateNights,4);
+ assert.equal(totals.lateNights,3);
 });
-test('shortest next-day school gap = 8 hours 5 minutes, NOT sleep duration',()=>{
+test('tentative game cannot distort the shortest verified school turnaround',()=>{
  const gap=summarizeCalendarEvents(DIMITRIS_SCREENSHOT_EVENTS).shortestSchoolTurnaround;
- assert.deepEqual(gap,{from:'2026-11-03',to:'2026-11-04',minutes:485});
+ assert.deepEqual(gap,{from:'2026-11-02',to:'2026-11-03',minutes:585});
 });
 test('Tuesday MATCH DAY is location metadata, not a verified game',()=>{
  const tue=DIMITRIS_SCREENSHOT_EVENTS.find(x=>x.date==='2026-11-03'&&x.type==='team');
@@ -42,10 +43,10 @@ test('Tuesday MATCH DAY is location metadata, not a verified game',()=>{
 test('date-bound screenshot is applied to Dimitris only',()=>{
  const week=buildFitnessWeek(athlete,defaultFitnessSettings(athlete),[],'2026-11-04');
  assert.equal(week.calendarKnown,true);
- assert.equal(week.scheduledBasketballMinutes,745);
+ assert.equal(week.scheduledBasketballMinutes,540);
  assert.equal(week.extraMinutes,0);
  assert.equal(week.days[2].kind,'rest');
- assert.equal(week.days[1].sportMinutes,205);
+ assert.equal(week.days[1].sportMinutes,0);
  assert.equal(week.days[1].extraMinutes,0);
  assert.equal(week.warnings.includes('match-unconfirmed'),true);
  assert.equal(week.warnings.includes('late-finishes'),true);
@@ -63,11 +64,12 @@ test('explicit user-enabled repeat shifts events one week',()=>{
  const r=resolveCalendarWeek(settings,'2026-11-09');
  assert.equal(r.known,true);assert.equal(r.repeated,true);
  assert.equal(r.events.find(x=>x.type==='team')?.date,'2026-11-09');
- assert.equal(summarizeCalendarEvents(r.events).teamMinutes,745);
+ assert.equal(summarizeCalendarEvents(r.events).teamMinutes,0);
+ assert.equal(summarizeCalendarEvents(r.events).tentativeMinutes,745);
 });
 test('edited times recalculate real workload immediately',()=>{
  const weeks=defaultDimitrisCalendar();
- const edited=weeks['2026-11-02'].map(x=>x.date==='2026-11-03'&&x.type==='team'?{...x,end:'22:00'}:x);
+ const edited=weeks['2026-11-02'].map(x=>x.date==='2026-11-03'&&x.type==='team'?{...x,end:'22:00',note:''}:x);
  const settings=normalizeFitnessSettings({...defaultFitnessSettings(athlete),calendarWeeks:{'2026-11-02':edited}},athlete);
  const plan=buildFitnessWeek(athlete,settings,[],'2026-11-04');
  assert.equal(plan.scheduledBasketballMinutes,630);
