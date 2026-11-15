@@ -1,0 +1,1 @@
+import{nt as e}from"./index-BegWL_Ua.js";var t=e(`check`,[[`path`,{d:`M20 6 9 17l-5-5`,key:`1gmf2c`}]]);export{t};
