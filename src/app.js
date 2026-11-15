@@ -14,34 +14,34 @@
 import {
   APP, FAMILY, RECIPES, PLAN_28, TRAINING_LOADS, SLOTS, SLOT_LABEL, SLOT_TIME, AISLES,
   PERSONA_FOCUS, IRON_RICH, LEGACY_MEMBER_NAMES, LEGACY_ACTIVITY
-} from './data.js?v=18.1.0';
+} from './data.js?v=18.1.1';
 import {
   isMinor, targetsFor, dayMacros, mealMacros, planCoverage, weightTrend, loggingStreak,
   contextualGuidance, personaPoints, trainingFueling, ironMeals, upgradeMemberNames,
   upgradeActivityLevels, nextMealNudge, plateScale, rotationEnergy, referenceValues,
   householdRoleServings, buildShoppingList, buildShoppingListForMembers
-} from './nutrition-engine.js?v=18.1.0';
+} from './nutrition-engine.js?v=18.1.1';
 import {
   get, put, all, del, clearAll, exportBackup, importBackup, migrateLog,
   storageInfo, requestPersistence, activeBackend
-} from './storage.js?v=18.1.0';
+} from './storage.js?v=18.1.1';
 import {
   esc, icon, logo, byId, $$, avatar, registerMembers,
   localDateKey, addDays, mondayOf, cycleDayIndex, dateFromKey,
   num, num1, shopAmount, bytesToText, toast, openSheet, closeSheet, isSheetOpen, clockText
-} from './ui.js?v=18.1.0';
+} from './ui.js?v=18.1.1';
 import {
   todayView, planView, mealsView, shoppingView, progressView, familyView,
   guideView, recipeDetail, memberForm, dayDetail, paletteView, cookBody, cookFooter
-} from './views.js?v=18.1.0';
-import { translateTree } from './i18n.js?v=18.1.0';
-import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf } from './fitness-engine.js?v=18.1.0';
-import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js?v=18.1.0';
-import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js?v=18.1.0';
-import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js?v=18.1.0';
-import { buildSupplementaryProgram, supplementLogId } from './performance-program.js?v=18.1.0';
-import { performanceSettingsForm } from './performance-view.js?v=18.1.0';
-import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu } from './experience.js?v=18.1.0';
+} from './views.js?v=18.1.1';
+import { translateTree } from './i18n.js?v=18.1.1';
+import { buildFitnessWeek, defaultFitnessSettings, normalizeFitnessSettings, fitnessLogId, weekStartOf } from './fitness-engine.js?v=18.1.1';
+import { fitnessView, fitnessSettingsForm, fitnessTodayCard } from './fitness-view.js?v=18.1.1';
+import { fitnessCalendarForm, fitnessCalendarEventRow } from './fitness-calendar-view.js?v=18.1.1';
+import { cleanCalendarEvents, parseFitnessIcs } from './fitness-calendar.js?v=18.1.1';
+import { buildSupplementaryProgram, supplementLogId } from './performance-program.js?v=18.1.1';
+import { performanceSettingsForm } from './performance-view.js?v=18.1.1';
+import { WORKSPACE_SECTIONS, WORKSPACE_GROUPS, workspaceDock, moreMenu } from './experience.js?v=18.1.1';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
@@ -390,7 +390,7 @@ function renderShell() {
     densityBtn.setAttribute('aria-pressed', String(state.density === 'compact'));
     densityBtn.title = densityBtn.getAttribute('aria-label');
   }
-  byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · ${state.lang === 'en' ? 'local data' : 'τοπικά δεδομένα'}</span>`;
+  byId('sideVer').innerHTML = `${icon('shield', 14)}<span>v${esc(APP.version)} · ${state.lang === 'en' ? 'local data' : 'τοπικά δεδομένα'}</span><button type="button" class="zn-check-update" data-act="checkUpdate" aria-label="${state.lang === 'en' ? 'Check for the newest version' : 'Έλεγχος νεότερης έκδοσης'}">${icon('refresh', 13)} ${state.lang === 'en' ? 'Check update' : 'Ενημέρωση'}</button>`;
 
   const en = state.lang === 'en';
   byId('sideNav').innerHTML = WORKSPACE_GROUPS.map(group =>
@@ -1584,6 +1584,18 @@ document.addEventListener('click', async e => {
       renderAll();
       break;
     }
+    case 'checkUpdate': {
+      target.disabled = true;
+      try {
+        const result = await window.ZenithUpdate?.check?.();
+        if (result?.available) toast(state.lang === 'en' ? 'New version found. Refreshing…' : 'Βρέθηκε νέα έκδοση. Ανανέωση…');
+        else toast(state.lang === 'en' ? 'You have the newest version.' : 'Έχεις την πιο πρόσφατη έκδοση.');
+      } catch (error) {
+        console.error('[ZENITH] version check failed', error);
+        toast(state.lang === 'en' ? 'Unable to check. Try again online.' : 'Αδυναμία ελέγχου. Δοκίμασε με σύνδεση.');
+      } finally { target.disabled = false; }
+      break;
+    }
     case 'print': window.print(); break;
     case 'closeSheet': closeSheet(); break;
     case 'reload': location.reload(); break;
@@ -1764,29 +1776,12 @@ window.addEventListener('unhandledrejection', e => console.error('[ZENITH] unhan
 /* Charts are drawn at the width of their container, so a resize redraws them. */
 window.addEventListener('resize', debounce(() => { if (state.view === 'progress' && !isSheetOpen()) render(); }, 250));
 
-/* ── Service worker ────────────────────────────────────────────────────── */
-
-if ('serviceWorker' in navigator) {
-  let reloadingForWorker = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForWorker) return;
-    reloadingForWorker = true;
-    location.reload();
-  });
-
-  navigator.serviceWorker.register('./sw.js?v=18.1.0', { scope: './', updateViaCache: 'none' }).then(reg => {
-    reg?.update?.()?.catch?.(() => {});
-    reg?.addEventListener?.('updatefound', () => {
-      const worker = reg.installing;
-      worker?.addEventListener('statechange', () => {
-        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-          updateReady = true;
-          if (state.view === 'today') render();
-        }
-      });
-    });
-  }).catch(err => console.error('[ZENITH] sw registration failed', err));
-}
+/* Service-worker registration and periodic update checks run independently
+ * in update-boot.js, even if a module import fails. */
+window.addEventListener('zenith:update-available', () => {
+  updateReady = true;
+  if (state.view === 'today') render();
+});
 
 /* ── Go ────────────────────────────────────────────────────────────────── */
 

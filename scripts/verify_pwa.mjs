@@ -47,6 +47,17 @@ if (pkg.version !== appVersion) fail(`package.json ${pkg.version} ≠ APP.versio
 const major = String(pkg.version).split('.')[0];
 if (!new RegExp(`^zenith-v${major}-\\d{4}-\\d{2}-\\d{2}-\\d+$`).test(cacheName ?? '')) fail(`CACHE «${cacheName}» should look like zenith-v${major}-YYYY-MM-DD-N`);
 
+const htmlForVersion = read('index.html');
+const declaredBuild = /<meta name="zenith-build" content="([^"]+)"/.exec(htmlForVersion)?.[1];
+if (!declaredBuild?.startsWith(`${pkg.version}-`)) fail(`index.html build marker ${declaredBuild} must start with ${pkg.version}-`);
+for (const m of htmlForVersion.matchAll(/\?v=(\d+\.\d+\.\d+)/g)) {
+  if (m[1] !== pkg.version) fail(`index.html asset version ${m[1]} differs from ${pkg.version}`);
+}
+if (!htmlForVersion.includes('src/update-boot.js?v='+pkg.version)) fail('index.html must load independent update boot script');
+if (!sw.includes("'./src/update-boot.js'")) fail('sw.js must cache the update boot script');
+if (!sw.includes("CHECK_ASSETS") || !sw.includes("checkPublishedAssets")) fail('sw.js must detect future published JS/CSS changes');
+if (!read('src/update-boot.js').includes("inspectAssets(worker)")) fail('update boot must compare live assets even when release marker is unchanged');
+
 /* ── 3 · every module the app can import is precached ──────────────────── */
 const modules = new Set();
 const walk = file => {
@@ -60,6 +71,11 @@ const walk = file => {
   }
 };
 walk('src/app.js');
+for (const file of modules) {
+  for (const m of read(file).matchAll(/\?v=(\d+\.\d+\.\d+)/g)) {
+    if (m[1] !== pkg.version) fail(`${file} imports an out-of-date asset version ${m[1]} instead of ${pkg.version}`);
+  }
+}
 for (const f of modules) if (!precached.has(`./${f}`)) fail(`${f} is imported by the app but not precached — it would be missing offline`);
 
 /* ── 4 · everything index.html loads, and every stylesheet's fonts ─────── */

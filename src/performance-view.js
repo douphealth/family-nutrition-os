@@ -2,7 +2,7 @@
  * ZENITH / ATHLETE ATLAS · screen-only athlete cockpit.
  * Planner is not a medical diagnosis; planned ≠ cleared ≠ completed.
  */
-import {esc,icon} from './ui.js?v=16.0.0';
+import {esc,icon} from './ui.js?v=18.1.1';
 import {SUPPLEMENTARY_SOURCES} from './performance-program.js';
 import {exerciseFor,isSafeYouTubeWatchUrl} from './exercise-library.js';
 
