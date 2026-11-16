@@ -24,7 +24,7 @@ const GROUPS = [['Κάθε μέρα', 'Every day'], ['Μαγείρεμα & ορ�
 const SIBLING_APPS = [
   { href: 'https://food-scan.gearuptofit.com/', host: 'food-scan.gearuptofit.com', name: 'Food Scan', tint: 'bg-olive/10 text-olive' },
   { href: 'https://daily-table.gearuptofit.com/', host: 'daily-table.gearuptofit.com', name: 'Daily Table', tint: 'bg-terracotta/10 text-terracotta' },
-  { href: 'https://alex-679.pages.dev/', host: 'alex-679.pages.dev', name: 'Portfolio', tint: 'bg-aegean/10 text-aegean' },
+  { href: 'https://alexios-portfolio.pages.dev/', host: 'alexios-portfolio.pages.dev', name: 'Portfolio', tint: 'bg-aegean/10 text-aegean' },
 ] as const;
 
 export function AppFooter() {
