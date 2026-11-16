@@ -1,1 +1,0 @@
-var e=`/family-nutrition-os/assets/slot-breakfast-BRD1MKL9.jpg`,t={breakfast:e,lunch:`/family-nutrition-os/assets/slot-lunch-BmbWsyPI.jpg`,snack:e,dinner:`/family-nutrition-os/assets/slot-dinner-C264MvdV.jpg`};export{t};
