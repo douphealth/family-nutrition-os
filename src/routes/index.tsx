@@ -78,7 +78,7 @@ function Today() {
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         {/* Next meal */}
-        <section className="card-soft overflow-hidden animate-rise">
+        <section className="card-soft min-w-0 overflow-hidden animate-rise">
           {nextSlot && nextRecipe ? (
             <>
               <div className="flex flex-col sm:flex-row">
@@ -110,9 +110,9 @@ function Today() {
         </section>
 
         {/* Energy */}
-        <section className="card-soft p-6 animate-rise">
+        <section className="card-soft min-w-0 p-6 animate-rise">
           <h2 className="text-lg font-semibold">{tr("Η ενέργεια της ημέρας")}</h2>
-          <div className="mt-4 flex items-center gap-6">
+          <div className="mt-4 flex flex-wrap items-center gap-6">
             <Ring value={eaten.kcal} max={t.energy.upper} color={profile.accent}>
               <div>
                 <div className="font-display text-3xl font-semibold tabular">{nf(eaten.kcal, 0, language)}</div>
@@ -137,7 +137,7 @@ function Today() {
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         {/* Day timeline */}
-        <section className="card-soft p-6">
+        <section className="card-soft min-w-0 p-6">
           <h2 className="text-lg font-semibold">{tr("Τα γεύματα της ημέρας")}</h2>
           <ol className="mt-4 space-y-2">
             {SLOTS.map((slot) => {
@@ -164,7 +164,7 @@ function Today() {
           </ol>
         </section>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* Water */}
           <section className="card-soft p-6">
             <div className="flex items-center justify-between">
@@ -177,7 +177,7 @@ function Today() {
                   className={cn("h-10 w-7 rounded-b-lg rounded-t-sm border-2 transition-all", i < Math.round(log.waterMl / 250) ? "border-aegean bg-aegean/70" : "border-border bg-muted/50 hover:border-aegean/50")} />
               ))}
             </div>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="outline" className="rounded-full" onClick={() => water(-250)}><Minus /> 250 ml</Button>
               <Button className="rounded-full" onClick={() => water(250)}><Plus /> {tr("Ένα ποτήρι")}</Button>
             </div>
